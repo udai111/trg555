@@ -7,13 +7,22 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Determine API base URL based on environment
+const getApiBaseUrl = () => {
+  if (import.meta.env.PROD) {
+    // In production on GitHub Pages, use Netlify for API
+    return '/.netlify/functions';
+  }
+  // In development, use local server
+  return '';
+};
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  // Determine if we're in production (Netlify) or development
-  const baseUrl = import.meta.env.PROD ? '/.netlify/functions' : '';
+  const baseUrl = getApiBaseUrl();
   const fullUrl = `${baseUrl}${url}`;
 
   const res = await fetch(fullUrl, {
@@ -33,8 +42,7 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    // Determine if we're in production (Netlify) or development
-    const baseUrl = import.meta.env.PROD ? '/.netlify/functions' : '';
+    const baseUrl = getApiBaseUrl();
     const fullUrl = `${baseUrl}${queryKey[0]}`;
 
     const res = await fetch(fullUrl, {
