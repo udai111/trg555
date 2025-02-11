@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, memo } from 'react';
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, BarChart2 } from "lucide-react";
+import { TrendingUp, TrendingDown, BarChart2, Maximize2, Minimize2 } from "lucide-react";
 
 const TradingViewWidget = memo(() => {
   const container = useRef();
@@ -48,11 +49,61 @@ const TradingViewWidget = memo(() => {
 });
 
 const TradingViewSection = () => {
+  const [isFullScreen, setIsFullScreen] = React.useState(false);
+
+  // Add event listener for escape key to exit full screen
+  useEffect(() => {
+    const handleEsc = (event) => {
+      if (event.key === 'Escape') {
+        setIsFullScreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+    };
+  }, []);
+
+  // Tell parent component about fullscreen state changes
+  useEffect(() => {
+    const event = new CustomEvent('tradingview-fullscreen', { detail: { isFullScreen } });
+    window.dispatchEvent(event);
+  }, [isFullScreen]);
+
+  if (isFullScreen) {
+    return (
+      <div className="fixed inset-0 bg-background z-50">
+        <div className="absolute top-4 right-4 z-10">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsFullScreen(false)}
+            className="hover:bg-accent"
+          >
+            <Minimize2 className="h-5 w-5" />
+          </Button>
+        </div>
+        <div className="h-screen w-screen">
+          <TradingViewWidget />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6">Advanced Market Analysis</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Advanced Market Analysis</h2>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsFullScreen(true)}
+          className="hover:bg-accent"
+        >
+          <Maximize2 className="h-5 w-5" />
+        </Button>
+      </div>
 
-      {/* TradingView Chart Card */}
       <Card className="p-6 mb-6">
         <div className="h-[600px] w-full">
           <TradingViewWidget />
@@ -61,10 +112,7 @@ const TradingViewSection = () => {
 
       {/* Analysis Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          className="card"
-        >
+        <motion.div whileHover={{ scale: 1.02 }} className="card">
           <Card className="p-4">
             <h3 className="text-lg font-semibold mb-2">Technical Analysis</h3>
             <div className="space-y-2">
@@ -80,22 +128,11 @@ const TradingViewSection = () => {
                 <span>Moving Averages</span>
                 <span className="font-medium text-green-500">Strong Buy</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span>Bollinger Bands</span>
-                <span className="font-medium">Upper Band Test</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Volume Profile</span>
-                <span className="font-medium text-yellow-500">High Activity</span>
-              </div>
             </div>
           </Card>
         </motion.div>
 
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          className="card"
-        >
+        <motion.div whileHover={{ scale: 1.02 }} className="card">
           <Card className="p-4">
             <h3 className="text-lg font-semibold mb-2">Market Sentiment</h3>
             <div className="space-y-2">
@@ -111,19 +148,10 @@ const TradingViewSection = () => {
                 <span>Trend Strength</span>
                 <span className="font-medium text-green-500">Strong</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span>Options Flow</span>
-                <span className="font-medium text-green-500">Bullish</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Put/Call Ratio</span>
-                <span className="font-medium">0.75</span>
-              </div>
             </div>
           </Card>
         </motion.div>
       </div>
-
       {/* Trading Signals */}
       <Card className="p-6 mt-6">
         <h3 className="text-lg font-semibold mb-4">Trading Signals</h3>

@@ -12,12 +12,26 @@ import TradingViewSection from "./components/TradingViewSection";
 import MarketAnalysis from "./components/MarketAnalysis";
 import ProTrading from "./components/ProTrading";
 import NotFound from "@/pages/not-found";
+import { useEffect, useState } from "react";
 
 function MainContent() {
+  const [showSidebar, setShowSidebar] = useState(true);
+
+  // Listen for fullscreen events from TradingView component
+  useEffect(() => {
+    const handleFullScreen = (event: CustomEvent) => {
+      setShowSidebar(!event.detail.isFullScreen);
+    };
+    window.addEventListener('tradingview-fullscreen', handleFullScreen as EventListener);
+    return () => {
+      window.removeEventListener('tradingview-fullscreen', handleFullScreen as EventListener);
+    };
+  }, []);
+
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="flex-1 p-4 bg-background">
+      {showSidebar && <Sidebar />}
+      <main className={`flex-1 p-4 bg-background ${!showSidebar ? 'w-full' : ''}`}>
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/pro-trading" component={ProTrading} />
