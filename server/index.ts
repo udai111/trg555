@@ -12,7 +12,7 @@ app.use(express.urlencoded({ extended: false }));
 // Register API routes
 const server = registerRoutes(app);
 
-// Setup basic development server
+// Setup server based on environment
 if (process.env.NODE_ENV === 'production') {
   log('Running in production mode');
   serveStatic(app);
@@ -25,8 +25,13 @@ if (process.env.NODE_ENV === 'production') {
     });
 }
 
-// Start server
+// Start server on Replit's port or default to 5000
 const PORT = Number(process.env.PORT || 5000);
 server.listen(PORT, '0.0.0.0', () => {
   log(`Server running at http://0.0.0.0:${PORT}`);
+});
+
+// Basic error handling
+server.on('error', (error) => {
+  console.error('Server error:', error);
 });
