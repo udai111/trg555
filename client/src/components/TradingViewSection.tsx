@@ -14,9 +14,15 @@ const LoadingIndicator = ({ type }: { type: 'pulse' | 'spin' }) => {
   return (
     <div className="inline-flex items-center justify-center">
       {type === 'pulse' ? (
-        <Activity className="h-4 w-4 text-primary animate-pulse" />
+        <div className="relative">
+          <Activity className="h-4 w-4 text-primary" />
+          <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping"></div>
+        </div>
       ) : (
-        <RefreshCw className="h-4 w-4 text-primary animate-spin" />
+        <div className="relative">
+          <RefreshCw className="h-4 w-4 text-primary animate-spin [animation-duration:2s]" />
+          <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse"></div>
+        </div>
       )}
     </div>
   );
