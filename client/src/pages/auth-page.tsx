@@ -53,7 +53,7 @@ export default function AuthPage() {
       {/* Subtle overlay for text readability */}
       <div className="absolute inset-0 bg-black/20" />
 
-      <Card className="w-full max-w-md p-8 bg-background/30 backdrop-blur-sm border border-white/20 relative z-10 mx-4 shadow-xl">
+      <Card className="w-full max-w-md p-8 bg-background/20 backdrop-blur-sm border border-white/20 relative z-10 mx-4 shadow-xl">
         <div className="mb-8 text-center">
           <SiTradingview className="w-12 h-12 mx-auto mb-4 text-white" />
           <h1 className="text-3xl font-bold text-white mb-2">
