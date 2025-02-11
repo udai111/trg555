@@ -2,12 +2,16 @@ import { Card } from "@/components/ui/card";
 import { LineChart, Activity, BarChart2, Wallet } from "lucide-react";
 import { useState } from "react";
 import StockSelector from "@/components/StockSelector";
+import FXWidget from "@/components/FXWidget";
 
 const Dashboard = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('INFY');
 
   return (
     <div className="p-6">
+      {/* FX Widget */}
+      <FXWidget />
+
       {/* Stock Selector */}
       <div className="mb-6">
         <StockSelector onStockChange={setSelectedSymbol} />
