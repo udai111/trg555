@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express, Request } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
@@ -41,13 +41,13 @@ export function setupAuth(app: Express) {
   app.use(passport.session());
 
   // JSON Content-Type middleware
-  app.use((req, res, next) => {
+  app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader('Content-Type', 'application/json');
     next();
   });
 
   passport.use(
-    new LocalStrategy(async (username, password, done) => {
+    new LocalStrategy(async (username: string, password: string, done) => {
       try {
         console.log(`[Auth] Login attempt for user: ${username}`);
         const user = await storage.getUserByUsername(username);
@@ -82,13 +82,13 @@ export function setupAuth(app: Express) {
   });
 
   // Simple middleware to ensure JSON responses
-  const wrapAsync = (fn: Function) => {
-    return (req: Request, res: any, next: any) => {
+  const wrapAsync = (fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) => {
+    return (req: Request, res: Response, next: NextFunction) => {
       fn(req, res, next).catch(next);
     };
   };
 
-  app.post("/api/register", wrapAsync(async (req: Request, res) => {
+  app.post("/api/register", wrapAsync(async (req: Request, res: Response) => {
     console.log('[Auth] Register attempt:', req.body);
     const { username } = req.body;
 
@@ -137,9 +137,9 @@ export function setupAuth(app: Express) {
     }
   }));
 
-  app.post("/api/login", (req, res, next) => {
+  app.post("/api/login", (req: Request, res: Response, next: NextFunction) => {
     console.log('[Auth] Login attempt:', req.body);
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: Error | null, user: Express.User | false, info: { message: string } | undefined) => {
       if (err) {
         console.error('[Auth] Authentication error:', err);
         return res.status(500).json({
@@ -168,7 +168,7 @@ export function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.post("/api/logout", (req, res) => {
+  app.post("/api/logout", (req: Request, res: Response) => {
     const username = req.user?.username;
     console.log('[Auth] Logout attempt:', username);
     req.logout((err) => {
@@ -187,7 +187,7 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/user", (req, res) => {
+  app.get("/api/user", (req: Request, res: Response) => {
     console.log('[Auth] User check:', req.user?.username);
     if (!req.isAuthenticated() || !req.user) {
       console.log('[Auth] User not authenticated');
@@ -205,7 +205,7 @@ export function setupAuth(app: Express) {
   });
 
   // Error handling middleware
-  app.use((err: Error, req: Request, res: any, next: any) => {
+  app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     console.error('[Auth] Error:', err);
     res.status(500).json({
       error: true,

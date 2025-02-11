@@ -15,22 +15,31 @@ import StockMarketGamePage from "./pages/StockMarketGamePage";
 import IntradayProbabilityPage from "./pages/intraday-probability";
 import CandlestickPatternsPage from "./pages/candlestick-patterns";
 import NotFound from "@/pages/not-found";
-import { Component, Suspense, useState, useEffect } from "react";
+import { Component, Suspense, useState, useEffect, ReactNode } from "react";
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
 
 // Error boundary for catching runtime errors
-class ErrorBoundary extends Component {
-  state = { hasError: false, error: null };
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false, error: null };
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     console.error('App Error:', error);
     return { hasError: true, error };
   }
 
-  componentDidCatch(error, info) {
+  componentDidCatch(error: Error, info: { componentStack: string }): void {
     console.error('Error details:', error, info);
   }
 
-  render() {
+  render(): ReactNode {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4">
@@ -55,7 +64,7 @@ const LoadingSpinner = () => (
   </div>
 );
 
-function App() {
+function App(): JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
