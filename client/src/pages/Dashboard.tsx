@@ -6,6 +6,7 @@ import FXWidget from "@/components/FXWidget";
 import PriceForecastWidget from "@/components/PriceForecastWidget";
 import TechnicalSummaryWidget from "@/components/TechnicalSummaryWidget";
 import TradingViewWidget from "@/components/TradingViewWidget";
+import InterestRatesWidget from "@/components/InterestRatesWidget";
 
 const Dashboard = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('GOOG');
@@ -26,8 +27,15 @@ const Dashboard = () => {
       {/* Price Forecast Widget */}
       <PriceForecastWidget symbol={selectedSymbol} />
 
-      {/* Technical Summary Widget */}
-      <TechnicalSummaryWidget />
+      {/* Technical Summary and Interest Rates Widgets */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="lg:col-span-2">
+          <TechnicalSummaryWidget />
+        </div>
+        <div>
+          <InterestRatesWidget />
+        </div>
+      </div>
 
       <h1 className="text-3xl font-bold mb-6">Market Dashboard</h1>
 
