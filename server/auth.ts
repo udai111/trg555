@@ -10,6 +10,7 @@ import { randomBytes } from "crypto";
 declare module 'express-session' {
   interface SessionData {
     passport?: any;
+    isAuthenticated?: boolean;
   }
 }
 
@@ -28,14 +29,15 @@ declare global {
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.REPL_ID! + randomBytes(32).toString('hex'),
-    resave: false,
+    resave: true, // Changed to true to ensure session is saved
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
       secure: app.get('env') === 'production',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       sameSite: 'lax'
-    }
+    },
+    name: 'session-id' // Added explicit session name
   };
 
   if (app.get("env") === "production") {
@@ -45,6 +47,14 @@ export function setupAuth(app: Express) {
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Add authentication check middleware
+  app.use((req, res, next) => {
+    if (req.session) {
+      req.session.isAuthenticated = req.isAuthenticated();
+    }
+    next();
+  });
 
   passport.use(
     new LocalStrategy(async (
@@ -66,18 +76,22 @@ export function setupAuth(app: Express) {
   );
 
   passport.serializeUser((user: Express.User, done: (err: any, id?: number) => void) => {
-    done(null, user.id)
+    done(null, user.id);
   });
 
   passport.deserializeUser(async (id: number, done: (err: any, user?: Express.User | false) => void) => {
     try {
       const user = await storage.getUser(id);
+      if (!user) {
+        return done(null, false);
+      }
       done(null, user);
     } catch (err) {
       done(err);
     }
   });
 
+  // Authentication endpoints
   app.post("/api/register", async (req: Request, res) => {
     try {
       const { username } = req.body;
@@ -102,7 +116,7 @@ export function setupAuth(app: Express) {
         if (err) {
           return res.status(500).json({ message: "Login failed after registration" });
         }
-        res.status(201).json(user);
+        res.status(201).json({ user, isAuthenticated: true });
       });
     } catch (error) {
       console.error('Registration error:', error);
@@ -117,7 +131,7 @@ export function setupAuth(app: Express) {
 
       req.login(user, (err) => {
         if (err) return next(err);
-        res.json(user);
+        res.json({ user, isAuthenticated: true });
       });
     })(req, res, next);
   });
@@ -130,17 +144,23 @@ export function setupAuth(app: Express) {
           console.error('Logout error:', err);
           return res.status(500).json({ message: "Logout failed" });
         }
-        res.json({ message: `${username} logged out successfully` });
+        res.clearCookie('session-id');
+        res.json({ message: `${username} logged out successfully`, isAuthenticated: false });
       });
     });
   });
 
   app.get("/api/user", (req: Request, res) => {
-    if (!req.user) {
-      return res.status(401).json({ message: "Not authenticated" });
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ 
+        message: "Not authenticated",
+        isAuthenticated: false 
+      });
     }
-    // Don't send sensitive information
     const { password, ...safeUser } = req.user;
-    res.json(safeUser);
+    res.json({ 
+      user: safeUser,
+      isAuthenticated: true
+    });
   });
 }
