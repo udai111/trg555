@@ -5,6 +5,8 @@ import TickerTape from "@/components/TickerTape";
 import SwotWidget from "@/components/SwotWidget";
 import QVTWidget from "@/components/QVTWidget";
 import ChecklistWidget from "@/components/ChecklistWidget";
+import FundamentalWidget from "@/components/FundamentalWidget";
+import InsiderTradingWidget from "@/components/InsiderTradingWidget";
 import StockSelector from "@/components/StockSelector";
 
 const Dashboard = () => {
@@ -35,6 +37,16 @@ const Dashboard = () => {
       {/* Add Checklist widget */}
       <div className="w-full mb-6 bg-white rounded-lg shadow">
         <ChecklistWidget symbol={selectedSymbol} />
+      </div>
+
+      {/* Add Fundamental widget */}
+      <div className="w-full mb-6 bg-white rounded-lg shadow">
+        <FundamentalWidget symbol={selectedSymbol} />
+      </div>
+
+      {/* Add Insider Trading widget */}
+      <div className="w-full mb-6 bg-white rounded-lg shadow">
+        <InsiderTradingWidget symbol={selectedSymbol} />
       </div>
 
       <h1 className="text-3xl font-bold mb-6">Market Dashboard</h1>
