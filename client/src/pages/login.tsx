@@ -22,9 +22,8 @@ export default function LoginPage() {
       return;
     }
 
-    // Store username and trigger page reload to ensure proper state update
     localStorage.setItem("username", username.trim());
-    window.location.href = "/";
+    setLocation("/");
   };
 
   return (

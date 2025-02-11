@@ -41,6 +41,7 @@ function App() {
           {!username ? (
             <Switch>
               <Route path="/login" component={LoginPage} />
+              <Route path="/" component={LandingPage} />
               <Route component={LandingPage} />
             </Switch>
           ) : (
