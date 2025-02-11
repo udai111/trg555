@@ -1,11 +1,17 @@
 import { Card } from "@/components/ui/card";
 import { LineChart, Activity, BarChart2, Wallet } from "lucide-react";
+import TickerTape from "@/components/TickerTape";
 
 const Dashboard = () => {
   return (
     <div className="p-6">
+      {/* Add TickerTape at the top */}
+      <div className="w-full h-12 mb-6 -mx-6 -mt-6">
+        <TickerTape />
+      </div>
+
       <h1 className="text-3xl font-bold mb-6">Premium Trading Dashboard</h1>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard 
           title="Portfolio Value"
