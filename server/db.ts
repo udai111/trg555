@@ -3,29 +3,21 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
 
-// Simple in-memory database for development
-const inMemoryDb = new Map();
+// Configure WebSocket for Neon
+neonConfig.webSocketConstructor = ws;
 
-export const db = {
-  // Simplified interface that matches what we need
-  select: () => ({
-    from: () => ({
-      where: () => []
-    })
-  }),
-  insert: () => ({
-    values: () => ({
-      returning: () => []
-    })
-  }),
-  update: () => ({
-    set: () => ({
-      where: () => ({
-        returning: () => []
-      })
-    })
-  })
-};
+// Create a simple pool with basic configuration
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
+});
+
+// Create the drizzle database instance
+export const db = drizzle(pool, { schema });
+
+// Basic error handling for the pool
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle database client', err);
+});
 
 // Export the in-memory store for testing
-export const store = inMemoryDb;
+export const store = new Map();
