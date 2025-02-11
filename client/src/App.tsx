@@ -10,7 +10,6 @@ import MLPrediction from "./components/MLPrediction";
 import BacktestPanel from "./components/BacktestPanel";
 import TradingViewSection from "./components/TradingViewSection";
 import MarketAnalysis from "./components/MarketAnalysis";
-import MarketOverview from "./components/MarketOverview";
 import ProTrading from "./components/ProTrading";
 import StockMarketGamePage from "./pages/StockMarketGamePage";
 import NotFound from "@/pages/not-found";
@@ -57,7 +56,6 @@ function App() {
                   <Route path="/backtest" component={BacktestPanel} />
                   <Route path="/charts" component={TradingViewSection} />
                   <Route path="/market-analysis" component={MarketAnalysis} />
-                  <Route path="/market-overview" component={MarketOverview} />
                   <Route component={NotFound} />
                 </Switch>
               </main>
