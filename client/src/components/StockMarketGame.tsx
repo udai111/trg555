@@ -116,18 +116,22 @@ const INITIAL_CRYPTO: StockData[] = [
   { symbol: "SUSHI", name: "SushiSwap", price: 140, change: 5.2, market: 'CRYPTO' }
 ];
 
-export default function StockMarketGame() {
+function StockMarketGame() {
   const [activeMarket, setActiveMarket] = useState<'NSE' | 'CRYPTO'>('NSE');
   const [nseStocks, setNseStocks] = useState<StockData[]>(INITIAL_NSE_STOCKS);
   const [cryptos, setCryptos] = useState<StockData[]>(INITIAL_CRYPTO);
-  const [user, setUser] = useState<User | null>(null);
-  const [username, setUsername] = useState('');
   const [selectedAsset, setSelectedAsset] = useState<StockData | null>(null);
   const [quantity, setQuantity] = useState('');
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [showRetroMode, setShowRetroMode] = useState(false);
   const [showProMode, setShowProMode] = useState(false);
   const { toast } = useToast();
+
+  const [user, setUser] = useState<User>({
+    username: 'Guest Trader',
+    wallet: 1000000,
+    portfolio: {}
+  });
 
   useEffect(() => {
     const savedUser = localStorage.getItem('stockGameUser');
@@ -137,9 +141,7 @@ export default function StockMarketGame() {
   }, []);
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem('stockGameUser', JSON.stringify(user));
-    }
+    localStorage.setItem('stockGameUser', JSON.stringify(user));
   }, [user]);
 
   useEffect(() => {
@@ -172,41 +174,9 @@ export default function StockMarketGame() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleLogin = () => {
-    if (!username) {
-      toast({
-        title: "Error",
-        description: "Please enter a username",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const newUser: User = {
-      username,
-      wallet: 1000000,
-      portfolio: {}
-    };
-    setUser(newUser);
-    setUsername('');
-
-    toast({
-      title: "Welcome!",
-      description: "You've been given ₹10,00,000 to start trading!"
-    });
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('stockGameUser');
-    toast({
-      title: "Logged out",
-      description: "Come back soon!"
-    });
-  };
 
   const handleBuy = () => {
-    if (!user || !selectedAsset || !quantity) return;
+    if (!selectedAsset || !quantity) return;
 
     const qty = parseInt(quantity);
     const totalCost = qty * selectedAsset.price;
@@ -250,7 +220,7 @@ export default function StockMarketGame() {
   };
 
   const handleSell = () => {
-    if (!user || !selectedAsset || !quantity) return;
+    if (!selectedAsset || !quantity) return;
 
     const qty = parseInt(quantity);
     const holding = user.portfolio[selectedAsset.symbol];
@@ -298,7 +268,6 @@ export default function StockMarketGame() {
   };
 
   const calculatePortfolioValue = (): number => {
-    if (!user) return 0;
     return Object.entries(user.portfolio).reduce((total, [symbol, holding]) => {
       const asset = holding.market === 'NSE'
         ? nseStocks.find(s => s.symbol === symbol)
@@ -316,29 +285,6 @@ export default function StockMarketGame() {
   const handleProMode = () => {
     setShowProMode(!showProMode);
   };
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="w-[400px] p-6">
-          <h1 className="text-2xl font-bold mb-6">Virtual Trading Platform</h1>
-          <div className="space-y-4">
-            <div>
-              <Label>Username</Label>
-              <Input
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username to start trading"
-              />
-            </div>
-            <Button className="w-full" onClick={handleLogin}>
-              Start Trading
-            </Button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
 
   if (showRetroMode) {
     return (
@@ -690,9 +636,6 @@ Enter command: _
             <Terminal className="mr-2 h-4 w-4" />
             Terminal Mode
           </Button>
-          <Button variant="outline" onClick={handleLogout}>
-            Logout
-          </Button>
         </div>
       </div>
 
@@ -822,3 +765,5 @@ Enter command: _
     </div>
   );
 }
+
+export default StockMarketGame;
