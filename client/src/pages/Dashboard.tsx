@@ -3,10 +3,10 @@ import { LineChart, Activity, BarChart2, Wallet } from "lucide-react";
 import { useState } from "react";
 import StockSelector from "@/components/StockSelector";
 import FXWidget from "@/components/FXWidget";
-import PriceForecastWidget from "@/components/PriceForecastWidget";
 import TechnicalSummaryWidget from "@/components/TechnicalSummaryWidget";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import InterestRatesWidget from "@/components/InterestRatesWidget";
+import ForexCrossRatesWidget from "@/components/ForexCrossRatesWidget";
 
 const Dashboard = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('GOOG');
@@ -24,8 +24,8 @@ const Dashboard = () => {
       {/* TradingView Widget */}
       <TradingViewWidget />
 
-      {/* Price Forecast Widget */}
-      <PriceForecastWidget symbol={selectedSymbol} />
+      {/* Forex Cross Rates Widget */}
+      <ForexCrossRatesWidget />
 
       {/* Technical Summary and Interest Rates Widgets */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
