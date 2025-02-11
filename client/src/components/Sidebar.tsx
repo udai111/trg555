@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Home, LineChart, Activity, BarChart2, TrendingUp } from "lucide-react";
+import { Home, LineChart, Activity, BarChart2, TrendingUp, Gem } from "lucide-react";
 
 const Sidebar = () => {
   const [location] = useLocation();
@@ -20,6 +20,11 @@ const Sidebar = () => {
         <NavLink href="/" isActive={location === "/"}>
           <Home className="w-5 h-5 mr-3" />
           Home
+        </NavLink>
+
+        <NavLink href="/pro-trading" isActive={location === "/pro-trading"}>
+          <Gem className="w-5 h-5 mr-3" />
+          Pro Trading
         </NavLink>
 
         <NavLink href="/ml-predictions" isActive={location === "/ml-predictions"}>

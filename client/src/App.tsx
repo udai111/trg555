@@ -10,6 +10,7 @@ import MLPrediction from "./components/MLPrediction";
 import BacktestPanel from "./components/BacktestPanel";
 import TradingViewSection from "./components/TradingViewSection";
 import MarketAnalysis from "./components/MarketAnalysis";
+import ProTrading from "./components/ProTrading";
 import NotFound from "@/pages/not-found";
 
 function MainContent() {
@@ -19,6 +20,7 @@ function MainContent() {
       <main className="flex-1 p-4 bg-background">
         <Switch>
           <Route path="/" component={Dashboard} />
+          <Route path="/pro-trading" component={ProTrading} />
           <Route path="/ml-predictions" component={MLPrediction} />
           <Route path="/backtest" component={BacktestPanel} />
           <Route path="/charts" component={TradingViewSection} />
