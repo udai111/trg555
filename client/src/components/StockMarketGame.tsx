@@ -3,20 +3,15 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
-import { TrendingUp, TrendingDown, Wallet, Clock } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Clock, User } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface StockData {
   symbol: string;
   price: number;
-  change?: number;
+  change: number;
 }
 
 interface Portfolio {
@@ -26,32 +21,48 @@ interface Portfolio {
   };
 }
 
-interface GameState {
+interface User {
+  username: string;
   wallet: number;
   portfolio: Portfolio;
 }
 
+// Mock initial stocks data
 const INITIAL_STOCKS: StockData[] = [
   { symbol: "AAPL", price: 189.30, change: 2.5 },
   { symbol: "GOOGL", price: 2756.80, change: -1.2 },
   { symbol: "MSFT", price: 345.67, change: 1.8 },
   { symbol: "AMZN", price: 3245.90, change: -0.5 },
   { symbol: "TSLA", price: 789.45, change: 3.2 },
-  { symbol: "META", price: 467.89, change: 1.5 },
-  { symbol: "NVDA", price: 678.34, change: 4.2 }
+  { symbol: "META", price: 467.89, change: 1.5 }
 ];
 
 export default function StockMarketGame() {
   const [stocks, setStocks] = useState<StockData[]>(INITIAL_STOCKS);
-  const [gameState, setGameState] = useState<GameState>({
-    wallet: 100000, // Start with 100k virtual currency
-    portfolio: {}
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [selectedStock, setSelectedStock] = useState<StockData | null>(null);
-  const [quantity, setQuantity] = useState<string>("");
-  const [timeElapsed, setTimeElapsed] = useState<number>(0);
+  const [quantity, setQuantity] = useState('');
+  const [timeElapsed, setTimeElapsed] = useState(0);
+  const { toast } = useToast();
 
-  // Simulate price updates every 5 seconds
+  // Load user data from localStorage on mount
+  useEffect(() => {
+    const savedUser = localStorage.getItem('stockGameUser');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  // Save user data to localStorage when it changes
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('stockGameUser', JSON.stringify(user));
+    }
+  }, [user]);
+
+  // Update stock prices every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setStocks(prevStocks =>
@@ -75,85 +86,165 @@ export default function StockMarketGame() {
     return () => clearInterval(timer);
   }, []);
 
+  const handleLogin = () => {
+    if (!username || !password) {
+      toast({
+        title: "Error",
+        description: "Please enter both username and password",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newUser: User = {
+      username,
+      wallet: 100000, // Start with 100k virtual currency
+      portfolio: {}
+    };
+    setUser(newUser);
+    setUsername('');
+    setPassword('');
+
+    toast({
+      title: "Welcome!",
+      description: "You've been given ₹100,000 to start trading!"
+    });
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('stockGameUser');
+    toast({
+      title: "Logged out",
+      description: "Come back soon!"
+    });
+  };
+
+  const handleBuy = () => {
+    if (!user || !selectedStock || !quantity) return;
+
+    const qty = parseInt(quantity);
+    const totalCost = qty * selectedStock.price;
+
+    if (totalCost > user.wallet) {
+      toast({
+        title: "Insufficient funds",
+        description: "You don't have enough money for this transaction",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newPortfolio = { ...user.portfolio };
+    const currentHolding = newPortfolio[selectedStock.symbol] || { quantity: 0, avgCost: 0 };
+    const newQuantity = currentHolding.quantity + qty;
+    const newAvgCost = ((currentHolding.quantity * currentHolding.avgCost) + totalCost) / newQuantity;
+
+    newPortfolio[selectedStock.symbol] = {
+      quantity: newQuantity,
+      avgCost: newAvgCost
+    };
+
+    setUser({
+      ...user,
+      wallet: user.wallet - totalCost,
+      portfolio: newPortfolio
+    });
+
+    setQuantity('');
+    toast({
+      title: "Purchase successful",
+      description: `Bought ${qty} shares of ${selectedStock.symbol}`
+    });
+  };
+
+  const handleSell = () => {
+    if (!user || !selectedStock || !quantity) return;
+
+    const qty = parseInt(quantity);
+    const holding = user.portfolio[selectedStock.symbol];
+
+    if (!holding || holding.quantity < qty) {
+      toast({
+        title: "Insufficient shares",
+        description: "You don't have enough shares to sell",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const proceeds = qty * selectedStock.price;
+    const newPortfolio = { ...user.portfolio };
+    const newQuantity = holding.quantity - qty;
+
+    if (newQuantity <= 0) {
+      delete newPortfolio[selectedStock.symbol];
+    } else {
+      newPortfolio[selectedStock.symbol] = {
+        quantity: newQuantity,
+        avgCost: holding.avgCost
+      };
+    }
+
+    setUser({
+      ...user,
+      wallet: user.wallet + proceeds,
+      portfolio: newPortfolio
+    });
+
+    setQuantity('');
+    toast({
+      title: "Sale successful",
+      description: `Sold ${qty} shares of ${selectedStock.symbol}`
+    });
+  };
+
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleBuy = () => {
-    if (!selectedStock || !quantity) return;
-    
-    const qty = parseInt(quantity);
-    const totalCost = qty * selectedStock.price;
-    
-    if (totalCost > gameState.wallet) {
-      alert("Insufficient funds!");
-      return;
-    }
-
-    setGameState(prev => {
-      const currentHolding = prev.portfolio[selectedStock.symbol] || { quantity: 0, avgCost: 0 };
-      const newQuantity = currentHolding.quantity + qty;
-      const newAvgCost = ((currentHolding.quantity * currentHolding.avgCost) + totalCost) / newQuantity;
-
-      return {
-        wallet: prev.wallet - totalCost,
-        portfolio: {
-          ...prev.portfolio,
-          [selectedStock.symbol]: {
-            quantity: newQuantity,
-            avgCost: newAvgCost
-          }
-        }
-      };
-    });
-
-    setQuantity("");
-  };
-
-  const handleSell = () => {
-    if (!selectedStock || !quantity) return;
-    
-    const qty = parseInt(quantity);
-    const holding = gameState.portfolio[selectedStock.symbol];
-    
-    if (!holding || holding.quantity < qty) {
-      alert("Not enough shares to sell!");
-      return;
-    }
-
-    const proceeds = qty * selectedStock.price;
-
-    setGameState(prev => {
-      const newQuantity = holding.quantity - qty;
-      const newPortfolio = { ...prev.portfolio };
-      
-      if (newQuantity <= 0) {
-        delete newPortfolio[selectedStock.symbol];
-      } else {
-        newPortfolio[selectedStock.symbol] = {
-          quantity: newQuantity,
-          avgCost: holding.avgCost // Keep the same average cost
-        };
-      }
-
-      return {
-        wallet: prev.wallet + proceeds,
-        portfolio: newPortfolio
-      };
-    });
-
-    setQuantity("");
-  };
-
-  const calculateTotalValue = (): number => {
-    return Object.entries(gameState.portfolio).reduce((total, [symbol, holding]) => {
+  const calculatePortfolioValue = (): number => {
+    if (!user) return 0;
+    return Object.entries(user.portfolio).reduce((total, [symbol, holding]) => {
       const stock = stocks.find(s => s.symbol === symbol);
       if (!stock) return total;
       return total + (stock.price * holding.quantity);
-    }, gameState.wallet);
+    }, user.wallet);
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="w-[400px] p-6">
+          <h1 className="text-2xl font-bold mb-6">Stock Market Game</h1>
+          <div className="space-y-4">
+            <div>
+              <Label>Username</Label>
+              <Input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter username"
+              />
+            </div>
+            <div>
+              <Label>Password</Label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+              />
+            </div>
+            <Button className="w-full" onClick={handleLogin}>
+              Start Trading
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -161,21 +252,28 @@ export default function StockMarketGame() {
         <h1 className="text-2xl font-bold">Stock Market Game</h1>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            <span>{user.username}</span>
+          </div>
+          <div className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            <span className="text-lg font-mono">{formatTime(timeElapsed)}</span>
+            <span className="font-mono">{formatTime(timeElapsed)}</span>
           </div>
           <div className="flex items-center gap-2">
             <Wallet className="h-5 w-5" />
-            <span className="text-lg font-mono">₹{gameState.wallet.toFixed(2)}</span>
+            <span className="font-mono">₹{user.wallet.toFixed(2)}</span>
           </div>
+          <Button variant="outline" onClick={handleLogout}>
+            Logout
+          </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Market Overview */}
-        <Card className="p-4 col-span-2">
+        {/* Market View */}
+        <Card className="col-span-2 p-4">
           <h2 className="text-lg font-semibold mb-4">Live Market</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             {stocks.map((stock) => (
               <motion.div
                 key={stock.symbol}
@@ -187,12 +285,10 @@ export default function StockMarketGame() {
               >
                 <div className="flex justify-between items-center">
                   <span className="font-semibold">{stock.symbol}</span>
-                  {stock.change && (
-                    <span className={`flex items-center ${stock.change > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {stock.change > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                      {Math.abs(stock.change).toFixed(1)}%
-                    </span>
-                  )}
+                  <span className={`flex items-center ${stock.change > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {stock.change > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                    {Math.abs(stock.change).toFixed(1)}%
+                  </span>
                 </div>
                 <p className="text-lg font-mono mt-1">₹{stock.price.toFixed(2)}</p>
               </motion.div>
@@ -200,37 +296,37 @@ export default function StockMarketGame() {
           </div>
         </Card>
 
-        {/* Portfolio Overview */}
+        {/* Portfolio View */}
         <Card className="p-4">
           <h2 className="text-lg font-semibold mb-4">Your Portfolio</h2>
           <div className="space-y-4">
-            {Object.entries(gameState.portfolio).map(([symbol, holding]) => {
+            {Object.entries(user.portfolio).map(([symbol, holding]) => {
               const stock = stocks.find(s => s.symbol === symbol);
               if (!stock) return null;
-              
+
               const currentValue = stock.price * holding.quantity;
               const profit = currentValue - (holding.avgCost * holding.quantity);
-              
+
               return (
-                <div key={symbol} className="p-3 bg-background rounded-lg">
+                <div key={symbol} className="p-3 bg-accent/10 rounded-lg">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">{symbol}</span>
                     <span className={profit >= 0 ? 'text-green-500' : 'text-red-500'}>
-                      {profit >= 0 ? '+' : ''}{profit.toFixed(2)}
+                      {profit >= 0 ? '+' : ''}₹{profit.toFixed(2)}
                     </span>
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    <div>Qty: {holding.quantity}</div>
-                    <div>Avg: ₹{holding.avgCost.toFixed(2)}</div>
+                    <div>Quantity: {holding.quantity}</div>
+                    <div>Avg Cost: ₹{holding.avgCost.toFixed(2)}</div>
                   </div>
                 </div>
               );
             })}
-            
+
             <div className="pt-4 border-t">
               <div className="flex justify-between items-center">
                 <span>Total Value</span>
-                <span className="font-bold">₹{calculateTotalValue().toFixed(2)}</span>
+                <span className="font-bold">₹{calculatePortfolioValue().toFixed(2)}</span>
               </div>
             </div>
           </div>
