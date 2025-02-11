@@ -1,3 +1,26 @@
+// Add types at the top of the file
+interface MarketItem {
+  symbol: string;
+  change: number;
+  price: number;
+  volume: string;
+}
+
+interface NewsItem {
+  title: string;
+  link: string;
+  pubDate: string;
+  category: string;
+  impact: 'Positive' | 'Negative' | 'Neutral';
+}
+
+interface WatchData {
+  [key: string]: {
+    price?: number;
+    change?: number;
+  };
+}
+
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,11 +49,11 @@ import { Switch } from "@/components/ui/switch";
 
 // Advanced Market Analysis Component
 const MarketAnalysis = () => {
-  const [gainers, setGainers] = useState([]);
-  const [losers, setLosers] = useState([]);
-  const [newsItems, setNewsItems] = useState([]);
-  const [watchlist, setWatchlist] = useState(["RELIANCE", "TCS", "INFY"]);
-  const [watchData, setWatchData] = useState({});
+  const [gainers, setGainers] = useState<MarketItem[]>([]);
+  const [losers, setLosers] = useState<MarketItem[]>([]);
+  const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
+  const [watchlist, setWatchlist] = useState<string[]>(["RELIANCE", "TCS", "INFY"]);
+  const [watchData, setWatchData] = useState<WatchData>({});
   const [newSymbol, setNewSymbol] = useState("");
   const [selectedSector, setSelectedSector] = useState("All");
   const [activeTab, setActiveTab] = useState("overview");
@@ -38,7 +61,6 @@ const MarketAnalysis = () => {
   const [selectedIndicator, setSelectedIndicator] = useState("All");
   const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState('');
-
 
   // Market Breadth Data
   const marketBreadthData = {
@@ -250,13 +272,13 @@ const MarketAnalysis = () => {
     ]
   };
 
-  const addToWatchlist = (symbol) => {
+  const addToWatchlist = (symbol: string) => {
     if (symbol && !watchlist.includes(symbol)) {
       setWatchlist([...watchlist, symbol]);
     }
   };
 
-  const removeFromWatchlist = (symbol) => {
+  const removeFromWatchlist = (symbol: string) => {
     setWatchlist(watchlist.filter((item) => item !== symbol));
   };
 
@@ -691,7 +713,7 @@ const MarketAnalysis = () => {
               </div>
             </Card>
             <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4>">DII Activity</h3>
+              <h3 className="text-lg font-semibold mb-4">DII Activity</h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span>Net Buy:</span>
