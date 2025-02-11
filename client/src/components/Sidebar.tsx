@@ -18,9 +18,9 @@ const NavLink = ({ href, children, isActive, onClick }: {
     onClick={onClick}
   >
     <Link href={href}>
-      <a className="flex items-center">
+      <div className="flex items-center">
         {children}
-      </a>
+      </div>
     </Link>
   </motion.div>
 );
