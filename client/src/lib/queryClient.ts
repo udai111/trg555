@@ -9,11 +9,11 @@ async function throwIfResNotOk(res: Response) {
 
 const getApiBaseUrl = () => {
   if (import.meta.env.PROD) {
-    // In production on Netlify, use /.netlify/functions
-    return '/.netlify/functions';
+    // In production, use Netlify functions
+    return '/.netlify/functions/api';
   }
   // In development, use local server
-  return '';
+  return '/api';
 };
 
 export async function apiRequest(
@@ -23,17 +23,22 @@ export async function apiRequest(
 ): Promise<Response> {
   const baseUrl = getApiBaseUrl();
   const fullUrl = `${baseUrl}${url}`;
-  console.log('Making API request to:', fullUrl); // Add logging
+  console.log(`Making ${method} request to:`, fullUrl);
 
-  const res = await fetch(fullUrl, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  try {
+    const res = await fetch(fullUrl, {
+      method,
+      headers: data ? { "Content-Type": "application/json" } : {},
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+    });
 
-  await throwIfResNotOk(res);
-  return res;
+    await throwIfResNotOk(res);
+    return res;
+  } catch (error) {
+    console.error('API request failed:', error);
+    throw error;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -44,18 +49,26 @@ export const getQueryFn: <T>(options: {
     async ({ queryKey }) => {
       const baseUrl = getApiBaseUrl();
       const fullUrl = `${baseUrl}${queryKey[0]}`;
-      console.log('Making query to:', fullUrl); // Add logging
+      console.log('Making query to:', fullUrl);
 
-      const res = await fetch(fullUrl, {
-        credentials: "include",
-      });
+      try {
+        const res = await fetch(fullUrl, {
+          credentials: "include",
+        });
 
-      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-        return null;
+        if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+          console.log('Unauthorized request, returning null as configured');
+          return null;
+        }
+
+        await throwIfResNotOk(res);
+        const data = await res.json();
+        console.log('Query response:', data);
+        return data;
+      } catch (error) {
+        console.error('Query failed:', error);
+        throw error;
       }
-
-      await throwIfResNotOk(res);
-      return await res.json();
     };
 
 export const queryClient = new QueryClient({
