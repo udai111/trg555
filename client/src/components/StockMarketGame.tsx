@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
-import { TrendingUp, TrendingDown, Wallet, Clock, User } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Clock, User, Terminal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface StockData {
@@ -30,7 +30,6 @@ interface User {
   portfolio: Portfolio;
 }
 
-// Mock initial stocks data with real NSE stocks
 const INITIAL_NSE_STOCKS: StockData[] = [
   { symbol: "RELIANCE", name: "Reliance Industries", price: 2467.85, change: 2.5, market: 'NSE' },
   { symbol: "TCS", name: "Tata Consultancy Services", price: 3890.45, change: -1.2, market: 'NSE' },
@@ -84,7 +83,6 @@ const INITIAL_NSE_STOCKS: StockData[] = [
   { symbol: "HINDUNILVR", name: "Hindustan Unilever", price: 2456.70, change: 1.5, market: 'NSE' }
 ];
 
-// Mock cryptocurrencies data with top 30 cryptos
 const INITIAL_CRYPTO: StockData[] = [
   { symbol: "BTC", name: "Bitcoin", price: 3452000, change: 4.2, market: 'CRYPTO' },
   { symbol: "ETH", name: "Ethereum", price: 230000, change: 3.1, market: 'CRYPTO' },
@@ -127,9 +125,9 @@ export default function StockMarketGame() {
   const [selectedAsset, setSelectedAsset] = useState<StockData | null>(null);
   const [quantity, setQuantity] = useState('');
   const [timeElapsed, setTimeElapsed] = useState(0);
+  const [showRetroMode, setShowRetroMode] = useState(false);
   const { toast } = useToast();
 
-  // Load user data from localStorage on mount
   useEffect(() => {
     const savedUser = localStorage.getItem('stockGameUser');
     if (savedUser) {
@@ -137,17 +135,14 @@ export default function StockMarketGame() {
     }
   }, []);
 
-  // Save user data to localStorage when it changes
   useEffect(() => {
     if (user) {
       localStorage.setItem('stockGameUser', JSON.stringify(user));
     }
   }, [user]);
 
-  // Update prices periodically with market-specific volatility
   useEffect(() => {
     const interval = setInterval(() => {
-      // NSE stocks: Lower volatility (±2%)
       setNseStocks(prev =>
         prev.map(stock => ({
           ...stock,
@@ -156,7 +151,6 @@ export default function StockMarketGame() {
         }))
       );
 
-      // Crypto: Higher volatility (±5%)
       setCryptos(prev =>
         prev.map(crypto => ({
           ...crypto,
@@ -169,7 +163,6 @@ export default function StockMarketGame() {
     return () => clearInterval(interval);
   }, []);
 
-  // Track game time
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeElapsed(prev => prev + 1);
@@ -190,7 +183,7 @@ export default function StockMarketGame() {
 
     const newUser: User = {
       username,
-      wallet: 1000000, // Start with 10 Lakh virtual currency
+      wallet: 1000000, 
       portfolio: {}
     };
     setUser(newUser);
@@ -315,6 +308,10 @@ export default function StockMarketGame() {
     }, user.wallet);
   };
 
+  const handleRetroMode = () => {
+    setShowRetroMode(!showRetroMode);
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -332,6 +329,49 @@ export default function StockMarketGame() {
             <Button className="w-full" onClick={handleLogin}>
               Start Trading
             </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (showRetroMode) {
+    return (
+      <div className="p-6 font-mono">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Retro Trading Terminal</h1>
+          <Button variant="outline" onClick={handleRetroMode}>
+            <Terminal className="mr-2 h-4 w-4" />
+            Exit Terminal
+          </Button>
+        </div>
+        <Card className="p-4 bg-black text-green-500 font-mono">
+          <pre className="whitespace-pre-wrap">
+            {`
+╔════════════════════════════════════════╗
+║          MARKET ORDER BOOK             ║
+╠════════════════════════════════════════╣
+║ BUY                          SELL      ║
+║ 100 @ 2450.00       50 @ 2451.00      ║
+║ 200 @ 2449.50      150 @ 2451.50      ║
+║ 300 @ 2449.00      200 @ 2452.00      ║
+╚════════════════════════════════════════╝
+
+           PRICE CHART (1H)
+    2452 ┤      ╭─╮
+    2451 ┤    ╭─╯ ╰╮
+    2450 ┤╭─╮╭╯    ╰─╮
+    2449 ┤╯ ╰╯       ╰
+    2448 ┤
+
+Enter command: _
+            `}
+          </pre>
+          <div className="mt-4">
+            <Input
+              className="bg-black text-green-500 border-green-500"
+              placeholder="Enter trading command (e.g., BUY RELIANCE 100)"
+            />
           </div>
         </Card>
       </div>
@@ -357,6 +397,10 @@ export default function StockMarketGame() {
             <Wallet className="h-5 w-5" />
             <span className="font-mono">₹{user.wallet.toFixed(2)}</span>
           </div>
+          <Button variant="outline" onClick={handleRetroMode}>
+            <Terminal className="mr-2 h-4 w-4" />
+            Terminal Mode
+          </Button>
           <Button variant="outline" onClick={handleLogout}>
             Logout
           </Button>
