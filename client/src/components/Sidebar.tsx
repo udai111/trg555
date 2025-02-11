@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Home, LineChart, Activity, BarChart2, TrendingUp, Gem, GamepadIcon } from "lucide-react";
+import { Home, LineChart, Activity, BarChart2, TrendingUp, Gem, GamepadIcon, AreaChart } from "lucide-react";
 
 const NavLink = ({ href, children, isActive }: { href: string; children: React.ReactNode; isActive: boolean }) => (
   <motion.div 
@@ -65,6 +65,11 @@ const Sidebar = () => {
         <NavLink href="/market-analysis" isActive={location === "/market-analysis"}>
           <TrendingUp className="w-5 h-5 mr-3" />
           Market Analysis
+        </NavLink>
+
+        <NavLink href="/market-overview" isActive={location === "/market-overview"}>
+          <AreaChart className="w-5 h-5 mr-3" />
+          Market Overview
         </NavLink>
       </nav>
 
