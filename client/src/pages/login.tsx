@@ -7,6 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
+// Predefined valid usernames
+const VALID_USERNAMES = [
+  'trader123',
+  'investor456',
+  'market789',
+  'stock101',
+  'crypto202'
+];
+
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [_, setLocation] = useLocation();
@@ -22,8 +31,23 @@ export default function LoginPage() {
       return;
     }
 
+    // Check if username is valid
+    if (!VALID_USERNAMES.includes(username.trim())) {
+      toast({
+        title: "Invalid Username",
+        description: "Please use one of the following usernames: trader123, investor456, market789, stock101, crypto202",
+        variant: "destructive"
+      });
+      return;
+    }
+
     localStorage.setItem("username", username.trim());
     setLocation("/");
+
+    toast({
+      title: "Success",
+      description: "Welcome to the Trading Platform!"
+    });
   };
 
   return (
@@ -52,7 +76,7 @@ export default function LoginPage() {
             <div className="mb-6">
               <h1 className="text-2xl font-bold">Virtual Trading Platform</h1>
               <p className="text-sm text-muted-foreground">
-                Enter your username to start trading
+                Enter one of the valid usernames to start trading
               </p>
             </div>
 
@@ -62,7 +86,7 @@ export default function LoginPage() {
                 <Input
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter username"
+                  placeholder="Enter username: e.g. trader123"
                   onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                 />
               </div>
@@ -75,9 +99,17 @@ export default function LoginPage() {
                 Start Trading
               </Button>
 
-              <p className="text-center text-sm text-muted-foreground">
-                ₹10,00,000 virtual currency will be credited to your account
-              </p>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p className="text-center">Valid usernames:</p>
+                <ul className="list-disc pl-6">
+                  {VALID_USERNAMES.map(user => (
+                    <li key={user}>{user}</li>
+                  ))}
+                </ul>
+                <p className="text-center mt-4">
+                  ₹10,00,000 virtual currency will be credited to your account
+                </p>
+              </div>
             </div>
           </Card>
         </motion.div>
