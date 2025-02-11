@@ -1,171 +1,61 @@
-import { useState, useEffect } from "react";
+import React, { useEffect, useRef, memo } from 'react';
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, BarChart2 } from "lucide-react";
 
-// Mock data generator
-const generateChartData = (days = 30) => {
-  const data = [];
-  let value = 100;
-  for (let i = 0; i < days; i++) {
-    const change = (Math.random() - 0.5) * 3;
-    value *= (1 + change / 100);
-    data.push({
-      date: new Date(2024, 0, i + 1).toLocaleDateString(),
-      value: Math.round(value * 100) / 100,
-      volume: Math.floor(Math.random() * 1000000)
-    });
-  }
-  return data;
-};
+const TradingViewWidget = memo(() => {
+  const container = useRef();
 
-const indicators = [
-  { value: "sma", label: "Simple Moving Average" },
-  { value: "ema", label: "Exponential Moving Average" },
-  { value: "rsi", label: "Relative Strength Index" },
-  { value: "macd", label: "MACD" }
-];
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+    script.type = "text/javascript";
+    script.async = true;
+    script.innerHTML = `
+      {
+        "autosize": true,
+        "symbol": "NASDAQ:AAPL",
+        "timezone": "Etc/UTC",
+        "theme": "dark",
+        "style": "1",
+        "locale": "en",
+        "withdateranges": true,
+        "range": "YTD",
+        "hide_side_toolbar": false,
+        "allow_symbol_change": true,
+        "details": true,
+        "hotlist": true,
+        "calendar": false,
+        "show_popup_button": true,
+        "popup_width": "1000",
+        "popup_height": "650",
+        "support_host": "https://www.tradingview.com"
+      }`;
+    container.current.appendChild(script);
+  }, []);
 
-const timeframes = [
-  { value: "1D", label: "1 Day" },
-  { value: "1W", label: "1 Week" },
-  { value: "1M", label: "1 Month" },
-  { value: "3M", label: "3 Months" },
-  { value: "1Y", label: "1 Year" }
-];
+  return (
+    <div className="tradingview-widget-container" ref={container} style={{ height: "100%", width: "100%" }}>
+      <div className="tradingview-widget-container__widget" style={{ height: "calc(100% - 32px)", width: "100%" }}></div>
+      <div className="tradingview-widget-copyright">
+        <a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank">
+          <span className="blue-text">Track all markets on TradingView</span>
+        </a>
+      </div>
+    </div>
+  );
+});
 
 const TradingViewSection = () => {
-  const [chartData, setChartData] = useState(generateChartData());
-  const [selectedIndicator, setSelectedIndicator] = useState("sma");
-  const [timeframe, setTimeframe] = useState("1M");
-  const [marketStats, setMarketStats] = useState({
-    change: 2.5,
-    volume: "1.2M",
-    high: 105.20,
-    low: 98.45
-  });
-
-  // Update chart data when timeframe changes
-  useEffect(() => {
-    const days = timeframe === "1D" ? 1 : 
-                timeframe === "1W" ? 7 : 
-                timeframe === "1M" ? 30 :
-                timeframe === "3M" ? 90 : 365;
-    setChartData(generateChartData(days));
-  }, [timeframe]);
-
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-6">Advanced Market Analysis</h2>
 
+      {/* TradingView Chart Card */}
       <Card className="p-6 mb-6">
-        {/* Chart Controls */}
-        <div className="flex gap-4 mb-4">
-          <div className="flex-1">
-            <Label>Timeframe</Label>
-            <Select value={timeframe} onValueChange={setTimeframe}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select timeframe" />
-              </SelectTrigger>
-              <SelectContent>
-                {timeframes.map(tf => (
-                  <SelectItem key={tf.value} value={tf.value}>
-                    {tf.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex-1">
-            <Label>Technical Indicator</Label>
-            <Select value={selectedIndicator} onValueChange={setSelectedIndicator}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select indicator" />
-              </SelectTrigger>
-              <SelectContent>
-                {indicators.map(indicator => (
-                  <SelectItem key={indicator.value} value={indicator.value}>
-                    {indicator.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Market Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <motion.div 
-            whileHover={{ scale: 1.02 }}
-            className="p-4 rounded-lg bg-background"
-          >
-            <Label>24h Change</Label>
-            <div className={`text-xl font-bold ${marketStats.change > 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {marketStats.change > 0 ? '+' : ''}{marketStats.change}%
-            </div>
-          </motion.div>
-          <motion.div 
-            whileHover={{ scale: 1.02 }}
-            className="p-4 rounded-lg bg-background"
-          >
-            <Label>Volume</Label>
-            <div className="text-xl font-bold">{marketStats.volume}</div>
-          </motion.div>
-          <motion.div 
-            whileHover={{ scale: 1.02 }}
-            className="p-4 rounded-lg bg-background"
-          >
-            <Label>24h High</Label>
-            <div className="text-xl font-bold text-green-500">{marketStats.high}</div>
-          </motion.div>
-          <motion.div 
-            whileHover={{ scale: 1.02 }}
-            className="p-4 rounded-lg bg-background"
-          >
-            <Label>24h Low</Label>
-            <div className="text-xl font-bold text-red-500">{marketStats.low}</div>
-          </motion.div>
-        </div>
-
-        {/* Main Chart */}
-        <div className="h-[500px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip 
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    return (
-                      <div className="bg-background p-3 rounded-lg border">
-                        <p className="text-sm text-muted-foreground">{payload[0].payload.date}</p>
-                        <p className="font-bold">₹{payload[0].value}</p>
-                        <p className="text-sm text-muted-foreground">Vol: {payload[0].payload.volume.toLocaleString()}</p>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke="hsl(var(--primary))"
-                fillOpacity={1}
-                fill="url(#colorValue)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+        <div className="h-[600px] w-full">
+          <TradingViewWidget />
         </div>
       </Card>
 
@@ -190,6 +80,14 @@ const TradingViewSection = () => {
                 <span>Moving Averages</span>
                 <span className="font-medium text-green-500">Strong Buy</span>
               </div>
+              <div className="flex justify-between items-center">
+                <span>Bollinger Bands</span>
+                <span className="font-medium">Upper Band Test</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Volume Profile</span>
+                <span className="font-medium text-yellow-500">High Activity</span>
+              </div>
             </div>
           </Card>
         </motion.div>
@@ -213,10 +111,40 @@ const TradingViewSection = () => {
                 <span>Trend Strength</span>
                 <span className="font-medium text-green-500">Strong</span>
               </div>
+              <div className="flex justify-between items-center">
+                <span>Options Flow</span>
+                <span className="font-medium text-green-500">Bullish</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Put/Call Ratio</span>
+                <span className="font-medium">0.75</span>
+              </div>
             </div>
           </Card>
         </motion.div>
       </div>
+
+      {/* Trading Signals */}
+      <Card className="p-6 mt-6">
+        <h3 className="text-lg font-semibold mb-4">Trading Signals</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 rounded-lg bg-background">
+            <Label>Support Levels</Label>
+            <div className="text-lg font-semibold text-red-500">$152.30</div>
+            <div className="text-sm text-muted-foreground">Strong support</div>
+          </div>
+          <div className="p-4 rounded-lg bg-background">
+            <Label>Resistance Levels</Label>
+            <div className="text-lg font-semibold text-green-500">$158.45</div>
+            <div className="text-sm text-muted-foreground">Key resistance</div>
+          </div>
+          <div className="p-4 rounded-lg bg-background">
+            <Label>Trend Direction</Label>
+            <div className="text-lg font-semibold text-green-500">Uptrend</div>
+            <div className="text-sm text-muted-foreground">Higher highs & lows</div>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 };
