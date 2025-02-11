@@ -2,13 +2,20 @@ import React, { useEffect, useRef, memo } from 'react';
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp, TrendingDown, BarChart2, Maximize2, Minimize2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-const TradingViewWidget = memo(() => {
-  const container = useRef();
+interface TradingViewWidgetProps {
+  className?: string;
+}
+
+const TradingViewWidget = memo(({ className }: TradingViewWidgetProps) => {
+  const container = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!container.current) return;
+
     const script = document.createElement("script");
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
     script.type = "text/javascript";
@@ -33,22 +40,34 @@ const TradingViewWidget = memo(() => {
         "popup_height": "650",
         "support_host": "https://www.tradingview.com"
       }`;
+
     container.current.appendChild(script);
+
+    return () => {
+      if (container.current) {
+        const script = container.current.querySelector('script');
+        if (script) {
+          script.remove();
+        }
+      }
+    };
   }, []);
 
   return (
-    <div className="tradingview-widget-container" ref={container} style={{ height: "100%", width: "100%" }}>
-      <div className="tradingview-widget-container__widget" style={{ height: "100%", width: "100%" }}></div>
+    <div className={cn("tradingview-widget-container", className)} ref={container}>
+      <div className="tradingview-widget-container__widget h-full w-full" />
     </div>
   );
 });
 
+TradingViewWidget.displayName = 'TradingViewWidget';
+
 const TradingViewSection = () => {
   const [isFullScreen, setIsFullScreen] = React.useState(false);
+  const [selectedIndicator, setSelectedIndicator] = React.useState<string | null>(null);
 
-  // Add event listener for escape key to exit full screen
   useEffect(() => {
-    const handleEsc = (event) => {
+    const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsFullScreen(false);
       }
@@ -59,27 +78,73 @@ const TradingViewSection = () => {
     };
   }, []);
 
-  // Tell parent component about fullscreen state changes
   useEffect(() => {
     const event = new CustomEvent('tradingview-fullscreen', { detail: { isFullScreen } });
     window.dispatchEvent(event);
   }, [isFullScreen]);
 
+  const indicators = [
+    { name: "RSI", value: "65.2", status: "neutral" },
+    { name: "MACD", value: "Bullish", status: "positive" },
+    { name: "Moving Averages", value: "Strong Buy", status: "positive" },
+    { name: "Bollinger Bands", value: "Upper Touch", status: "positive" },
+    { name: "Stochastic", value: "78.5", status: "neutral" },
+    { name: "Volume", value: "Above Avg", status: "positive" }
+  ];
+
+  const renderChart = () => (
+    <Card className="p-6 mb-6 relative">
+      <div className="absolute top-4 right-4 z-10">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsFullScreen(!isFullScreen)}
+          className="hover:bg-accent"
+        >
+          {isFullScreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+        </Button>
+      </div>
+      <div className={cn("w-full", isFullScreen ? "h-screen" : "h-[600px]")}>
+        <TradingViewWidget className="h-full" />
+      </div>
+    </Card>
+  );
+
+  const renderIndicators = () => (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      {indicators.map((indicator) => (
+        <motion.div
+          key={indicator.name}
+          whileHover={{ scale: 1.02 }}
+          className="card"
+          onClick={() => setSelectedIndicator(indicator.name)}
+        >
+          <Card className={cn(
+            "p-4 cursor-pointer transition-colors",
+            selectedIndicator === indicator.name && "ring-2 ring-primary"
+          )}>
+            <div className="flex justify-between items-center">
+              <Label className="text-sm font-medium">{indicator.name}</Label>
+              <span className={cn(
+                "px-2 py-1 rounded text-xs font-semibold",
+                indicator.status === "positive" && "bg-green-500/20 text-green-500",
+                indicator.status === "negative" && "bg-red-500/20 text-red-500",
+                indicator.status === "neutral" && "bg-yellow-500/20 text-yellow-500"
+              )}>
+                {indicator.value}
+              </span>
+            </div>
+          </Card>
+        </motion.div>
+      ))}
+    </div>
+  );
+
   if (isFullScreen) {
     return (
       <div className="fixed inset-0 bg-background z-50">
-        <div className="absolute top-4 right-4 z-10">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsFullScreen(false)}
-            className="hover:bg-accent"
-          >
-            <Minimize2 className="h-5 w-5" />
-          </Button>
-        </div>
         <div className="h-screen w-screen">
-          <TradingViewWidget />
+          {renderChart()}
         </div>
       </div>
     );
@@ -89,82 +154,34 @@ const TradingViewSection = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Advanced Market Analysis</h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsFullScreen(true)}
-          className="hover:bg-accent"
-        >
-          <Maximize2 className="h-5 w-5" />
-        </Button>
-      </div>
-
-      <Card className="p-6 mb-6">
-        <div className="h-[600px] w-full">
-          <TradingViewWidget />
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm">
+            <BarChart2 className="h-4 w-4 mr-2" />
+            Add Indicator
+          </Button>
         </div>
-      </Card>
-
-      {/* Analysis Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <motion.div whileHover={{ scale: 1.02 }} className="card">
-          <Card className="p-4">
-            <h3 className="text-lg font-semibold mb-2">Technical Analysis</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span>RSI (14)</span>
-                <span className="font-medium">65.2</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>MACD</span>
-                <span className="font-medium text-green-500">Bullish</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Moving Averages</span>
-                <span className="font-medium text-green-500">Strong Buy</span>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-
-        <motion.div whileHover={{ scale: 1.02 }} className="card">
-          <Card className="p-4">
-            <h3 className="text-lg font-semibold mb-2">Market Sentiment</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span>Fear & Greed Index</span>
-                <span className="font-medium text-yellow-500">65 - Greed</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Volatility</span>
-                <span className="font-medium">Medium</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Trend Strength</span>
-                <span className="font-medium text-green-500">Strong</span>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
       </div>
-      {/* Trading Signals */}
-      <Card className="p-6 mt-6">
-        <h3 className="text-lg font-semibold mb-4">Trading Signals</h3>
+
+      {renderIndicators()}
+      {renderChart()}
+
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4">Market Insights</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 rounded-lg bg-background">
+          <div className="p-4 rounded-lg bg-card">
             <Label>Support Levels</Label>
             <div className="text-lg font-semibold text-red-500">$152.30</div>
-            <div className="text-sm text-muted-foreground">Strong support</div>
+            <div className="text-sm text-muted-foreground">Strong support zone</div>
           </div>
-          <div className="p-4 rounded-lg bg-background">
+          <div className="p-4 rounded-lg bg-card">
             <Label>Resistance Levels</Label>
             <div className="text-lg font-semibold text-green-500">$158.45</div>
-            <div className="text-sm text-muted-foreground">Key resistance</div>
+            <div className="text-sm text-muted-foreground">Key resistance area</div>
           </div>
-          <div className="p-4 rounded-lg bg-background">
-            <Label>Trend Direction</Label>
-            <div className="text-lg font-semibold text-green-500">Uptrend</div>
-            <div className="text-sm text-muted-foreground">Higher highs & lows</div>
+          <div className="p-4 rounded-lg bg-card">
+            <Label>Market Sentiment</Label>
+            <div className="text-lg font-semibold text-green-500">Bullish</div>
+            <div className="text-sm text-muted-foreground">Strong uptrend continuation</div>
           </div>
         </div>
       </Card>
