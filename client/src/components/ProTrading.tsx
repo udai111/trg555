@@ -210,7 +210,7 @@ export default function ProTrading() {
 
       <Card className="mb-8">
         <CardContent className="p-6">
-          <h2 className="text-2xl font-semibold mb-4">Advanced Chart (TradingView)</h2>
+          <h2 className="text-2xl font-semibold mb-4">Advanced Chart</h2>
           <div className="flex gap-4 mb-4">
             <Select value={chartInterval} onValueChange={setChartInterval}>
               <SelectTrigger>
@@ -246,9 +246,13 @@ export default function ProTrading() {
             </div>
           </div>
 
-          <div className="tradingview-widget-container mb-8">
-            <div className="tradingview-widget-container__widget" />
-            <div id="tradingview_advanced_chart" className="h-[400px]" />
+          <div className="w-full bg-white rounded-lg shadow mb-6">
+            <iframe 
+              height="480" 
+              width="100%" 
+              src="https://ssltvc.investing.com/?pair_ID=160&height=480&width=650&interval=300&plotStyle=candles&domain_ID=56&lang_ID=56&timezone_ID=20"
+              style={{ border: 'none' }}
+            />
           </div>
         </CardContent>
       </Card>
