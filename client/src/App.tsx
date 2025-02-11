@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Router } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "styled-components";
 import { queryClient } from "./lib/queryClient";
@@ -12,7 +12,7 @@ import TradingViewSection from "./components/TradingViewSection";
 import MarketAnalysis from "./components/MarketAnalysis";
 import NotFound from "@/pages/not-found";
 
-function Router() {
+function MainContent() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
@@ -34,7 +34,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
-        <Router />
+        <Router>
+          <MainContent />
+        </Router>
         <Toaster />
       </ThemeProvider>
     </QueryClientProvider>
