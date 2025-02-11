@@ -23,18 +23,6 @@ import { ProtectedRoute } from "./lib/protected-route";
 import ProfitKingdom from "./pages/ProfitKingdom";
 import TRBot from "./components/TRBot";
 
-interface ErrorBoundaryState {
-  hasError: boolean;
-  error: Error | null;
-  errorInfo: { componentStack: string } | null;
-  retryCount: number;
-}
-
-interface ErrorBoundaryProps {
-  children: ReactNode;
-  maxRetries?: number;
-}
-
 // Enhanced error boundary with retry mechanism and better error reporting
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = {
