@@ -1,0 +1,22 @@
+# These owners will be the default owners for everything in
+# the repo. Unless a later match takes precedence,
+# @udai111 will be requested for review when someone 
+# opens a pull request.
+*       @udai111
+
+# Order is important; the last matching pattern takes the most
+# precedence.
+
+# Core application files
+/server/         @udai111
+/shared/         @udai111
+/client/src/     @udai111
+
+# Database related files
+/migrations/     @udai111
+*.sql           @udai111
+
+# Configuration files
+*.json          @udai111
+*.ts            @udai111
+*.js            @udai111
