@@ -41,30 +41,30 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <Router>
-          {!isAuthenticated ? (
-            <div className="min-h-screen bg-background">
+          <div className="min-h-screen bg-background">
+            {!isAuthenticated ? (
               <Switch>
                 <Route path="/login" component={LoginPage} />
                 <Route component={LandingPage} />
               </Switch>
-            </div>
-          ) : (
-            <div className="flex min-h-screen">
-              {showSidebar && <Sidebar />}
-              <main className={`flex-1 p-4 bg-background ${!showSidebar ? 'w-full' : ''}`}>
-                <Switch>
-                  <Route path="/" component={Dashboard} />
-                  <Route path="/pro-trading" component={ProTrading} />
-                  <Route path="/stock-market-game" component={StockMarketGamePage} />
-                  <Route path="/ml-predictions" component={MLPrediction} />
-                  <Route path="/backtest" component={BacktestPanel} />
-                  <Route path="/charts" component={TradingViewSection} />
-                  <Route path="/market-analysis" component={MarketAnalysis} />
-                  <Route component={NotFound} />
-                </Switch>
-              </main>
-            </div>
-          )}
+            ) : (
+              <div className="flex min-h-screen">
+                {showSidebar && <Sidebar />}
+                <main className={`flex-1 p-4 bg-background ${!showSidebar ? 'w-full' : ''}`}>
+                  <Switch>
+                    <Route path="/" component={Dashboard} />
+                    <Route path="/pro-trading" component={ProTrading} />
+                    <Route path="/stock-market-game" component={StockMarketGamePage} />
+                    <Route path="/ml-predictions" component={MLPrediction} />
+                    <Route path="/backtest" component={BacktestPanel} />
+                    <Route path="/charts" component={TradingViewSection} />
+                    <Route path="/market-analysis" component={MarketAnalysis} />
+                    <Route component={NotFound} />
+                  </Switch>
+                </main>
+              </div>
+            )}
+          </div>
         </Router>
         <Toaster />
       </ThemeProvider>
