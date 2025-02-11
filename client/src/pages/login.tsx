@@ -36,8 +36,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md p-8">
+    <div 
+      className="min-h-screen w-full flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat"
+      style={{
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/attached_assets/caption.jpg')`,
+        backgroundAttachment: 'fixed'
+      }}
+    >
+      <Card className="w-full max-w-md p-8 bg-white/95 backdrop-blur-sm shadow-2xl">
         <div className="text-center mb-8">
           <img 
             src="/assets/logo.webp" 
@@ -47,7 +53,7 @@ export default function LoginPage() {
           <p className="text-xs text-muted-foreground/60 mb-4">
             Created by TRG for Gangwar's the market
           </p>
-          <h1 className="text-2xl font-bold">Start Trading</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Start Trading</h1>
           <p className="mt-2 text-muted-foreground">
             Enter a username to begin with ₹10,00,000 virtual currency
           </p>
@@ -55,17 +61,18 @@ export default function LoginPage() {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Username</Label>
+            <Label className="text-gray-700">Username</Label>
             <Input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter your username"
               onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+              className="border-gray-300 focus:border-blue-500"
             />
           </div>
 
           <Button 
-            className="w-full" 
+            className="w-full bg-blue-600 hover:bg-blue-700 transition-colors" 
             onClick={handleLogin}
             disabled={!username.trim()}
           >
@@ -73,9 +80,9 @@ export default function LoginPage() {
           </Button>
 
           <Button 
-            variant="link" 
+            variant="outline" 
             onClick={() => setLocation("/")}
-            className="w-full"
+            className="w-full border-gray-300 text-gray-700 hover:bg-gray-100"
           >
             Return to Home
           </Button>
