@@ -1,6 +1,9 @@
 import { Card } from "@/components/ui/card";
 import { LineChart, Activity, BarChart2, Wallet } from "lucide-react";
 import TickerTape from "@/components/TickerTape";
+import SwotWidget from "@/components/SwotWidget";
+import QVTWidget from "@/components/QVTWidget";
+import ChecklistWidget from "@/components/ChecklistWidget";
 
 const Dashboard = () => {
   return (
@@ -8,6 +11,21 @@ const Dashboard = () => {
       {/* Add Trendlyne widget at the top */}
       <div className="w-full mb-6 -mx-6 -mt-6 bg-white rounded-lg shadow">
         <TickerTape />
+      </div>
+
+      {/* Add SWOT widget */}
+      <div className="w-full mb-6 bg-white rounded-lg shadow">
+        <SwotWidget />
+      </div>
+
+      {/* Add QVT widget */}
+      <div className="w-full mb-6 bg-white rounded-lg shadow">
+        <QVTWidget />
+      </div>
+
+      {/* Add Checklist widget */}
+      <div className="w-full mb-6 bg-white rounded-lg shadow">
+        <ChecklistWidget />
       </div>
 
       <h1 className="text-3xl font-bold mb-6">Premium Trading Dashboard</h1>
