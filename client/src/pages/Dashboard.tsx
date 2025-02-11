@@ -3,9 +3,10 @@ import { LineChart, Activity, BarChart2, Wallet } from "lucide-react";
 import { useState } from "react";
 import StockSelector from "@/components/StockSelector";
 import FXWidget from "@/components/FXWidget";
+import PriceForecastWidget from "@/components/PriceForecastWidget";
 
 const Dashboard = () => {
-  const [selectedSymbol, setSelectedSymbol] = useState('INFY');
+  const [selectedSymbol, setSelectedSymbol] = useState('GOOG');
 
   return (
     <div className="p-6">
@@ -16,6 +17,9 @@ const Dashboard = () => {
       <div className="mb-6">
         <StockSelector onStockChange={setSelectedSymbol} />
       </div>
+
+      {/* Price Forecast Widget */}
+      <PriceForecastWidget symbol={selectedSymbol} />
 
       <h1 className="text-3xl font-bold mb-6">Market Dashboard</h1>
 
