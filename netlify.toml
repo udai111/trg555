@@ -18,6 +18,7 @@
   from = "/*"
   to = "/index.html"
   status = 200
+  force = true
 
 [[headers]]
   for = "/*"
@@ -26,7 +27,7 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "no-referrer-when-downgrade"
-    Content-Security-Policy = "default-src 'self' *.netlify.app; script-src 'self' 'unsafe-inline' 'unsafe-eval' s3.tradingview.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' *.netlify.app;"
+    Content-Security-Policy = "default-src 'self' *.netlify.app; script-src 'self' 'unsafe-inline' 'unsafe-eval' s3.tradingview.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' *.netlify.app ws: wss:;"
 
 [functions]
   directory = "dist/functions"
