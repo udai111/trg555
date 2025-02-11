@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { ArrowRight, User, Key, Lock } from "lucide-react";
+import { ArrowRight, User, Lock } from "lucide-react";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -39,10 +39,10 @@ export default function LoginPage() {
 
   return (
     <div 
-      className="min-h-screen w-full flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat overflow-hidden"
+      className="min-h-screen w-full flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat"
       style={{
-        backgroundColor: '#1a1b1e', // Fallback color
-        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/world-map-background.jpg')`,
+        backgroundColor: '#1a1b1e',
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), url('/caption.jpg')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed'
@@ -54,7 +54,7 @@ export default function LoginPage() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        <Card className="p-8 bg-white/90 backdrop-blur-sm shadow-2xl border-t border-white/20">
+        <Card className="p-8 backdrop-blur-sm bg-white/10 border-t border-white/20">
           <motion.div 
             initial={{ scale: 0.95 }}
             animate={{ scale: 1 }}
@@ -67,12 +67,12 @@ export default function LoginPage() {
                 animate={{ rotate: 0, opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
               >
-                <Lock className="h-12 w-12 text-blue-600" />
+                <Lock className="h-12 w-12 text-white" />
               </motion.div>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-            <p className="text-sm text-gray-600">
-              Enter your username to access your trading dashboard
+            <h1 className="text-3xl font-bold text-white mb-2">Welcome to Trading Platform</h1>
+            <p className="text-sm text-gray-300">
+              Enter your username to start your trading journey
             </p>
           </motion.div>
 
@@ -83,7 +83,7 @@ export default function LoginPage() {
             className="space-y-6"
           >
             <div className="space-y-2">
-              <Label className="text-gray-700 flex items-center gap-2">
+              <Label className="text-white flex items-center gap-2">
                 <User className="h-4 w-4" />
                 Username
               </Label>
@@ -92,7 +92,7 @@ export default function LoginPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter your username"
                 onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                className="border-gray-200 focus:border-blue-500 transition-colors bg-white/50"
+                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
               />
             </div>
 
@@ -106,8 +106,8 @@ export default function LoginPage() {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
 
-              <p className="text-center text-sm text-gray-600">
-                Start with ₹10,00,000 virtual currency
+              <p className="text-center text-sm text-gray-300">
+                Begin with ₹10,00,000 virtual currency
               </p>
             </div>
           </motion.div>
