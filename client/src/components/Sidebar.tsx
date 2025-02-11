@@ -116,23 +116,25 @@ const Sidebar = () => {
       </Button>
 
       <motion.aside 
-        className={`fixed md:static top-0 left-0 z-40 w-64 bg-primary text-white min-h-screen p-6 flex flex-col ${
+        className={`fixed md:static top-0 left-0 z-40 w-64 bg-primary text-white h-full md:min-h-screen overflow-y-auto flex flex-col ${
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         } transition-transform duration-200 ease-in-out`}
         initial={false}
       >
-        <div className="mb-8 flex flex-col items-center justify-center p-4">
-          <img 
-            src="/assets/logo.webp" 
-            alt="TRG Logo" 
-            className="h-16 w-auto"
-          />
-          <p className="text-xs text-white/60 mt-2 text-center">
-            Created by TRG for Gangwar's the market
-          </p>
+        <div className="sticky top-0 z-10 bg-primary pt-6 px-6">
+          <div className="flex flex-col items-center justify-center p-4">
+            <img 
+              src="/assets/logo.webp" 
+              alt="TRG Logo" 
+              className="h-16 w-auto"
+            />
+            <p className="text-xs text-white/60 mt-2 text-center">
+              Created by TRG for Gangwar's the market
+            </p>
+          </div>
         </div>
 
-        <nav className="space-y-2">
+        <nav className="flex-1 px-6 pb-6 space-y-2 overflow-y-auto">
           <NavLink href="/" isActive={location === "/"} onClick={handleLinkClick}>
             <Home className="w-5 h-5 mr-3" />
             Home
@@ -179,14 +181,14 @@ const Sidebar = () => {
           </NavLink>
         </nav>
 
-        <div className="mt-4 flex-grow">
+        <div className="px-6 pb-6">
           <div ref={widgetContainer} className="tradingview-widget-container hidden md:block">
             <div className="tradingview-widget-container__widget"></div>
           </div>
-        </div>
 
-        <div className="mt-4 text-sm opacity-70">
-          <p className="text-center">Data provided for educational purposes only. Trading involves risk.</p>
+          <div className="mt-4 text-sm opacity-70">
+            <p className="text-center">Data provided for educational purposes only. Trading involves risk.</p>
+          </div>
         </div>
       </motion.aside>
 

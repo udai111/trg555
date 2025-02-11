@@ -47,9 +47,9 @@ function App() {
               </Switch>
             </div>
           ) : (
-            <div className="flex flex-1 relative">
+            <div className="flex flex-1 relative overflow-hidden">
               {showSidebar && <Sidebar />}
-              <main className={`flex-1 p-2 md:p-4 bg-background transition-all duration-200 ${!showSidebar ? 'w-full' : ''}`}>
+              <main className={`flex-1 overflow-y-auto min-h-screen p-2 md:p-4 bg-background transition-all duration-200 ${!showSidebar ? 'w-full' : ''}`}>
                 <Switch>
                   <Route path="/" component={Dashboard} />
                   <Route path="/pro-trading" component={ProTrading} />
