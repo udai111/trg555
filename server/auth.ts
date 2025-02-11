@@ -6,7 +6,6 @@ import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import { randomBytes } from "crypto";
 
-// Augment express-session with a custom SessionData interface
 declare module 'express-session' {
   interface SessionData {
     passport?: any;
@@ -14,30 +13,23 @@ declare module 'express-session' {
   }
 }
 
-// Augment Express Request type
 declare global {
   namespace Express {
     interface User extends SelectUser {}
-    interface Request {
-      user?: User;
-      login(user: User, done: (err: any) => void): void;
-      logout(done: (err: any) => void): void;
-    }
   }
 }
 
 export function setupAuth(app: Express) {
+  // Use a simpler session configuration
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.REPL_ID! + randomBytes(32).toString('hex'),
-    resave: true,
+    secret: process.env.REPL_ID || 'dev-secret',
+    resave: false,
     saveUninitialized: false,
     cookie: {
-      httpOnly: true,
       secure: app.get('env') === 'production',
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax'
-    },
-    name: 'session-id'
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
   };
 
   if (app.get("env") === "production") {
@@ -48,173 +40,177 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Add authentication check middleware
+  // JSON Content-Type middleware
   app.use((req, res, next) => {
-    if (req.session) {
-      req.session.isAuthenticated = req.isAuthenticated();
-    }
+    res.setHeader('Content-Type', 'application/json');
     next();
   });
 
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
+        console.log(`[Auth] Login attempt for user: ${username}`);
         const user = await storage.getUserByUsername(username);
         if (!user) {
-          return done(null, false, { message: "User not found" });
+          console.log(`[Auth] User not found: ${username}`);
+          return done(null, false, { message: "Invalid username or password" });
         }
-        // For this demo, we're not implementing password checks
+        // For demo purposes, accept any password
+        console.log(`[Auth] Login successful for user: ${username}`);
         return done(null, user);
       } catch (err) {
+        console.error('[Auth] Login error:', err);
         return done(err);
       }
-    }),
+    })
   );
 
-  passport.serializeUser((user: Express.User, done: (err: any, id?: number) => void) => {
+  passport.serializeUser((user: Express.User, done) => {
+    console.log(`[Auth] Serializing user: ${user.username}`);
     done(null, user.id);
   });
 
-  passport.deserializeUser(async (id: number, done: (err: any, user?: Express.User | false) => void) => {
+  passport.deserializeUser(async (id: number, done) => {
     try {
+      console.log(`[Auth] Deserializing user ID: ${id}`);
       const user = await storage.getUser(id);
-      if (!user) {
-        return done(null, false);
-      }
-      done(null, user);
+      done(null, user || false);
     } catch (err) {
+      console.error('[Auth] Deserialize error:', err);
       done(err);
     }
   });
 
-  // Error handling middleware
-  app.use((err: Error, req: Request, res: any, next: any) => {
-    console.error('Auth error:', err);
-    res.status(500).json({
-      error: true,
-      message: 'Internal server error',
-      isAuthenticated: false
-    });
-  });
+  // Simple middleware to ensure JSON responses
+  const wrapAsync = (fn: Function) => {
+    return (req: Request, res: any, next: any) => {
+      fn(req, res, next).catch(next);
+    };
+  };
 
-  // Authentication endpoints
-  app.post("/api/register", async (req: Request, res) => {
-    try {
-      const { username } = req.body;
+  app.post("/api/register", wrapAsync(async (req: Request, res) => {
+    console.log('[Auth] Register attempt:', req.body);
+    const { username } = req.body;
 
-      // Input validation
-      if (!username || typeof username !== 'string' || username.length < 3) {
-        return res.status(400).json({
-          error: true,
-          message: "Invalid username. Must be at least 3 characters.",
-          isAuthenticated: false
-        });
-      }
-
-      const existingUser = await storage.getUserByUsername(username);
-      if (existingUser) {
-        return res.status(400).json({
-          error: true,
-          message: "Username already exists",
-          isAuthenticated: false
-        });
-      }
-
-      const user = await storage.createUser({
-        username,
-        email: `${username}@example.com`, // Placeholder email
-        password: "demo", // For demo purposes
-      });
-
-      req.login(user, (err) => {
-        if (err) {
-          return res.status(500).json({
-            error: true,
-            message: "Login failed after registration",
-            isAuthenticated: false
-          });
-        }
-        res.status(201).json({
-          user,
-          isAuthenticated: true
-        });
-      });
-    } catch (error) {
-      console.error('Registration error:', error);
-      res.status(500).json({
+    if (!username || typeof username !== 'string' || username.length < 3) {
+      console.log('[Auth] Invalid username:', username);
+      return res.status(400).json({
         error: true,
-        message: "Registration failed",
-        isAuthenticated: false
+        message: "Username must be at least 3 characters"
       });
     }
-  });
 
-  app.post("/api/login", (req: Request, res, next) => {
-    passport.authenticate("local", (err: any, user: Express.User | false, info?: { message: string }) => {
+    const existingUser = await storage.getUserByUsername(username);
+    if (existingUser) {
+      console.log('[Auth] Username exists:', username);
+      return res.status(400).json({
+        error: true,
+        message: "Username already exists"
+      });
+    }
+
+    try {
+      const user = await storage.createUser({
+        username,
+        email: `${username}@example.com`,
+        password: "demo" // For demo purposes
+      });
+
+      console.log('[Auth] User created:', username);
+      req.login(user, (err) => {
+        if (err) {
+          console.error('[Auth] Login after registration failed:', err);
+          return res.status(500).json({
+            error: true,
+            message: "Login failed after registration"
+          });
+        }
+        console.log('[Auth] Login after registration successful:', username);
+        res.json({ user, isAuthenticated: true });
+      });
+    } catch (err) {
+      console.error('[Auth] Registration error:', err);
+      res.status(500).json({
+        error: true,
+        message: "Registration failed"
+      });
+    }
+  }));
+
+  app.post("/api/login", (req, res, next) => {
+    console.log('[Auth] Login attempt:', req.body);
+    passport.authenticate("local", (err, user, info) => {
       if (err) {
+        console.error('[Auth] Authentication error:', err);
         return res.status(500).json({
           error: true,
-          message: "Authentication error",
-          isAuthenticated: false
+          message: "Authentication error"
         });
       }
       if (!user) {
+        console.log('[Auth] Authentication failed:', info?.message);
         return res.status(401).json({
           error: true,
-          message: info?.message || "Authentication failed",
-          isAuthenticated: false
+          message: info?.message || "Invalid credentials"
         });
       }
-
       req.login(user, (err) => {
         if (err) {
+          console.error('[Auth] Login error:', err);
           return res.status(500).json({
             error: true,
-            message: "Login failed",
-            isAuthenticated: false
+            message: "Login failed"
           });
         }
-        res.json({
-          user,
-          isAuthenticated: true
-        });
+        console.log('[Auth] Login successful:', user.username);
+        res.json({ user, isAuthenticated: true });
       });
     })(req, res, next);
   });
 
-  app.post("/api/logout", (req: Request, res) => {
+  app.post("/api/logout", (req, res) => {
     const username = req.user?.username;
-    req.logout(() => {
-      req.session.destroy((err) => {
-        if (err) {
-          console.error('Logout error:', err);
-          return res.status(500).json({
-            error: true,
-            message: "Logout failed",
-            isAuthenticated: false
-          });
-        }
-        res.clearCookie('session-id');
-        res.json({
-          message: `${username} logged out successfully`,
-          isAuthenticated: false
+    console.log('[Auth] Logout attempt:', username);
+    req.logout((err) => {
+      if (err) {
+        console.error('[Auth] Logout error:', err);
+        return res.status(500).json({
+          error: true,
+          message: "Logout failed"
         });
+      }
+      console.log('[Auth] Logout successful:', username);
+      res.json({
+        message: "Logged out successfully",
+        isAuthenticated: false
       });
     });
   });
 
-  app.get("/api/user", (req: Request, res) => {
+  app.get("/api/user", (req, res) => {
+    console.log('[Auth] User check:', req.user?.username);
     if (!req.isAuthenticated() || !req.user) {
+      console.log('[Auth] User not authenticated');
       return res.status(401).json({
         error: true,
         message: "Not authenticated",
         isAuthenticated: false
       });
     }
-    const { password, ...safeUser } = req.user;
+    console.log('[Auth] User authenticated:', req.user.username);
     res.json({
-      user: safeUser,
+      user: req.user,
       isAuthenticated: true
+    });
+  });
+
+  // Error handling middleware
+  app.use((err: Error, req: Request, res: any, next: any) => {
+    console.error('[Auth] Error:', err);
+    res.status(500).json({
+      error: true,
+      message: 'Internal server error',
+      isAuthenticated: false
     });
   });
 }

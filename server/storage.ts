@@ -1,32 +1,45 @@
-import { users, type User, type InsertUser } from "@shared/schema";
-import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { type User, type InsertUser } from "@shared/schema";
+import session from "express-session";
+import createMemoryStore from "memorystore";
 
-// keep IStorage interface the same
+const MemoryStore = createMemoryStore(session);
+
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  sessionStore: session.Store;
 }
 
-export class DatabaseStorage implements IStorage {
+// In-memory storage implementation
+export class MemStorage implements IStorage {
+  private users: User[] = [];
+  private nextId = 1;
+  public sessionStore: session.Store;
+
+  constructor() {
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    });
+  }
+
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+    return this.users.find(u => u.id === id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
+    return this.users.find(u => u.username === username);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
+    const user: User = {
+      id: this.nextId++,
+      ...insertUser,
+      created_at: new Date()
+    };
+    this.users.push(user);
     return user;
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new MemStorage();
