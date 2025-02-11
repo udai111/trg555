@@ -1,12 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { LineChart, Activity, BarChart2, Wallet } from "lucide-react";
 import { useState } from "react";
-import TickerTape from "@/components/TickerTape";
-import SwotWidget from "@/components/SwotWidget";
-import QVTWidget from "@/components/QVTWidget";
-import ChecklistWidget from "@/components/ChecklistWidget";
-import FundamentalWidget from "@/components/FundamentalWidget";
-import InsiderTradingWidget from "@/components/InsiderTradingWidget";
 import StockSelector from "@/components/StockSelector";
 
 const Dashboard = () => {
@@ -17,36 +11,6 @@ const Dashboard = () => {
       {/* Stock Selector */}
       <div className="mb-6">
         <StockSelector onStockChange={setSelectedSymbol} />
-      </div>
-
-      {/* Add Trendlyne widget at the top */}
-      <div className="w-full mb-6 -mx-6 -mt-6 bg-white rounded-lg shadow">
-        <TickerTape symbol={selectedSymbol} />
-      </div>
-
-      {/* Add SWOT widget */}
-      <div className="w-full mb-6 bg-white rounded-lg shadow">
-        <SwotWidget symbol={selectedSymbol} />
-      </div>
-
-      {/* Add QVT widget */}
-      <div className="w-full mb-6 bg-white rounded-lg shadow">
-        <QVTWidget symbol={selectedSymbol} />
-      </div>
-
-      {/* Add Checklist widget */}
-      <div className="w-full mb-6 bg-white rounded-lg shadow">
-        <ChecklistWidget symbol={selectedSymbol} />
-      </div>
-
-      {/* Add Fundamental widget */}
-      <div className="w-full mb-6 bg-white rounded-lg shadow">
-        <FundamentalWidget symbol={selectedSymbol} />
-      </div>
-
-      {/* Add Insider Trading widget */}
-      <div className="w-full mb-6 bg-white rounded-lg shadow">
-        <InsiderTradingWidget symbol={selectedSymbol} />
       </div>
 
       <h1 className="text-3xl font-bold mb-6">Market Dashboard</h1>
