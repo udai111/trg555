@@ -14,14 +14,14 @@ const app = express();
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"],
-      connectSrc: ["'self'", "*.replit.dev", "ws:", "wss:"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      fontSrc: ["'self'", "data:"],
-      frameSrc: ["'self'"],
-      workerSrc: ["'self'", "blob:"]
+      defaultSrc: ["'self'", "*.replit.dev"],
+      connectSrc: ["'self'", "*.replit.dev", "wss://*.replit.dev", "ws:", "wss:"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "*.replit.dev"],
+      styleSrc: ["'self'", "'unsafe-inline'", "*.replit.dev"],
+      imgSrc: ["'self'", "data:", "https:", "*.replit.dev"],
+      fontSrc: ["'self'", "data:", "*.replit.dev"],
+      frameSrc: ["'self'", "*.replit.dev"],
+      workerSrc: ["'self'", "blob:", "*.replit.dev"]
     }
   },
   crossOriginEmbedderPolicy: false,
@@ -32,12 +32,13 @@ app.use(helmet({
 // Enable CORS for Replit domains
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin && origin.endsWith('.replit.dev')) {
+  if (origin && (origin.endsWith('.replit.dev') || origin.includes('replit.com'))) {
     res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
   }
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
@@ -51,10 +52,7 @@ app.use(express.urlencoded({ extended: false }));
 setupAuth(app);
 
 // Register API routes before frontend middleware
-registerRoutes(app);
-
-// Create HTTP server
-const server = http.createServer(app);
+const server = registerRoutes(app);
 
 if (process.env.NODE_ENV === 'production') {
   log('Running in production mode');
@@ -75,8 +73,8 @@ export const handler = serverless(app);
 if (!process.env.NETLIFY) {
   const PORT = Number(process.env.PORT || 5000);
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running at http://0.0.0.0:${PORT}`);
-    console.log('Press Ctrl+C to stop');
+    log(`Server running at http://0.0.0.0:${PORT}`);
+    log('Press Ctrl+C to stop');
   });
 
   // Improved error handling for the server
