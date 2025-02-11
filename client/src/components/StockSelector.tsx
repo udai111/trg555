@@ -21,10 +21,23 @@ interface StockSelectorProps {
 
 export default function StockSelector({ onStockChange }: StockSelectorProps) {
   const [market, setMarket] = useState<MarketType>('indian');
-  
+  const [currentSymbol, setCurrentSymbol] = useState(MARKET_SYMBOLS[market][0]);
+
+  const handleMarketChange = (value: MarketType) => {
+    setMarket(value);
+    const newSymbol = MARKET_SYMBOLS[value][0];
+    setCurrentSymbol(newSymbol);
+    onStockChange(newSymbol);
+  };
+
+  const handleSymbolChange = (value: string) => {
+    setCurrentSymbol(value);
+    onStockChange(value);
+  };
+
   return (
     <div className="flex gap-4">
-      <Select onValueChange={(value: MarketType) => setMarket(value)} defaultValue={market}>
+      <Select onValueChange={handleMarketChange} value={market}>
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="Select market" />
         </SelectTrigger>
@@ -35,7 +48,7 @@ export default function StockSelector({ onStockChange }: StockSelectorProps) {
         </SelectContent>
       </Select>
 
-      <Select onValueChange={onStockChange} defaultValue="INFY">
+      <Select onValueChange={handleSymbolChange} value={currentSymbol}>
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="Select symbol" />
         </SelectTrigger>
