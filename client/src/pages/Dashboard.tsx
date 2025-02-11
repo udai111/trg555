@@ -4,6 +4,7 @@ import { useState } from "react";
 import StockSelector from "@/components/StockSelector";
 import FXWidget from "@/components/FXWidget";
 import PriceForecastWidget from "@/components/PriceForecastWidget";
+import TechnicalSummaryWidget from "@/components/TechnicalSummaryWidget";
 
 const Dashboard = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('GOOG');
@@ -20,6 +21,9 @@ const Dashboard = () => {
 
       {/* Price Forecast Widget */}
       <PriceForecastWidget symbol={selectedSymbol} />
+
+      {/* Technical Summary Widget */}
+      <TechnicalSummaryWidget />
 
       <h1 className="text-3xl font-bold mb-6">Market Dashboard</h1>
 
