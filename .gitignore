@@ -34,3 +34,12 @@ yarn-error.log*
 *.tar.gz
 vite.config.ts.*
 server/public
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Secrets
+.env*
+!.env.example
