@@ -37,36 +37,36 @@ const Dashboard = () => {
         <ChecklistWidget symbol={selectedSymbol} />
       </div>
 
-      <h1 className="text-3xl font-bold mb-6">Premium Trading Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-6">Market Dashboard</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard 
-          title="Portfolio Value"
-          value="$124,532"
-          change="+2.4%"
+          title="Market Status"
+          value={selectedSymbol}
+          change="Active"
           icon={Wallet}
           positive
         />
         <StatCard 
-          title="Open Positions"
-          value="8"
-          change="-1"
+          title="Day's Change"
+          value="+1.2%"
+          change="↑ 45.30"
           icon={Activity}
-          positive={false}
+          positive={true}
         />
         <StatCard 
-          title="Win Rate"
-          value="68%"
-          change="+5%"
+          title="Trading Volume"
+          value="2.1M"
+          change="+15% avg"
           icon={BarChart2}
-          positive
+          positive={true}
         />
         <StatCard 
-          title="Avg Return"
-          value="12.4%"
-          change="+1.2%"
+          title="Market Trend"
+          value="Bullish"
+          change="Strong Buy"
           icon={LineChart}
-          positive
+          positive={true}
         />
       </div>
 
@@ -77,26 +77,26 @@ const Dashboard = () => {
             <ActionButton href="/ml-predictions">ML Predictions</ActionButton>
             <ActionButton href="/backtest">Run Backtest</ActionButton>
             <ActionButton href="/charts">View Charts</ActionButton>
-            <ActionButton href="/settings">Settings</ActionButton>
+            <ActionButton href="/market-analysis">Market Analysis</ActionButton>
           </div>
         </Card>
 
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
+          <h2 className="text-xl font-semibold mb-4">Market Activity</h2>
           <div className="space-y-4">
             <ActivityItem 
-              action="ML Prediction Generated"
-              detail={`${selectedSymbol} +2.4% expected`}
+              action="Price Alert"
+              detail={`${selectedSymbol} crossed resistance at ₹1,580`}
               time="2 mins ago"
             />
             <ActivityItem 
-              action="Backtest Completed"
-              detail="SMA Strategy: +15.2% return"
+              action="Volume Spike"
+              detail={`Unusual trading volume in ${selectedSymbol}`}
               time="1 hour ago"
             />
             <ActivityItem 
-              action="New Signal Alert"
-              detail={`RSI oversold on ${selectedSymbol}`}
+              action="Technical Signal"
+              detail={`${selectedSymbol} showing bullish MACD crossover`}
               time="3 hours ago"
             />
           </div>
