@@ -7,7 +7,6 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-// Only modify the getApiBaseUrl function
 const getApiBaseUrl = () => {
   if (import.meta.env.PROD) {
     // In production on Netlify, use /.netlify/functions
@@ -24,6 +23,7 @@ export async function apiRequest(
 ): Promise<Response> {
   const baseUrl = getApiBaseUrl();
   const fullUrl = `${baseUrl}${url}`;
+  console.log('Making API request to:', fullUrl); // Add logging
 
   const res = await fetch(fullUrl, {
     method,
@@ -44,6 +44,7 @@ export const getQueryFn: <T>(options: {
     async ({ queryKey }) => {
       const baseUrl = getApiBaseUrl();
       const fullUrl = `${baseUrl}${queryKey[0]}`;
+      console.log('Making query to:', fullUrl); // Add logging
 
       const res = await fetch(fullUrl, {
         credentials: "include",
