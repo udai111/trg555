@@ -16,38 +16,72 @@ import IntradayProbabilityPage from "./pages/intraday-probability";
 import CandlestickPatternsPage from "./pages/candlestick-patterns";
 import NotFound from "@/pages/not-found";
 import { Component, Suspense, useState, useEffect, ReactNode } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
+  errorInfo: { componentStack: string } | null;
+  retryCount: number;
 }
 
 interface ErrorBoundaryProps {
   children: ReactNode;
+  maxRetries?: number;
 }
 
-// Error boundary for catching runtime errors
+// Enhanced error boundary with retry mechanism and better error reporting
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { hasError: false, error: null };
+  state: ErrorBoundaryState = {
+    hasError: false,
+    error: null,
+    errorInfo: null,
+    retryCount: 0
+  };
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    console.error('App Error:', error);
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, info: { componentStack: string }): void {
-    console.error('Error details:', error, info);
+  componentDidCatch(error: Error, errorInfo: { componentStack: string }): void {
+    console.error('Error details:', error, errorInfo);
+    this.setState({ error, errorInfo });
   }
 
+  handleRetry = () => {
+    const { maxRetries = 3 } = this.props;
+    if (this.state.retryCount < maxRetries) {
+      this.setState(state => ({
+        hasError: false,
+        error: null,
+        errorInfo: null,
+        retryCount: state.retryCount + 1
+      }));
+    }
+  };
+
   render(): ReactNode {
-    if (this.state.hasError) {
+    const { hasError, error, retryCount } = this.state;
+    const { maxRetries = 3 } = this.props;
+
+    if (hasError) {
       return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4">
           <h1 className="text-2xl font-bold text-destructive mb-4">Something went wrong</h1>
-          <p className="text-muted-foreground mb-4">Please try refreshing the page</p>
+          <p className="text-muted-foreground mb-4">
+            {error?.message || 'An unexpected error occurred'}
+          </p>
+          {retryCount < maxRetries ? (
+            <button
+              onClick={this.handleRetry}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 mb-2"
+            >
+              Retry ({maxRetries - retryCount} attempts remaining)
+            </button>
+          ) : null}
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
           >
             Refresh Page
           </button>
@@ -58,35 +92,63 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 }
 
-const LoadingSpinner = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-  </div>
-);
+// Enhanced loading spinner with timeout
+const LoadingSpinner = ({ timeout = 10000 }: { timeout?: number }) => {
+  const [showTimeout, setShowTimeout] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowTimeout(true);
+      toast({
+        title: "Loading taking longer than expected",
+        description: "Please check your connection or try refreshing the page.",
+        variant: "default"
+      });
+    }, timeout);
+
+    return () => clearTimeout(timer);
+  }, [timeout, toast]);
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mb-4"></div>
+      {showTimeout && (
+        <p className="text-muted-foreground text-sm">
+          Still loading... You may want to refresh the page.
+        </p>
+      )}
+    </div>
+  );
+};
 
 function App(): JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Add console log to track initialization
     console.log('App initializing...');
-    const timer = setTimeout(() => {
-      console.log('App initialized');
+    // Reduced initial loading time but added error handling
+    try {
+      const timer = setTimeout(() => {
+        console.log('App initialized');
+        setIsLoading(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    } catch (error) {
+      console.error('Error during initialization:', error);
       setIsLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
+    }
   }, []);
 
-  // Add base path handling for production
   const base = import.meta.env.PROD ? '/trgfin' : '';
   console.log('Using base path:', base);
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <LoadingSpinner timeout={5000} />;
   }
 
   return (
-    <ErrorBoundary>
+    <ErrorBoundary maxRetries={3}>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider theme={theme}>
           <Router base={base}>
@@ -94,7 +156,7 @@ function App(): JSX.Element {
               <div className="flex flex-1 relative overflow-hidden">
                 <Sidebar />
                 <main className="flex-1 overflow-y-auto min-h-screen p-2 md:p-4 bg-background">
-                  <Suspense fallback={<LoadingSpinner />}>
+                  <Suspense fallback={<LoadingSpinner timeout={10000} />}>
                     <Switch>
                       <Route path="/" component={Dashboard} />
                       <Route path="/pro-trading" component={ProTrading} />
