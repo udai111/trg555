@@ -41,8 +41,9 @@ export default function LoginPage() {
     <div 
       className="min-h-screen w-full flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat overflow-hidden"
       style={{
-        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/attached_assets/caption.jpg')`,
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('../../attached_assets/caption.jpg')`,
         backgroundSize: 'cover',
+        backgroundPosition: 'center',
         backgroundAttachment: 'fixed'
       }}
     >
