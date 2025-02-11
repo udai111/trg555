@@ -77,21 +77,54 @@ const generateEquityData = (initialAmount) => {
 };
 
 const LoadingStep = ({ step, currentStep, text }) => (
-  <motion.div 
+  <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     className={`flex items-center space-x-2 ${currentStep >= step ? 'text-primary' : 'text-muted-foreground'}`}
   >
     <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-      currentStep > step ? 'bg-primary text-white' : 
-      currentStep === step ? 'border-2 border-primary' : 
-      'border-2 border-muted'
+      currentStep > step ? 'bg-primary text-white' :
+        currentStep === step ? 'border-2 border-primary' :
+          'border-2 border-muted'
     }`}>
       {currentStep > step ? '✓' : step + 1}
     </div>
     <span>{text}</span>
   </motion.div>
 );
+
+// Adding new interfaces and mock data
+interface StrategyComparison {
+  name: string;
+  winRate: number;
+  avgReturn: number;
+  maxDrawdown: number;
+  sharpeRatio: number;
+}
+
+const strategyComparisons: StrategyComparison[] = [
+  {
+    name: "SMA Crossover",
+    winRate: 65,
+    avgReturn: 15,
+    maxDrawdown: 12,
+    sharpeRatio: 1.8
+  },
+  {
+    name: "RSI Oversold",
+    winRate: 58,
+    avgReturn: 12,
+    maxDrawdown: 15,
+    sharpeRatio: 1.5
+  },
+  {
+    name: "Momentum",
+    winRate: 72,
+    avgReturn: 18,
+    maxDrawdown: 20,
+    sharpeRatio: 2.1
+  }
+];
 
 const BacktestPanel = () => {
   const [selectedSymbol, setSelectedSymbol] = useState("");
@@ -105,6 +138,9 @@ const BacktestPanel = () => {
   const [downloadStatus, setDownloadStatus] = useState("");
   const [equityData, setEquityData] = useState([]);
   const [showResults, setShowResults] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
+  const [riskLevel, setRiskLevel] = useState<"low" | "medium" | "high">("medium");
+  const [marketSentiment, setMarketSentiment] = useState<number>(65); // 0-100 scale
 
   const simulateDataDownload = async () => {
     setIsLoading(true);
@@ -150,6 +186,20 @@ const BacktestPanel = () => {
 
   const formatDate = (date) => {
     return format(date, "PPP");
+  };
+
+  // Calculate potential returns based on investment and risk level
+  const calculatePotentialReturns = (amount: number, risk: string) => {
+    const riskMultipliers = {
+      low: { min: 0.05, max: 0.12 },
+      medium: { min: 0.10, max: 0.25 },
+      high: { min: 0.20, max: 0.40 }
+    };
+    const multiplier = riskMultipliers[risk as keyof typeof riskMultipliers];
+    return {
+      conservative: amount * (1 + multiplier.min),
+      aggressive: amount * (1 + multiplier.max)
+    };
   };
 
   return (
@@ -270,6 +320,128 @@ const BacktestPanel = () => {
         </div>
       </Card>
 
+      {/* New Market Sentiment Section */}
+      <Card className="p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Market Sentiment</h2>
+          <div className="text-lg font-bold">
+            {marketSentiment}% Bullish
+          </div>
+        </div>
+        <div className="relative h-4 bg-background rounded-full overflow-hidden">
+          <motion.div
+            className="absolute top-0 left-0 h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
+            style={{ width: `${marketSentiment}%` }}
+            initial={{ width: 0 }}
+            animate={{ width: `${marketSentiment}%` }}
+            transition={{ duration: 1 }}
+          />
+        </div>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Current market sentiment is {marketSentiment < 30 ? 'Bearish' : marketSentiment > 70 ? 'Bullish' : 'Neutral'}
+        </p>
+      </Card>
+
+      {/* Strategy Comparison Section */}
+      <Card className="p-6 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Strategy Comparison</h2>
+          <Button
+            variant="outline"
+            onClick={() => setShowComparison(!showComparison)}
+          >
+            {showComparison ? 'Hide Details' : 'Show Details'}
+          </Button>
+        </div>
+
+        <AnimatePresence>
+          {showComparison && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-4"
+            >
+              {strategyComparisons.map((strategy) => (
+                <div key={strategy.name} className="p-4 border rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-semibold">{strategy.name}</h3>
+                    <span className={`px-2 py-1 rounded-full text-sm ${
+                      strategy.winRate > 65 ? 'bg-green-500/20 text-green-700' :
+                        strategy.winRate > 55 ? 'bg-yellow-500/20 text-yellow-700' :
+                          'bg-red-500/20 text-red-700'
+                    }`}>
+                      {strategy.winRate}% Win Rate
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Avg Return</p>
+                      <p className="font-semibold text-green-500">+{strategy.avgReturn}%</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Max Drawdown</p>
+                      <p className="font-semibold text-red-500">-{strategy.maxDrawdown}%</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Sharpe Ratio</p>
+                      <p className="font-semibold">{strategy.sharpeRatio}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Card>
+
+      {/* Risk Profile & Potential Returns */}
+      <Card className="p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Risk Profile & Potential Returns</h2>
+        <div className="space-y-4">
+          <div>
+            <Label>Select Risk Level</Label>
+            <Select value={riskLevel} onValueChange={(value: "low" | "medium" | "high") => setRiskLevel(value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose risk level" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Conservative (Lower risk)</SelectItem>
+                <SelectItem value="medium">Balanced (Moderate risk)</SelectItem>
+                <SelectItem value="high">Aggressive (Higher risk)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {initialInvestment > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 bg-accent/5 rounded-lg"
+            >
+              <h3 className="font-semibold mb-2">Potential Returns (1 Year)</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Conservative Estimate</p>
+                  <p className="text-xl font-bold text-green-500">
+                    ₹{Math.round(calculatePotentialReturns(initialInvestment, riskLevel).conservative).toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Aggressive Estimate</p>
+                  <p className="text-xl font-bold text-green-500">
+                    ₹{Math.round(calculatePotentialReturns(initialInvestment, riskLevel).aggressive).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                *These are hypothetical scenarios based on historical data. Past performance doesn't guarantee future returns.
+              </p>
+            </motion.div>
+          )}
+        </div>
+      </Card>
+
       {showResults && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -327,8 +499,8 @@ const BacktestPanel = () => {
       )}
 
       <div className="flex justify-center space-x-4">
-        <Button 
-          size="lg" 
+        <Button
+          size="lg"
           onClick={simulateDataDownload}
           disabled={isLoading || !selectedSymbol || !selectedStrategy}
         >
@@ -341,9 +513,9 @@ const BacktestPanel = () => {
             'Run Backtest'
           )}
         </Button>
-        <Button 
-          size="lg" 
-          variant="destructive" 
+        <Button
+          size="lg"
+          variant="destructive"
           onClick={() => {
             setShowResults(false);
             setEquityData([]);
