@@ -124,7 +124,7 @@ function StockMarketGame() {
   const [quantity, setQuantity] = useState('');
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [showRetroMode, setShowRetroMode] = useState(false);
-  const [showProMode, setShowProMode] = useState(false);
+  const [showProMode, setShowProMode] = useState(true); // Set Pro Mode as default
   const { toast } = useToast();
 
   const [user, setUser] = useState<User>({
