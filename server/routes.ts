@@ -1,15 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
 
 export function registerRoutes(app: Express): Server {
-  // put application routes here
-  // prefix all routes with /api
+  // Basic health check endpoint
+  app.get('/api/health', (_req, res) => {
+    res.json({ status: 'ok' });
+  });
 
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
-
+  // Create HTTP server
   const httpServer = createServer(app);
-
   return httpServer;
 }
