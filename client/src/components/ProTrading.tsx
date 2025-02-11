@@ -191,10 +191,10 @@ export default function ProTrading() {
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Ultra-Pro Trading Technology</h1>
+    <div className="p-2 md:p-6">
+      <h1 className="text-xl md:text-3xl font-bold mb-4 md:mb-6">Ultra-Pro Trading Technology</h1>
 
-      <div className="flex gap-4 mb-6">
+      <div className="flex flex-col md:flex-row gap-2 md:gap-4 mb-4 md:mb-6">
         <div className="flex items-center gap-2">
           <Switch
             checked={demoMode}
@@ -208,12 +208,12 @@ export default function ProTrading() {
         </Button>
       </div>
 
-      <Card className="mb-8">
-        <CardContent className="p-6">
-          <h2 className="text-2xl font-semibold mb-4">Advanced Chart</h2>
-          <div className="flex gap-4 mb-4">
+      <Card className="mb-4 md:mb-8">
+        <CardContent className="p-3 md:p-6">
+          <h2 className="text-xl md:text-2xl font-semibold mb-4">Advanced Chart</h2>
+          <div className="flex flex-col md:flex-row gap-2 md:gap-4 mb-4">
             <Select value={chartInterval} onValueChange={setChartInterval}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full md:w-auto">
                 <SelectValue placeholder="Select interval" />
               </SelectTrigger>
               <SelectContent>
@@ -226,7 +226,7 @@ export default function ProTrading() {
               </SelectContent>
             </Select>
 
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
                 <Switch
                   checked={advancedIndicators.ma}
@@ -246,22 +246,22 @@ export default function ProTrading() {
             </div>
           </div>
 
-          <div className="w-full bg-white rounded-lg shadow mb-6">
+          <div className="w-full bg-white rounded-lg shadow mb-6 overflow-hidden">
             <iframe 
-              height="480" 
+              height="400"
               width="100%" 
-              src="https://ssltvc.investing.com/?pair_ID=160&height=480&width=650&interval=300&plotStyle=candles&domain_ID=56&lang_ID=56&timezone_ID=20"
+              src="https://ssltvc.investing.com/?pair_ID=160&height=400&width=100%&interval=300&plotStyle=candles&domain_ID=56&lang_ID=56&timezone_ID=20"
               style={{ border: 'none' }}
+              className="w-full max-w-full"
             />
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
         <Card>
-          <CardContent className="p-6">
-            <h2 className="text-2xl font-semibold mb-4">Order Panel</h2>
-
+          <CardContent className="p-3 md:p-6">
+            <h2 className="text-xl md:text-2xl font-semibold mb-4">Order Panel</h2>
             <div className="space-y-4">
               <div className="flex flex-col gap-2">
                 <Label>Symbol</Label>
@@ -403,119 +403,121 @@ export default function ProTrading() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <h2 className="text-2xl font-semibold mb-4">Open Positions</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-muted">
-                    {columnOrder.map((col) => (
-                      <th key={col} className="px-4 py-2 text-left">
-                        {col === "symbol" && "Symbol"}
-                        {col === "side" && "Side"}
-                        {col === "orderType" && "Type"}
-                        {col === "qty" && "Qty"}
-                        {col === "entryPrice" && "Price"}
-                        {col === "margin" && "Margin"}
-                        {col === "PnL" && "PnL"}
-                        {col === "date" && "Date"}
-                        {col === "actions" && "Close"}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {positions.map((pos) => {
-                    const pnl =
-                      (realTimePrice - pos.entryPrice) *
-                      pos.qty *
-                      (pos.side === "Buy" ? 1 : -1);
-                    return (
-                      <tr key={pos.id} className="border-b">
-                        {columnOrder.includes("symbol") && (
-                          <td className="px-4 py-2">{pos.symbol}</td>
-                        )}
-                        {columnOrder.includes("side") && (
-                          <td className="px-4 py-2">{pos.side}</td>
-                        )}
-                        {columnOrder.includes("orderType") && (
-                          <td className="px-4 py-2">{pos.orderType}</td>
-                        )}
-                        {columnOrder.includes("qty") && (
-                          <td className="px-4 py-2">{pos.qty}</td>
-                        )}
-                        {columnOrder.includes("entryPrice") && (
-                          <td className="px-4 py-2">₹{pos.entryPrice}</td>
-                        )}
-                        {columnOrder.includes("margin") && (
-                          <td className="px-4 py-2">
-                            {pos.margin ? `${pos.leverage}x` : "No"}
-                          </td>
-                        )}
-                        {columnOrder.includes("PnL") && (
-                          <td
-                            className={cn(
-                              "px-4 py-2",
-                              pnl >= 0 ? "text-green-600" : "text-red-600"
-                            )}
-                          >
-                            ₹{pnl.toFixed(2)}
-                          </td>
-                        )}
-                        {columnOrder.includes("date") && (
-                          <td className="px-4 py-2">{pos.date}</td>
-                        )}
-                        {columnOrder.includes("actions") && (
-                          <td className="px-4 py-2">
-                            <div className="flex flex-col gap-2">
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleClosePosition(pos.id)}
-                              >
-                                Close
-                              </Button>
-                              <div className="flex gap-2">
-                                <Input
-                                  type="number"
-                                  placeholder="Partial Qty"
-                                  value={partialCloseQty}
-                                  onChange={(e) => setPartialCloseQty(e.target.value)}
-                                  className="w-20"
-                                />
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleClosePosition(pos.id, true)}
-                                >
-                                  Partial
-                                </Button>
-                              </div>
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    );
-                  })}
-                  {positions.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={columnOrder.length}
-                        className="px-4 py-2 text-center"
-                      >
-                        No open positions
-                      </td>
+        <Card className="overflow-x-auto">
+          <CardContent className="p-3 md:p-6">
+            <h2 className="text-xl md:text-2xl font-semibold mb-4">Open Positions</h2>
+            <div className="overflow-x-auto -mx-3 md:-mx-6">
+              <div className="min-w-[800px] px-3 md:px-6">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-muted">
+                      {columnOrder.map((col) => (
+                        <th key={col} className="px-4 py-2 text-left">
+                          {col === "symbol" && "Symbol"}
+                          {col === "side" && "Side"}
+                          {col === "orderType" && "Type"}
+                          {col === "qty" && "Qty"}
+                          {col === "entryPrice" && "Price"}
+                          {col === "margin" && "Margin"}
+                          {col === "PnL" && "PnL"}
+                          {col === "date" && "Date"}
+                          {col === "actions" && "Close"}
+                        </th>
+                      ))}
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {positions.map((pos) => {
+                      const pnl =
+                        (realTimePrice - pos.entryPrice) *
+                        pos.qty *
+                        (pos.side === "Buy" ? 1 : -1);
+                      return (
+                        <tr key={pos.id} className="border-b">
+                          {columnOrder.includes("symbol") && (
+                            <td className="px-4 py-2">{pos.symbol}</td>
+                          )}
+                          {columnOrder.includes("side") && (
+                            <td className="px-4 py-2">{pos.side}</td>
+                          )}
+                          {columnOrder.includes("orderType") && (
+                            <td className="px-4 py-2">{pos.orderType}</td>
+                          )}
+                          {columnOrder.includes("qty") && (
+                            <td className="px-4 py-2">{pos.qty}</td>
+                          )}
+                          {columnOrder.includes("entryPrice") && (
+                            <td className="px-4 py-2">₹{pos.entryPrice}</td>
+                          )}
+                          {columnOrder.includes("margin") && (
+                            <td className="px-4 py-2">
+                              {pos.margin ? `${pos.leverage}x` : "No"}
+                            </td>
+                          )}
+                          {columnOrder.includes("PnL") && (
+                            <td
+                              className={cn(
+                                "px-4 py-2",
+                                pnl >= 0 ? "text-green-600" : "text-red-600"
+                              )}
+                            >
+                              ₹{pnl.toFixed(2)}
+                            </td>
+                          )}
+                          {columnOrder.includes("date") && (
+                            <td className="px-4 py-2">{pos.date}</td>
+                          )}
+                          {columnOrder.includes("actions") && (
+                            <td className="px-4 py-2">
+                              <div className="flex flex-col gap-2">
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleClosePosition(pos.id)}
+                                >
+                                  Close
+                                </Button>
+                                <div className="flex gap-2">
+                                  <Input
+                                    type="number"
+                                    placeholder="Partial Qty"
+                                    value={partialCloseQty}
+                                    onChange={(e) => setPartialCloseQty(e.target.value)}
+                                    className="w-20"
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleClosePosition(pos.id, true)}
+                                  >
+                                    Partial
+                                  </Button>
+                                </div>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                    {positions.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={columnOrder.length}
+                          className="px-4 py-2 text-center"
+                        >
+                          No open positions
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8 mt-4 md:mt-8">
         <Card>
           <CardContent className="p-6">
             <h3 className="text-xl font-semibold mb-4">Alerts</h3>
@@ -583,7 +585,7 @@ export default function ProTrading() {
         </Card>
       </div>
 
-      <Card className="mt-8">
+      <Card className="mt-4 md:mt-8">
         <CardContent className="p-6">
           <h3 className="text-xl font-semibold mb-4">Stats</h3>
           <div className="space-y-2">
