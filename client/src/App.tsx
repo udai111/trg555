@@ -1,4 +1,4 @@
-import { Switch, Route, Router } from "wouter";
+import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "styled-components";
 import { queryClient } from "./lib/queryClient";
@@ -18,14 +18,7 @@ import LoginPage from "@/pages/login";
 import { useEffect, useState } from "react";
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null); // Use null for initial state
   const [showSidebar, setShowSidebar] = useState(true);
-
-  useEffect(() => {
-    // Check authentication status
-    const username = localStorage.getItem("username");
-    setIsAuthenticated(!!username);
-  }, []);
 
   // Listen for fullscreen events from TradingView component
   useEffect(() => {
@@ -38,47 +31,37 @@ function App() {
     };
   }, []);
 
-  // Show nothing while checking authentication
-  if (isAuthenticated === null) {
-    return null;
-  }
+  // Check if user is authenticated
+  const username = localStorage.getItem("username");
 
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
-        <Router>
-          <div className="min-h-screen bg-background">
-            {!isAuthenticated ? (
-              // Public routes
-              <Switch>
-                <Route path="/login">
-                  <LoginPage />
-                </Route>
-                <Route>
-                  <LandingPage />
-                </Route>
-              </Switch>
-            ) : (
-              // Protected routes
-              <div className="flex min-h-screen">
-                {showSidebar && <Sidebar />}
-                <main className={`flex-1 p-4 bg-background ${!showSidebar ? 'w-full' : ''}`}>
-                  <Switch>
-                    <Route path="/" component={Dashboard} />
-                    <Route path="/pro-trading" component={ProTrading} />
-                    <Route path="/stock-market-game" component={StockMarketGamePage} />
-                    <Route path="/ml-predictions" component={MLPrediction} />
-                    <Route path="/backtest" component={BacktestPanel} />
-                    <Route path="/charts" component={TradingViewSection} />
-                    <Route path="/market-analysis" component={MarketAnalysis} />
-                    <Route component={NotFound} />
-                  </Switch>
-                </main>
-              </div>
-            )}
-          </div>
-        </Router>
-        <Toaster />
+        <div className="min-h-screen bg-background">
+          {!username ? (
+            <Switch>
+              <Route path="/login" component={LoginPage} />
+              <Route component={LandingPage} />
+            </Switch>
+          ) : (
+            <div className="flex min-h-screen">
+              {showSidebar && <Sidebar />}
+              <main className={`flex-1 p-4 bg-background ${!showSidebar ? 'w-full' : ''}`}>
+                <Switch>
+                  <Route path="/" component={Dashboard} />
+                  <Route path="/pro-trading" component={ProTrading} />
+                  <Route path="/stock-market-game" component={StockMarketGamePage} />
+                  <Route path="/ml-predictions" component={MLPrediction} />
+                  <Route path="/backtest" component={BacktestPanel} />
+                  <Route path="/charts" component={TradingViewSection} />
+                  <Route path="/market-analysis" component={MarketAnalysis} />
+                  <Route component={NotFound} />
+                </Switch>
+              </main>
+            </div>
+          )}
+          <Toaster />
+        </div>
       </ThemeProvider>
     </QueryClientProvider>
   );

@@ -5,15 +5,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [_, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const handleLogin = () => {
-    if (!username) return;
-    localStorage.setItem("username", username);
-    setLocation("/");
+    if (!username.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a username",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Store username and trigger page reload to ensure proper state update
+    localStorage.setItem("username", username.trim());
+    window.location.href = "/";
   };
 
   return (
@@ -60,7 +71,7 @@ export default function LoginPage() {
               <Button
                 className="w-full"
                 onClick={handleLogin}
-                disabled={!username}
+                disabled={!username.trim()}
               >
                 Start Trading
               </Button>
