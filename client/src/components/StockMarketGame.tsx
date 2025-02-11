@@ -117,6 +117,11 @@ const INITIAL_CRYPTO: StockData[] = [
 ];
 
 function StockMarketGame() {
+  const [user, setUser] = useState<User>({
+    username: 'Guest Trader',
+    wallet: 1000000,
+    portfolio: {}
+  });
   const [activeMarket, setActiveMarket] = useState<'NSE' | 'CRYPTO'>('NSE');
   const [nseStocks, setNseStocks] = useState<StockData[]>(INITIAL_NSE_STOCKS);
   const [cryptos, setCryptos] = useState<StockData[]>(INITIAL_CRYPTO);
@@ -293,12 +298,6 @@ function StockMarketGame() {
       return total + (currentValue - initialValue);
     }, 0);
   };
-
-  const [user, setUser] = useState<User>({
-    username: 'Guest Trader',
-    wallet: 1000000,
-    portfolio: {}
-  });
 
   if (showRetroMode) {
     return (
@@ -587,7 +586,7 @@ Enter command: _
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
               <Card className="p-4">
                 <Label>Market Depth</Label>
-                <div className="text-2xl font-semibold mt1">
+                <div className="text-2xl font-semibold mt-1">
                   {Math.floor(Math.random() * 10000).toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground">
@@ -625,123 +624,8 @@ Enter command: _
                 </div>
               </Card>
             </div>
-
-            {/* Trading Interface */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-              {/* Order Entry */}
-              <Card className="p-4">
-                <h3 className="text-lg font-semibold mb-4">New Order</h3>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Order Type</Label>
-                      <select className="w-full px-3 py-2 rounded-md border border-input bg-background">
-                        <option>Market</option>
-                        <option>Limit</option>
-                        <option>Stop</option>
-                        <option>Stop Limit</option>
-                      </select>
-                    </div>
-                    <div>
-                      <Label>TIF</Label>
-                      <select className="w-full px-3 py-2 rounded-md border border-input bg-background">
-                        <option>Day</option>
-                        <option>GTC</option>
-                        <option>IOC</option>
-                        <option>FOK</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Quantity</Label>
-                      <Input
-                        type="number"
-                        value={quantity}
-                        onChange={(e) => setQuantity(e.target.value)}
-                        className="font-mono"
-                      />
-                    </div>
-                    <div>
-                      <Label>Price</Label>
-                      <Input
-                        type="number"
-                        defaultValue={selectedAsset?.price}
-                        className="font-mono"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button
-                      className="bg-green-500 hover:bg-green-600"
-                      onClick={handleBuy}
-                    >
-                      BUY / LONG
-                    </Button>
-                    <Button
-                      className="bg-red-500 hover:bg-red-600"
-                      onClick={handleSell}
-                    >
-                      SELL / SHORT
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Trade History */}
-              <Card className="p-4">
-                <h3 className="text-lg font-semibold mb-4">Trade History</h3>
-                <div className="space-y-2">
-                  {Array.from({ length: 5 }).map((_, i) => {
-                    const isBuy = Math.random() > 0.5;
-                    return (
-                      <div key={i} className="flex items-center justify-between text-xs p-2 bg-accent/10 rounded-lg">
-                        <div>
-                          <div className={isBuy ? "text-green-500" : "text-red-500"}>
-                            {isBuy ? "BUY" : "SELL"} {selectedAsset?.symbol || 'RELIANCE'}
-                          </div>
-                          <div className="text-muted-foreground">
-                            {new Date(Date.now() - i * 60000).toLocaleTimeString()}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-mono">₹{(selectedAsset?.price || 0).toFixed(2)}</div>
-                          <div className="text-muted-foreground">
-                            Qty: {Math.floor(Math.random() * 100)}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-
-              {/* Open Orders */}
-              <Card className="p-4">
-                <h3 className="text-lg font-semibold mb-4">Open Orders</h3>
-                <div className="space-y-2">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="p-2 bg-accent/10 rounded-lg text-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{selectedAsset?.symbol || 'RELIANCE'}</span>
-                        <Button variant="ghost" size="sm">
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 mt-1 text-xs text-muted-foreground">
-                        <div>Type: Limit</div>
-                        <div>Price: ₹{(selectedAsset?.price || 0).toFixed(2)}</div>
-                        <div>Qty: {Math.floor(Math.random() * 100)}</div>
-                        <div>TIF: Day</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </div>
           </TabsContent>
+
           <TabsContent value="profits">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Overall Performance Card */}
