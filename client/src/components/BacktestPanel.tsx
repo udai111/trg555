@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { Loader2 } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, BarChart2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -20,17 +20,61 @@ import {
 } from "@/components/ui/accordion";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
 import { motion, AnimatePresence } from "framer-motion";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-// Mock data for equity curve
-const mockEquityData = [
-  { time: 'Start', value: 10000 },
-  { time: 'Trade 1', value: 10200 },
-  { time: 'Trade 2', value: 9800 },
-  { time: 'Trade 3', value: 10500 },
-  { time: 'End', value: 11000 }
+// Mock strategies
+const strategies = [
+  {
+    id: "sma-crossover",
+    name: "SMA Crossover",
+    description: "Buy when short-term SMA crosses above long-term SMA",
+    example: "Example: Buy when 20-day SMA crosses above 50-day SMA",
+    performance: "+15% annual return historically"
+  },
+  {
+    id: "rsi-oversold",
+    name: "RSI Oversold Bounce",
+    description: "Buy when RSI indicates oversold conditions",
+    example: "Example: Buy when RSI(14) goes below 30",
+    performance: "+12% annual return historically"
+  },
+  {
+    id: "momentum",
+    name: "Momentum Strategy",
+    description: "Buy stocks showing strong upward momentum",
+    example: "Example: Buy when price > 20-day high",
+    performance: "+18% annual return historically"
+  }
 ];
+
+// Popular symbols
+const popularSymbols = [
+  { value: "RELIANCE", label: "Reliance Industries" },
+  { value: "TCS", label: "Tata Consultancy Services" },
+  { value: "INFY", label: "Infosys" },
+  { value: "HDFCBANK", label: "HDFC Bank" },
+  { value: "ITC", label: "ITC Limited" }
+];
+
+// Mock equity curve data with projection
+const generateEquityData = (initialAmount) => {
+  let amount = initialAmount;
+  const data = [];
+  for (let month = 0; month <= 12; month++) {
+    const isProjected = month > 6;
+    amount *= (1 + (Math.random() * 0.08 - 0.02));
+    data.push({
+      month: `Month ${month}`,
+      value: Math.round(amount),
+      isProjected
+    });
+  }
+  return data;
+};
 
 const LoadingStep = ({ step, currentStep, text }) => (
   <motion.div 
@@ -50,60 +94,38 @@ const LoadingStep = ({ step, currentStep, text }) => (
 );
 
 const BacktestPanel = () => {
-  // Previous state
-  const [dataSource, setDataSource] = useState("");
-  const [timeframe, setTimeframe] = useState("1d");
-  const [adjustSplits, setAdjustSplits] = useState(true);
-  const [adjustDividends, setAdjustDividends] = useState(true);
-  const [positionSizing, setPositionSizing] = useState("fixed");
-  const [stopLoss, setStopLoss] = useState(5);
-  const [takeProfit, setTakeProfit] = useState(10);
-  const [leverage, setLeverage] = useState("2x");
-  const [useATR, setUseATR] = useState(false);
-  const [slippage, setSlippage] = useState(0.01);
-  const [commission, setCommission] = useState(5);
-  const [orderType, setOrderType] = useState("market");
-  const [latency, setLatency] = useState(100);
-
-  // New state for loading and progress
+  const [selectedSymbol, setSelectedSymbol] = useState("");
+  const [startDate, setStartDate] = useState(new Date(2024, 0, 1));
+  const [endDate, setEndDate] = useState(new Date());
+  const [initialInvestment, setInitialInvestment] = useState(1000);
+  const [selectedStrategy, setSelectedStrategy] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [progress, setProgress] = useState(0);
   const [downloadStatus, setDownloadStatus] = useState("");
-
-  // Performance metrics state
-  const [metrics, setMetrics] = useState({
-    totalReturn: "--",
-    annualReturn: "--",
-    sharpeRatio: "--",
-    sortinoRatio: "--",
-    maxDrawdown: "--",
-    recoveryPeriod: "--",
-    winRate: "--",
-    avgHolding: "--",
-    numTrades: "--"
-  });
+  const [equityData, setEquityData] = useState([]);
+  const [showResults, setShowResults] = useState(false);
 
   const simulateDataDownload = async () => {
     setIsLoading(true);
     setLoadingStep(0);
     setProgress(0);
 
-    // Step 1: Connecting to data source - faster connection
+    // Step 1: Connecting to data source
     setDownloadStatus("Connecting to data source...");
     await new Promise(r => setTimeout(r, 500));
     setLoadingStep(1);
     setProgress(25);
 
-    // Step 2: Fetching historical data - faster increments
-    setDownloadStatus("Fetching historical data...");
+    // Step 2: Fetching historical data
+    setDownloadStatus(`Fetching historical data for ${selectedSymbol}...`);
     for (let i = 25; i <= 60; i += 10) {
       setProgress(i);
       await new Promise(r => setTimeout(r, 100));
     }
     setLoadingStep(2);
 
-    // Step 3: Processing and validating - faster processing
+    // Step 3: Processing and validating
     setDownloadStatus("Processing and validating data...");
     for (let i = 60; i <= 90; i += 10) {
       setProgress(i);
@@ -111,8 +133,8 @@ const BacktestPanel = () => {
     }
     setLoadingStep(3);
 
-    // Step 4: Finalizing - quick completion
-    setDownloadStatus("Finalizing...");
+    // Step 4: Finalizing
+    setDownloadStatus("Generating backtest results...");
     for (let i = 90; i <= 100; i += 5) {
       setProgress(i);
       await new Promise(r => setTimeout(r, 50));
@@ -120,31 +142,19 @@ const BacktestPanel = () => {
     setLoadingStep(4);
 
     await new Promise(r => setTimeout(r, 200));
+    setEquityData(generateEquityData(initialInvestment));
     setIsLoading(false);
-    setDownloadStatus("Data ready for backtesting!");
+    setShowResults(true);
+    setDownloadStatus("Backtest completed successfully!");
   };
 
-  const runBacktest = async () => {
-    if (!isLoading) {
-      await simulateDataDownload();
-    }
-
-    setMetrics({
-      totalReturn: "10%",
-      annualReturn: "8%",
-      sharpeRatio: "1.2",
-      sortinoRatio: "1.5",
-      maxDrawdown: "5%",
-      recoveryPeriod: "2 weeks",
-      winRate: "60%",
-      avgHolding: "3 days",
-      numTrades: "10"
-    });
+  const formatDate = (date) => {
+    return format(date, "PPP");
   };
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Advanced Backtesting Platform</h1>
+      <h1 className="text-2xl font-bold mb-6">Strategy Backtester</h1>
 
       {/* Loading Overlay */}
       <AnimatePresence>
@@ -166,282 +176,161 @@ const BacktestPanel = () => {
                   <LoadingStep step={0} currentStep={loadingStep} text="Connecting to data source" />
                   <LoadingStep step={1} currentStep={loadingStep} text="Fetching historical data" />
                   <LoadingStep step={2} currentStep={loadingStep} text="Processing and validating" />
-                  <LoadingStep step={3} currentStep={loadingStep} text="Finalizing" />
+                  <LoadingStep step={3} currentStep={loadingStep} text="Calculating returns" />
                 </div>
-
-                {loadingStep === 4 && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex justify-center"
-                  >
-                    <Button onClick={() => setIsLoading(false)}>
-                      Continue to Backtest
-                    </Button>
-                  </motion.div>
-                )}
               </div>
             </Card>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <Accordion type="single" collapsible className="w-full space-y-4">
-        <AccordionItem value="item-1">
-          <AccordionTrigger className="text-lg font-semibold">
-            Historical Data Integration
-          </AccordionTrigger>
-          <AccordionContent className="space-y-4 p-4">
-            <div className="space-y-4">
-              <div>
-                <Label>Data Source URL / File</Label>
-                <Input
-                  value={dataSource}
-                  onChange={(e) => setDataSource(e.target.value)}
-                  placeholder="Enter data source or file path"
-                />
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {/* Symbol Selection */}
+        <Card className="p-4">
+          <Label className="text-lg font-semibold mb-4 block">Select Trading Symbol</Label>
+          <Select value={selectedSymbol} onValueChange={setSelectedSymbol}>
+            <SelectTrigger>
+              <SelectValue placeholder="Choose a stock" />
+            </SelectTrigger>
+            <SelectContent>
+              {popularSymbols.map(symbol => (
+                <SelectItem key={symbol.value} value={symbol.value}>
+                  {symbol.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Card>
 
-              <div>
-                <Label>Choose Timeframe</Label>
-                <Select value={timeframe} onValueChange={setTimeframe}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select timeframe" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1m">1 Minute</SelectItem>
-                    <SelectItem value="1h">1 Hour</SelectItem>
-                    <SelectItem value="1d">Daily</SelectItem>
-                    <SelectItem value="1w">Weekly</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+        {/* Date Range */}
+        <Card className="p-4">
+          <Label className="text-lg font-semibold mb-4 block">Select Date Range</Label>
+          <div className="flex space-x-4">
+            <div className="flex-1">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start">
+                    {formatDate(startDate)}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent>
+                  <Calendar mode="single" selected={startDate} onSelect={setStartDate} />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="flex-1">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start">
+                    {formatDate(endDate)}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent>
+                  <Calendar mode="single" selected={endDate} onSelect={setEndDate} />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+        </Card>
+      </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="adjustSplits"
-                    checked={adjustSplits}
-                    onCheckedChange={(checked) => setAdjustSplits(!!checked)}
+      {/* Strategy Selection */}
+      <Card className="p-6 mb-6">
+        <Label className="text-lg font-semibold mb-4 block">Choose Strategy</Label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {strategies.map((strategy) => (
+            <motion.div
+              key={strategy.id}
+              whileHover={{ scale: 1.02 }}
+              className={`p-4 rounded-lg border cursor-pointer ${
+                selectedStrategy === strategy.id ? 'border-primary bg-primary/5' : 'border-border'
+              }`}
+              onClick={() => setSelectedStrategy(strategy.id)}
+            >
+              <h3 className="font-semibold mb-2">{strategy.name}</h3>
+              <p className="text-sm text-muted-foreground mb-2">{strategy.description}</p>
+              <p className="text-xs text-muted-foreground">{strategy.example}</p>
+              <p className="text-sm font-medium text-green-500 mt-2">{strategy.performance}</p>
+            </motion.div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Investment Amount */}
+      <Card className="p-6 mb-6">
+        <Label className="text-lg font-semibold mb-4 block">Investment Amount</Label>
+        <div className="flex items-center space-x-4">
+          <Input
+            type="number"
+            value={initialInvestment}
+            onChange={(e) => setInitialInvestment(Number(e.target.value))}
+            className="text-lg"
+          />
+          <span className="text-lg font-semibold">₹</span>
+        </div>
+      </Card>
+
+      {showResults && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Card className="p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">Backtest Results</h2>
+            <div className="h-[400px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={equityData}>
+                  <defs>
+                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke="hsl(var(--primary))"
+                    fillOpacity={1}
+                    fill="url(#colorValue)"
                   />
-                  <Label htmlFor="adjustSplits">Adjust for Splits</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="adjustDividends"
-                    checked={adjustDividends}
-                    onCheckedChange={(checked) => setAdjustDividends(!!checked)}
-                  />
-                  <Label htmlFor="adjustDividends">Adjust for Dividends</Label>
-                </div>
-              </div>
-
-              <Button 
-                onClick={simulateDataDownload}
-                disabled={isLoading}
-                className="w-full"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Downloading Data...
-                  </>
-                ) : (
-                  'Download Historical Data'
-                )}
-              </Button>
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
-          </AccordionContent>
-        </AccordionItem>
-        <AccordionItem value="item-2">
-          <AccordionTrigger className="text-lg font-semibold">
-            Risk Management
-          </AccordionTrigger>
-          <AccordionContent className="space-y-4 p-4">
-            <div className="space-y-4">
-              <div>
-                <Label>Position Sizing</Label>
-                <RadioGroup value={positionSizing} onValueChange={setPositionSizing}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="fixed" id="fixed" />
-                    <Label htmlFor="fixed">Fixed Dollar Amount</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="percent" id="percent" />
-                    <Label htmlFor="percent">Percentage of Capital</Label>
-                  </div>
-                </RadioGroup>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Stop-Loss (%)</Label>
-                  <Input
-                    type="number"
-                    value={stopLoss}
-                    onChange={(e) => setStopLoss(Number(e.target.value))}
-                  />
-                </div>
-                <div>
-                  <Label>Take-Profit (%)</Label>
-                  <Input
-                    type="number"
-                    value={takeProfit}
-                    onChange={(e) => setTakeProfit(Number(e.target.value))}
-                  />
-                </div>
-              </div>
-
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
               <div>
-                <Label>Leverage</Label>
-                <Input
-                  value={leverage}
-                  onChange={(e) => setLeverage(e.target.value)}
-                  placeholder="e.g. 2x"
-                />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="useATR"
-                  checked={useATR}
-                  onCheckedChange={(checked) => setUseATR(!!checked)}
-                />
-                <Label htmlFor="useATR">Use ATR-based sizing</Label>
-              </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-        <AccordionItem value="item-3">
-          <AccordionTrigger className="text-lg font-semibold">
-            Execution Simulation
-          </AccordionTrigger>
-          <AccordionContent className="space-y-4 p-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Slippage (% or cents)</Label>
-                <Input
-                  type="number"
-                  value={slippage}
-                  onChange={(e) => setSlippage(Number(e.target.value))}
-                />
+                <Label>Initial Investment</Label>
+                <div className="text-2xl font-bold">₹{initialInvestment}</div>
               </div>
               <div>
-                <Label>Commission ($)</Label>
-                <Input
-                  type="number"
-                  value={commission}
-                  onChange={(e) => setCommission(Number(e.target.value))}
-                />
+                <Label>Final Value</Label>
+                <div className="text-2xl font-bold text-green-500">
+                  ₹{Math.round(equityData[equityData.length - 1]?.value || 0)}
+                </div>
+              </div>
+              <div>
+                <Label>Return %</Label>
+                <div className="text-2xl font-bold text-green-500">
+                  +{Math.round(((equityData[equityData.length - 1]?.value || 0) / initialInvestment - 1) * 100)}%
+                </div>
+              </div>
+              <div>
+                <Label>Time Period</Label>
+                <div className="text-2xl font-bold">{equityData.length} months</div>
               </div>
             </div>
+          </Card>
+        </motion.div>
+      )}
 
-            <div>
-              <Label>Order Type</Label>
-              <Select value={orderType} onValueChange={setOrderType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select order type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="market">Market Order</SelectItem>
-                  <SelectItem value="limit">Limit Order</SelectItem>
-                  <SelectItem value="stopLimit">Stop-Limit Order</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Latency (ms)</Label>
-              <Input
-                type="number"
-                value={latency}
-                onChange={(e) => setLatency(Number(e.target.value))}
-              />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-        <AccordionItem value="item-4">
-          <AccordionTrigger className="text-lg font-semibold">
-            Performance Metrics
-          </AccordionTrigger>
-          <AccordionContent className="space-y-4 p-4">
-            <Card className="p-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <Label>Total Return</Label>
-                  <div className="text-2xl font-bold">{metrics.totalReturn}</div>
-                </div>
-                <div>
-                  <Label>Annual Return</Label>
-                  <div className="text-2xl font-bold">{metrics.annualReturn}</div>
-                </div>
-                <div>
-                  <Label>Sharpe Ratio</Label>
-                  <div className="text-2xl font-bold">{metrics.sharpeRatio}</div>
-                </div>
-                <div>
-                  <Label>Sortino Ratio</Label>
-                  <div className="text-2xl font-bold">{metrics.sortinoRatio}</div>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-4">
-              <Label className="mb-4 block">Equity Curve</Label>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={mockEquityData}>
-                    <XAxis dataKey="time" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-
-            <Card className="p-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <Label>Max Drawdown</Label>
-                  <div className="text-xl font-semibold text-red-500">
-                    {metrics.maxDrawdown}
-                  </div>
-                </div>
-                <div>
-                  <Label>Recovery Period</Label>
-                  <div className="text-xl font-semibold">
-                    {metrics.recoveryPeriod}
-                  </div>
-                </div>
-                <div>
-                  <Label>Win Rate</Label>
-                  <div className="text-xl font-semibold text-green-500">
-                    {metrics.winRate}
-                  </div>
-                </div>
-                <div>
-                  <Label>Number of Trades</Label>
-                  <div className="text-xl font-semibold">
-                    {metrics.numTrades}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-
-      <div className="mt-6 flex justify-center space-x-4">
+      <div className="flex justify-center space-x-4">
         <Button 
           size="lg" 
-          onClick={runBacktest}
-          disabled={isLoading}
+          onClick={simulateDataDownload}
+          disabled={isLoading || !selectedSymbol || !selectedStrategy}
         >
           {isLoading ? (
             <>
@@ -455,10 +344,16 @@ const BacktestPanel = () => {
         <Button 
           size="lg" 
           variant="destructive" 
-          onClick={() => window.location.reload()}
+          onClick={() => {
+            setShowResults(false);
+            setEquityData([]);
+            setSelectedSymbol("");
+            setSelectedStrategy("");
+            setInitialInvestment(1000);
+          }}
           disabled={isLoading}
         >
-          Reset All
+          Reset
         </Button>
       </div>
     </div>
