@@ -37,16 +37,19 @@ function MainContent() {
     };
   }, []);
 
+  // Show landing and login pages for unauthenticated users
   if (!isAuthenticated) {
     return (
-      <Switch>
-        <Route path="/" component={LandingPage} />
-        <Route path="/login" component={LoginPage} />
-        <Route component={LandingPage} />
-      </Switch>
+      <div className="min-h-screen bg-background">
+        <Switch>
+          <Route path="/login" component={LoginPage} />
+          <Route path="/*" component={LandingPage} />
+        </Switch>
+      </div>
     );
   }
 
+  // Show main application for authenticated users
   return (
     <div className="flex min-h-screen">
       {showSidebar && <Sidebar />}
