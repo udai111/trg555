@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
-import { TrendingUp, TrendingDown, Wallet, Clock, User, Terminal } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Clock, User, Terminal, BarChart2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface StockData {
@@ -126,6 +126,7 @@ export default function StockMarketGame() {
   const [quantity, setQuantity] = useState('');
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [showRetroMode, setShowRetroMode] = useState(false);
+  const [showProMode, setShowProMode] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -183,7 +184,7 @@ export default function StockMarketGame() {
 
     const newUser: User = {
       username,
-      wallet: 1000000, 
+      wallet: 1000000,
       portfolio: {}
     };
     setUser(newUser);
@@ -220,10 +221,10 @@ export default function StockMarketGame() {
     }
 
     const newPortfolio = { ...user.portfolio };
-    const currentHolding = newPortfolio[selectedAsset.symbol] || { 
-      quantity: 0, 
+    const currentHolding = newPortfolio[selectedAsset.symbol] || {
+      quantity: 0,
       avgCost: 0,
-      market: selectedAsset.market 
+      market: selectedAsset.market
     };
 
     const newQuantity = currentHolding.quantity + qty;
@@ -299,7 +300,7 @@ export default function StockMarketGame() {
   const calculatePortfolioValue = (): number => {
     if (!user) return 0;
     return Object.entries(user.portfolio).reduce((total, [symbol, holding]) => {
-      const asset = holding.market === 'NSE' 
+      const asset = holding.market === 'NSE'
         ? nseStocks.find(s => s.symbol === symbol)
         : cryptos.find(c => c.symbol === symbol);
 
@@ -310,6 +311,10 @@ export default function StockMarketGame() {
 
   const handleRetroMode = () => {
     setShowRetroMode(!showRetroMode);
+  };
+
+  const handleProMode = () => {
+    setShowProMode(!showProMode);
   };
 
   if (!user) {
@@ -378,6 +383,128 @@ Enter command: _
     );
   }
 
+  if (showProMode) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Professional Trading Terminal</h1>
+          <Button variant="outline" onClick={handleProMode}>
+            Exit Pro Mode
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Depth Chart */}
+          <div className="md:col-span-2">
+            <Card className="p-4">
+              <h3 className="text-lg font-semibold mb-4">Market Depth</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Bids</h4>
+                  <div className="space-y-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={`bid-${i}`} className="flex justify-between text-sm">
+                        <span className="text-green-500">{(selectedAsset?.price || 0) - (i * 0.5)}</span>
+                        <span>{Math.floor(Math.random() * 1000)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Asks</h4>
+                  <div className="space-y-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={`ask-${i}`} className="flex justify-between text-sm">
+                        <span className="text-red-500">{(selectedAsset?.price || 0) + (i * 0.5)}</span>
+                        <span>{Math.floor(Math.random() * 1000)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Trade Feed */}
+            <Card className="p-4 mt-6">
+              <h3 className="text-lg font-semibold mb-4">Recent Trades</h3>
+              <div className="space-y-2">
+                {Array.from({ length: 5 }).map((_, i) => {
+                  const isBuy = Math.random() > 0.5;
+                  return (
+                    <div key={`trade-${i}`} className="flex justify-between items-center text-sm">
+                      <span>{new Date().toLocaleTimeString()}</span>
+                      <span className={isBuy ? "text-green-500" : "text-red-500"}>
+                        {selectedAsset?.symbol} @ ₹{selectedAsset?.price}
+                      </span>
+                      <span>{Math.floor(Math.random() * 100)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          </div>
+
+          {/* Order Entry */}
+          <Card className="p-4">
+            <h3 className="text-lg font-semibold mb-4">Order Entry</h3>
+            <div className="space-y-4">
+              <div>
+                <Label>Quantity</Label>
+                <Input
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Button
+                  className="bg-green-500 hover:bg-green-600"
+                  onClick={handleBuy}
+                >
+                  BUY
+                </Button>
+                <Button
+                  className="bg-red-500 hover:bg-red-600"
+                  onClick={handleSell}
+                >
+                  SELL
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Market Stats */}
+        <Card className="p-4 mt-6">
+          <h3 className="text-lg font-semibold mb-4">Market Statistics</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <Label>24h Volume</Label>
+              <div className="text-lg font-semibold">₹{(Math.random() * 1000000).toFixed(2)}</div>
+            </div>
+            <div>
+              <Label>Open Interest</Label>
+              <div className="text-lg font-semibold">₹{(Math.random() * 500000).toFixed(2)}</div>
+            </div>
+            <div>
+              <Label>24h High</Label>
+              <div className="text-lg font-semibold text-green-500">
+                ₹{(selectedAsset?.price || 0 * 1.05).toFixed(2)}
+              </div>
+            </div>
+            <div>
+              <Label>24h Low</Label>
+              <div className="text-lg font-semibold text-red-500">
+                ₹{(selectedAsset?.price || 0 * 0.95).toFixed(2)}
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   const currentAssets = activeMarket === 'NSE' ? nseStocks : cryptos;
 
   return (
@@ -397,6 +524,10 @@ Enter command: _
             <Wallet className="h-5 w-5" />
             <span className="font-mono">₹{user.wallet.toFixed(2)}</span>
           </div>
+          <Button variant="outline" onClick={handleProMode}>
+            <BarChart2 className="mr-2 h-4 w-4" />
+            Pro Mode
+          </Button>
           <Button variant="outline" onClick={handleRetroMode}>
             <Terminal className="mr-2 h-4 w-4" />
             Terminal Mode
