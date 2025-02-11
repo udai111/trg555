@@ -2,6 +2,21 @@ import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { Home, LineChart, Activity, BarChart2, TrendingUp, Gem } from "lucide-react";
 
+const NavLink = ({ href, children, isActive }: { href: string; children: React.ReactNode; isActive: boolean }) => (
+  <motion.div 
+    whileHover={{ scale: 1.02 }}
+    className={`p-3 rounded-lg transition-colors ${
+      isActive ? 'bg-accent text-white' : 'hover:bg-accent/20'
+    }`}
+  >
+    <Link href={href}>
+      <a className="flex items-center">
+        {children}
+      </a>
+    </Link>
+  </motion.div>
+);
+
 const Sidebar = () => {
   const [location] = useLocation();
 
@@ -54,15 +69,5 @@ const Sidebar = () => {
     </motion.aside>
   );
 };
-
-const NavLink = ({ href, children, isActive }: { href: string; children: React.ReactNode; isActive: boolean }) => (
-  <Link href={href}>
-    <a className={`flex items-center p-3 rounded-lg transition-colors ${
-      isActive ? 'bg-accent text-white' : 'hover:bg-accent/20'
-    }`}>
-      {children}
-    </a>
-  </Link>
-);
 
 export default Sidebar;
