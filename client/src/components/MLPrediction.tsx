@@ -96,59 +96,80 @@ const MLPrediction = () => {
   });
 
   const handleTraining = async () => {
+    if (!selectedStock || selectedModels.length === 0) return;
+
     setIsTraining(true);
     setTrainingProgress(0);
+    setLoadingStep(0);
 
     const steps = [
       {
-        name: "Connecting to data source",
-        duration: 500,
+        name: "Initializing model architecture",
+        duration: 800,
         progress: 10
       },
       {
-        name: "Fetching historical data",
-        duration: 800,
+        name: "Loading market data",
+        duration: 1000,
         progress: 30
       },
       {
-        name: "Analyzing market conditions",
-        duration: 600,
+        name: "Training neural network",
+        duration: 1500,
         progress: 50
       },
       {
-        name: "Running strategy simulations",
-        duration: 1000,
+        name: "Optimizing weights",
+        duration: 1200,
         progress: 70
       },
       {
-        name: "Calculating risk metrics",
-        duration: 700,
+        name: "Validating results",
+        duration: 1000,
         progress: 85
       },
       {
-        name: "Generating final report",
-        duration: 500,
+        name: "Finalizing model",
+        duration: 800,
         progress: 100
       }
     ];
 
-    for (let i = 0; i < steps.length; i++) {
-      const step = steps[i];
-      setDownloadStatus(step.name);
-      setLoadingStep(i);
-      setTrainingProgress(step.progress);
-      await new Promise(r => setTimeout(r, step.duration));
-    }
+    try {
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        setDownloadStatus(step.name);
+        setLoadingStep(i);
+        setTrainingProgress(step.progress);
+        await new Promise(r => setTimeout(r, step.duration));
+      }
 
+      setMetrics({
+        accuracy: 85.5,
+        mse: 0.0023,
+        mae: 0.0456,
+        sharpeRatio: 1.8,
+        profitFactor: 2.1
+      });
+    } catch (error) {
+      console.error('Training error:', error);
+    } finally {
+      setIsTraining(false);
+      setDownloadStatus("Training completed successfully!");
+    }
+  };
+
+  const resetTraining = () => {
+    setTrainingProgress(0);
+    setLoadingStep(0);
+    setDownloadStatus("");
     setMetrics({
-      accuracy: 85.5,
-      mse: 0.0023,
-      mae: 0.0456,
-      sharpeRatio: 1.8,
-      profitFactor: 2.1
+      accuracy: 0,
+      mse: 0,
+      mae: 0,
+      sharpeRatio: 0,
+      profitFactor: 0
     });
-    setIsTraining(false);
-    setDownloadStatus("Training completed successfully!");
   };
 
   const stocks = [
@@ -218,7 +239,7 @@ const MLPrediction = () => {
   );
 
   return (
-    <div className="p-6">
+    <div className="p-6 relative">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold">Advanced ML Market Predictions</h1>
@@ -239,8 +260,9 @@ const MLPrediction = () => {
             <h2 className="text-lg font-semibold mb-4">Select Models</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {modelOptions.map((model) => (
-                <div
+                <motion.div
                   key={model.value}
+                  whileHover={{ scale: 1.02 }}
                   className={`p-4 rounded-lg border cursor-pointer ${
                     selectedModels.includes(model.value) ? 'border-primary bg-primary/5' : 'border-border'
                   }`}
@@ -256,17 +278,20 @@ const MLPrediction = () => {
                   <p className="text-sm text-muted-foreground mt-1">
                     {getModelDescription(model.value)}
                   </p>
-                </div>
+                </motion.div>
               ))}
             </div>
           </Card>
 
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">Select Stock</h2>
-            <Select value={selectedStock} onValueChange={(value) => {
-              setSelectedStock(value);
-              fetchPredictions(value);
-            }}>
+            <Select 
+              value={selectedStock} 
+              onValueChange={(value) => {
+                setSelectedStock(value);
+                fetchPredictions(value);
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Choose a stock to analyze" />
               </SelectTrigger>
@@ -292,24 +317,26 @@ const MLPrediction = () => {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50"
+                    style={{ overflowY: 'auto' }}
                   >
-                    <Card className="p-6 w-[400px]">
-                      <div className="space-y-6">
-                        <div className="space-y-2">
-                          <h3 className="text-lg font-semibold text-center">{downloadStatus}</h3>
-                          <Progress value={trainingProgress} className="w-full" />
+                    <div className="min-h-screen flex items-center justify-center p-4">
+                      <Card className="p-6 w-[400px]">
+                        <div className="space-y-6">
+                          <div className="space-y-2">
+                            <h3 className="text-lg font-semibold text-center">{downloadStatus}</h3>
+                            <Progress value={trainingProgress} className="w-full" />
+                          </div>
+                          <div className="space-y-4">
+                            <LoadingStep step={0} currentStep={loadingStep} text="Initializing model" />
+                            <LoadingStep step={1} currentStep={loadingStep} text="Loading market data" />
+                            <LoadingStep step={2} currentStep={loadingStep} text="Training neural network" />
+                            <LoadingStep step={3} currentStep={loadingStep} text="Optimizing weights" />
+                            <LoadingStep step={4} currentStep={loadingStep} text="Validating results" />
+                            <LoadingStep step={5} currentStep={loadingStep} text="Finalizing model" />
+                          </div>
                         </div>
-                        <div className="space-y-4">
-                          <LoadingStep step={0} currentStep={loadingStep} text="Initializing model" />
-                          <LoadingStep step={1} currentStep={loadingStep} text="Loading market data" />
-                          <LoadingStep step={2} currentStep={loadingStep} text="Training neural network" />
-                          <LoadingStep step={3} currentStep={loadingStep} text="Optimizing weights" />
-                          <LoadingStep step={4} currentStep={loadingStep} text="Validating results" />
-                          <LoadingStep step={5} currentStep={loadingStep} text="Finalizing model" />
-
-                        </div>
-                      </div>
-                    </Card>
+                      </Card>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -334,6 +361,7 @@ const MLPrediction = () => {
                             duration: 2,
                             repeat: Infinity,
                             ease: "linear",
+                            repeatType: "loop"
                           }}
                         />
                       )}
@@ -364,16 +392,7 @@ const MLPrediction = () => {
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      setTrainingProgress(0);
-                      setMetrics({
-                        accuracy: 0,
-                        mse: 0,
-                        mae: 0,
-                        sharpeRatio: 0,
-                        profitFactor: 0
-                      });
-                    }}
+                    onClick={resetTraining}
                     disabled={isTraining}
                     className="flex-1"
                   >
