@@ -1,22 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import helmet from "helmet";
-import rateLimit from "express-rate-limit";
 
 const app = express();
-
-// Security middleware
-app.use(helmet());
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
-});
-app.use("/api/", limiter);
-
-app.use(express.json({ limit: '10kb' })); // Limit payload size
+app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Request logging middleware
@@ -36,7 +23,6 @@ app.use((req, res, next) => {
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
-        // Sanitize sensitive information before logging
         const sanitizedResponse = { ...capturedJsonResponse };
         delete sanitizedResponse.password;
         delete sanitizedResponse.token;
@@ -60,11 +46,11 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 
   // Don't expose internal error details in production
   const status = err.status || err.statusCode || 500;
-  const message = app.get('env') === 'production' 
+  const message = app.get('env') === 'production'
     ? 'Internal Server Error'
     : err.message || 'Internal Server Error';
 
-  res.status(status).json({ 
+  res.status(status).json({
     status: 'error',
     message,
     ...(app.get('env') !== 'production' && { stack: err.stack })
