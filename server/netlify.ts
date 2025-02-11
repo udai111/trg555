@@ -17,7 +17,7 @@ setupAuth(app);
 registerRoutes(app);
 
 // API Routes
-app.get('/api/health', async (_req, res) => {
+app.get('/.netlify/functions/server/api/health', async (_req, res) => {
   try {
     console.log('Checking database connection...');
     const testUser = await storage.getUserByUsername('test');
@@ -46,5 +46,5 @@ app.get('/api/health', async (_req, res) => {
 // Export the serverless handler
 export const handler = serverless(app, {
   binary: ['application/octet-stream', 'application/x-protobuf', 'image/*'],
-  basePath: '/.netlify/functions'
+  basePath: '/.netlify/functions/server'
 });
