@@ -147,7 +147,8 @@ function App(): JSX.Element {
                 <main className="flex-1 overflow-y-auto min-h-screen p-2 md:p-4 bg-background">
                   <Suspense fallback={<LoadingSpinner timeout={10000} />}>
                     <Switch>
-                      <Route path="/" component={StockMarketGamePage} />
+                      <Route path="/" component={Dashboard} />
+                      <Route path="/stock-market-game" component={StockMarketGamePage} />
                       <Route path="/pro-trading" component={ProTrading} />
                       <Route path="/ml-predictions" component={MLPrediction} />
                       <Route path="/backtest" component={BacktestPanel} />
