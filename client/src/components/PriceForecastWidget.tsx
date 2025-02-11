@@ -18,7 +18,7 @@ const PriceForecastWidget = ({ symbol }: PriceForecastWidgetProps) => {
           borderRadius: "5px",
           boxShadow: "0 2px 4px 0 rgba(0,0,0,.2)"
         }}
-        src={`https://jika.io/embed/forecast-price-target?symbol=${symbol}&boxShadow=true&graphColor=1652f0&textColor=161c2d&backgroundColor=FFFFFF&fontFamily=Nunito`}
+        src={`https://jika.io/embed/forecast-price-target?symbol=${symbol}&boxShadow=true&graphColor=1652f0&textColor=161c2d&backgroundColor=FFFFFF&fontFamily=Nunito&cookieconsent=0&privacy=0`}
       />
     </div>
   );
