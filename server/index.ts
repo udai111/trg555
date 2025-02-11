@@ -13,6 +13,8 @@ app.use(express.urlencoded({ extended: false }));
 // Add base path middleware for Netlify Functions
 app.use((req, res, next) => {
   if (process.env.NETLIFY) {
+    // Remove the Netlify Functions base path for local routing
+    req.originalUrl = req.originalUrl.replace('/.netlify/functions/server', '');
     req.url = req.url.replace('/.netlify/functions/server', '');
   }
   next();

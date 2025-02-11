@@ -3,10 +3,14 @@ import serverless from 'serverless-http';
 import { storage } from './storage';
 import { setupAuth } from './auth';
 import { registerRoutes } from './routes';
+import helmet from 'helmet';
 
 const app: Express = express();
 
-// Middleware setup
+// Security middleware
+app.use(helmet());
+
+// Basic middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -16,8 +20,8 @@ setupAuth(app);
 // Register all routes
 registerRoutes(app);
 
-// API Routes
-app.get('/.netlify/functions/server/api/health', async (_req, res) => {
+// Health check endpoint
+app.get('/api/health', async (_req, res) => {
   try {
     console.log('Checking database connection...');
     const testUser = await storage.getUserByUsername('test');
@@ -46,5 +50,4 @@ app.get('/.netlify/functions/server/api/health', async (_req, res) => {
 // Export the serverless handler
 export const handler = serverless(app, {
   binary: ['application/octet-stream', 'application/x-protobuf', 'image/*'],
-  basePath: '/.netlify/functions/server'
 });
