@@ -3,12 +3,24 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { TrendingUp, TrendingDown, BarChart2, Maximize2, Minimize2 } from "lucide-react";
+import { TrendingUp, TrendingDown, BarChart2, Maximize2, Minimize2, Activity, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TradingViewWidgetProps {
   className?: string;
 }
+
+const LoadingIndicator = ({ type }: { type: 'pulse' | 'spin' }) => {
+  return (
+    <div className="inline-flex items-center justify-center">
+      {type === 'pulse' ? (
+        <Activity className="h-4 w-4 text-primary animate-pulse" />
+      ) : (
+        <RefreshCw className="h-4 w-4 text-primary animate-spin" />
+      )}
+    </div>
+  );
+};
 
 const TradingViewWidget = memo(({ className }: TradingViewWidgetProps) => {
   const container = useRef<HTMLDivElement>(null);
@@ -65,6 +77,7 @@ TradingViewWidget.displayName = 'TradingViewWidget';
 const TradingViewSection = () => {
   const [isFullScreen, setIsFullScreen] = React.useState(false);
   const [selectedIndicator, setSelectedIndicator] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(false);
 
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
@@ -84,12 +97,12 @@ const TradingViewSection = () => {
   }, [isFullScreen]);
 
   const indicators = [
-    { name: "RSI", value: "65.2", status: "neutral" },
-    { name: "MACD", value: "Bullish", status: "positive" },
-    { name: "Moving Averages", value: "Strong Buy", status: "positive" },
-    { name: "Bollinger Bands", value: "Upper Touch", status: "positive" },
-    { name: "Stochastic", value: "78.5", status: "neutral" },
-    { name: "Volume", value: "Above Avg", status: "positive" }
+    { name: "RSI", value: "65.2", status: "neutral", loading: 'pulse' as const },
+    { name: "MACD", value: "Bullish", status: "positive", loading: 'spin' as const },
+    { name: "Moving Averages", value: "Strong Buy", status: "positive", loading: 'pulse' as const },
+    { name: "Bollinger Bands", value: "Upper Touch", status: "positive", loading: 'spin' as const },
+    { name: "Stochastic", value: "78.5", status: "neutral", loading: 'pulse' as const },
+    { name: "Volume", value: "Above Avg", status: "positive", loading: 'spin' as const }
   ];
 
   const renderChart = () => (
@@ -124,7 +137,10 @@ const TradingViewSection = () => {
             selectedIndicator === indicator.name && "ring-2 ring-primary"
           )}>
             <div className="flex justify-between items-center">
-              <Label className="text-sm font-medium">{indicator.name}</Label>
+              <div className="flex items-center gap-2">
+                <LoadingIndicator type={indicator.loading} />
+                <Label className="text-sm font-medium">{indicator.name}</Label>
+              </div>
               <span className={cn(
                 "px-2 py-1 rounded text-xs font-semibold",
                 indicator.status === "positive" && "bg-green-500/20 text-green-500",
@@ -153,7 +169,10 @@ const TradingViewSection = () => {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Advanced Market Analysis</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-2xl font-bold">Advanced Market Analysis</h2>
+          {isLoading && <LoadingIndicator type="spin" />}
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
             <BarChart2 className="h-4 w-4 mr-2" />
@@ -169,17 +188,26 @@ const TradingViewSection = () => {
         <h3 className="text-lg font-semibold mb-4">Market Insights</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 rounded-lg bg-card">
-            <Label>Support Levels</Label>
+            <div className="flex items-center gap-2">
+              <LoadingIndicator type="pulse" />
+              <Label>Support Levels</Label>
+            </div>
             <div className="text-lg font-semibold text-red-500">$152.30</div>
             <div className="text-sm text-muted-foreground">Strong support zone</div>
           </div>
           <div className="p-4 rounded-lg bg-card">
-            <Label>Resistance Levels</Label>
+            <div className="flex items-center gap-2">
+              <LoadingIndicator type="spin" />
+              <Label>Resistance Levels</Label>
+            </div>
             <div className="text-lg font-semibold text-green-500">$158.45</div>
             <div className="text-sm text-muted-foreground">Key resistance area</div>
           </div>
           <div className="p-4 rounded-lg bg-card">
-            <Label>Market Sentiment</Label>
+            <div className="flex items-center gap-2">
+              <LoadingIndicator type="pulse" />
+              <Label>Market Sentiment</Label>
+            </div>
             <div className="text-lg font-semibold text-green-500">Bullish</div>
             <div className="text-sm text-muted-foreground">Strong uptrend continuation</div>
           </div>
