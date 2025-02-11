@@ -7,10 +7,10 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-// Determine API base URL based on environment
+// Only modify the getApiBaseUrl function
 const getApiBaseUrl = () => {
   if (import.meta.env.PROD) {
-    // In production on GitHub Pages, use Netlify for API
+    // In production on Netlify, use /.netlify/functions
     return '/.netlify/functions';
   }
   // In development, use local server
@@ -41,21 +41,21 @@ export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    const baseUrl = getApiBaseUrl();
-    const fullUrl = `${baseUrl}${queryKey[0]}`;
+    async ({ queryKey }) => {
+      const baseUrl = getApiBaseUrl();
+      const fullUrl = `${baseUrl}${queryKey[0]}`;
 
-    const res = await fetch(fullUrl, {
-      credentials: "include",
-    });
+      const res = await fetch(fullUrl, {
+        credentials: "include",
+      });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
-    }
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
+      }
 
-    await throwIfResNotOk(res);
-    return await res.json();
-  };
+      await throwIfResNotOk(res);
+      return await res.json();
+    };
 
 export const queryClient = new QueryClient({
   defaultOptions: {

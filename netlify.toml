@@ -7,14 +7,12 @@
   NODE_VERSION = "20"
   CI = "true"
   NPM_FLAGS = "--no-optional"
-  GO_IMPORT_PATH = ""
-  HUGO_VERSION = ""
-  PORT = "80"
 
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/*"
@@ -30,11 +28,12 @@
     Referrer-Policy = "no-referrer-when-downgrade"
     Content-Security-Policy = "default-src 'self' *.netlify.app; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;"
 
-[context.production]
-  environment = { NODE_ENV = "production", PORT = "80" }
+[functions]
+  directory = "dist/functions"
 
-[context.deploy-preview]
-  environment = { NODE_ENV = "production", PORT = "80" }
-
-[context.branch-deploy]
-  environment = { NODE_ENV = "production", PORT = "80" }
+[dev]
+  command = "npm run dev"
+  port = 8888
+  targetPort = 5000
+  publish = "dist/public"
+  autoLaunch = true

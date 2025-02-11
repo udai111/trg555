@@ -1,13 +1,17 @@
 import express, { Express } from 'express';
 import serverless from 'serverless-http';
 import { storage } from './storage';
+import { setupAuth } from './auth';
 
 const app: Express = express();
 
 // Middleware setup
 app.use(express.json());
 
-// Basic health check
+// Setup authentication
+setupAuth(app);
+
+// API Routes
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });

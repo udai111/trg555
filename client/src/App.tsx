@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Router } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "styled-components";
 import { queryClient } from "./lib/queryClient";
@@ -16,6 +16,7 @@ import IntradayProbabilityPage from "./pages/intraday-probability";
 import CandlestickPatternsPage from "./pages/candlestick-patterns";
 import NotFound from "@/pages/not-found";
 import { Component, Suspense } from "react";
+import { useState, useEffect } from "react";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -62,6 +63,17 @@ const LoadingSpinner = () => (
 );
 
 function App() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
   return (
     <ErrorBoundaryComponent>
       <QueryClientProvider client={queryClient}>
