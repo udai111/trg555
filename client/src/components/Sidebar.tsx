@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { Home, LineChart, Activity, BarChart2, TrendingUp, Gem, GamepadIcon, Sigma, CandlestickChart, Menu, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 const NavLink = ({ href, children, isActive, onClick }: { 
@@ -28,71 +28,6 @@ const NavLink = ({ href, children, isActive, onClick }: {
 const Sidebar = () => {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
-  const widgetContainer = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (widgetContainer.current) {
-      const script = document.createElement("script");
-      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js";
-      script.type = "text/javascript";
-      script.async = true;
-      script.innerHTML = JSON.stringify({
-        "colorTheme": "dark",
-        "dateRange": "12M",
-        "showChart": true,
-        "locale": "en",
-        "largeChartUrl": "",
-        "isTransparent": true,
-        "showSymbolLogo": true,
-        "showFloatingTooltip": false,
-        "width": "100%",
-        "height": "300",
-        "plotLineColorGrowing": "rgba(41, 98, 255, 1)",
-        "plotLineColorFalling": "rgba(41, 98, 255, 1)",
-        "gridLineColor": "rgba(42, 46, 57, 0)",
-        "scaleFontColor": "rgba(219, 219, 219, 1)",
-        "tabs": [
-          {
-            "title": "Indices",
-            "symbols": [
-              {
-                "s": "FOREXCOM:SPXUSD",
-                "d": "S&P 500"
-              },
-              {
-                "s": "FOREXCOM:NSXUSD",
-                "d": "Nasdaq 100"
-              }
-            ]
-          },
-          {
-            "title": "Forex",
-            "symbols": [
-              {
-                "s": "FX:EURUSD",
-                "d": "EUR/USD"
-              },
-              {
-                "s": "FX:GBPUSD",
-                "d": "GBP/USD"
-              }
-            ]
-          }
-        ]
-      });
-
-      widgetContainer.current.appendChild(script);
-    }
-
-    return () => {
-      if (widgetContainer.current) {
-        const script = widgetContainer.current.querySelector('script');
-        if (script) {
-          script.remove();
-        }
-      }
-    };
-  }, []);
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
@@ -185,12 +120,9 @@ const Sidebar = () => {
           </div>
         </nav>
 
-        {/* Widget Section */}
+        {/* Footer Section */}
         <div className="flex-shrink-0 p-6 border-t border-white/10">
-          <div ref={widgetContainer} className="tradingview-widget-container">
-            <div className="tradingview-widget-container__widget"></div>
-          </div>
-          <div className="mt-4 text-sm text-white/60">
+          <div className="text-sm text-white/60">
             <p className="text-center">Data provided for educational purposes only. Trading involves risk.</p>
           </div>
         </div>
