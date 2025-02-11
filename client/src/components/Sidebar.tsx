@@ -116,12 +116,12 @@ const Sidebar = () => {
       </Button>
 
       <motion.aside 
-        className={`fixed md:static top-0 left-0 z-40 w-64 bg-primary text-white h-full md:min-h-screen overflow-y-auto flex flex-col ${
+        className={`fixed md:static top-0 left-0 z-40 w-64 bg-primary text-white h-full md:min-h-screen flex flex-col ${
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         } transition-transform duration-200 ease-in-out`}
         initial={false}
       >
-        <div className="sticky top-0 z-10 bg-primary pt-6 px-6">
+        <div className="sticky top-0 z-10 bg-primary pt-6">
           <div className="flex flex-col items-center justify-center p-4">
             <img 
               src="/assets/logo.webp" 
@@ -182,7 +182,7 @@ const Sidebar = () => {
         </nav>
 
         <div className="px-6 pb-6">
-          <div ref={widgetContainer} className="tradingview-widget-container hidden md:block">
+          <div ref={widgetContainer} className="tradingview-widget-container">
             <div className="tradingview-widget-container__widget"></div>
           </div>
 
