@@ -8,15 +8,24 @@ import helmet from 'helmet';
 
 const app = express();
 
-// Security middleware
+// Security middleware with adjusted CSP for trading widgets
 app.use(helmet({
-  contentSecurityPolicy: false // Disable CSP temporarily for faster deployment
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "*.tradingview.com"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "wss:", "ws:", "*.neon.tech"],
+      frameSrc: ["'self'", "*.tradingview.com"],
+    }
+  }
 }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Add CORS headers for Netlify deployment
+// Add CORS headers
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
@@ -28,16 +37,18 @@ app.use((req, res, next) => {
   }
 });
 
-// Add health check endpoint
+// Health check endpoint with detailed diagnostics
 app.get('/api/health', async (_req, res) => {
   try {
+    console.log('Checking database connection...');
     const testUser = await storage.getUserByUsername('test');
     res.json({ 
       status: 'ok',
       database: {
         connected: true,
         url: process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'hidden',
-        database: process.env.PGDATABASE || 'neondb'
+        database: process.env.PGDATABASE || 'neondb',
+        test_query: testUser ? 'success' : 'no test user found'
       },
       environment: process.env.NODE_ENV,
       timestamp: new Date().toISOString()
@@ -52,14 +63,12 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
-// Register routes
+// Register API routes
 registerRoutes(app);
 
-// Export the serverless handler for Netlify Functions
+// Export serverless handler for Netlify
 export const handler = serverless(app, {
-  binary: ['application/octet-stream', 'application/x-protobuf', 'image/*'],
-  basePath: '/.netlify/functions',
-  callbackWaitsForEmptyEventLoop: false
+  binary: ['application/octet-stream', 'application/x-protobuf', 'image/*']
 });
 
 // Only start the server if we're not in a serverless environment
