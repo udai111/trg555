@@ -3,16 +3,26 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, 
-  AreaChart, Area, BarChart, Bar, ComposedChart, Scatter 
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  AreaChart, Area, BarChart, Bar, ComposedChart, Scatter
 } from "recharts";
-import { 
-  ArrowUpCircle, ArrowDownCircle, TrendingUp, Plus, X, 
+import {
+  ArrowUpCircle, ArrowDownCircle, TrendingUp, Plus, X,
   PieChart, BarChart2, Activity, DollarSign, Target,
   TrendingDown, ArrowRightLeft, Maximize2
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+
 
 // Advanced Market Analysis Component
 const MarketAnalysis = () => {
@@ -27,6 +37,8 @@ const MarketAnalysis = () => {
   const [selectedTimeframe, setSelectedTimeframe] = useState("1D");
   const [selectedIndicator, setSelectedIndicator] = useState("All");
   const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false);
+  const [selectedSymbol, setSelectedSymbol] = useState('');
+
 
   // Market Breadth Data
   const marketBreadthData = {
@@ -57,9 +69,9 @@ const MarketAnalysis = () => {
 
   // Institutional Activity
   const institutionalData = {
-    fii: { 
-      netBuy: 1245.8, 
-      totalBuy: 8456.2, 
+    fii: {
+      netBuy: 1245.8,
+      totalBuy: 8456.2,
       totalSell: 7210.4,
       trend: "Positive",
       weeklyChange: "+15.2%"
@@ -253,8 +265,8 @@ const MarketAnalysis = () => {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Advanced Market Analysis</h2>
         <div className="flex gap-4">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => setShowAdvancedMetrics(!showAdvancedMetrics)}
           >
             {showAdvancedMetrics ? "Basic View" : "Advanced View"}
@@ -305,9 +317,9 @@ const MarketAnalysis = () => {
                 <div className="flex justify-between items-center">
                   <span>A/D Ratio</span>
                   <span className={
-                    marketBreadthData.advanceDecline.advances > marketBreadthData.advanceDecline.declines 
-                    ? "text-green-500" 
-                    : "text-red-500"
+                    marketBreadthData.advanceDecline.advances > marketBreadthData.advanceDecline.declines
+                      ? "text-green-500"
+                      : "text-red-500"
                   }>
                     {(marketBreadthData.advanceDecline.advances / marketBreadthData.advanceDecline.declines).toFixed(2)}
                   </span>
@@ -419,7 +431,7 @@ const MarketAnalysis = () => {
                 <h3 className="text-lg font-semibold mb-4">Depth Heat Map</h3>
                 <div className="space-y-2">
                   {marketInternalsData.marketDepthHeatMap.buyZones.map((zone, i) => (
-                    <div 
+                    <div
                       key={`buy-${i}`}
                       className="flex justify-between items-center p-2 rounded"
                       style={{
@@ -431,7 +443,7 @@ const MarketAnalysis = () => {
                     </div>
                   ))}
                   {marketInternalsData.marketDepthHeatMap.sellZones.map((zone, i) => (
-                    <div 
+                    <div
                       key={`sell-${i}`}
                       className="flex justify-between items-center p-2 rounded"
                       style={{
@@ -463,11 +475,11 @@ const MarketAnalysis = () => {
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className={`${
-                          indicator.signal === "Bullish" || indicator.signal === "Above" 
-                            ? "text-green-500" 
+                          indicator.signal === "Bullish" || indicator.signal === "Above"
+                            ? "text-green-500"
                             : indicator.signal === "Bearish" || indicator.signal === "Below"
-                            ? "text-red-500"
-                            : "text-yellow-500"
+                              ? "text-red-500"
+                              : "text-yellow-500"
                         }`}>
                           {indicator.signal}
                         </span>
@@ -583,7 +595,7 @@ const MarketAnalysis = () => {
               <div className="space-y-4">
                 <div className="grid grid-cols-5 gap-2">
                   {Object.entries(marketInternalsData.tickerHeat).map(([signal, count]) => (
-                    <div 
+                    <div
                       key={signal}
                       className="text-center p-2 rounded bg-accent/10"
                     >
@@ -610,9 +622,9 @@ const MarketAnalysis = () => {
                     <div className="flex justify-between items-center mb-2">
                       <span className="font-medium">{pattern.pattern}</span>
                       <span className={`text-sm ${
-                        pattern.reliability > 0.8 ? 'text-green-500' : 
-                        pattern.reliability > 0.6 ? 'text-yellow-500' : 
-                        'text-red-500'
+                        pattern.reliability > 0.8 ? 'text-green-500' :
+                          pattern.reliability > 0.6 ? 'text-yellow-500' :
+                            'text-red-500'
                       }`}>
                         {(pattern.reliability * 100).toFixed(0)}% Reliability
                       </span>
@@ -620,9 +632,9 @@ const MarketAnalysis = () => {
                     <div className="flex justify-between text-sm text-muted-foreground">
                       <span>Timeframe: {pattern.timeframe}</span>
                       <span>
-                        {pattern.confirmation ? '✓ Confirmed' : 
-                         pattern.forming ? '⋯ Forming' :
-                         pattern.approaching ? '→ Approaching' : 'Pending'}
+                        {pattern.confirmation ? '✓ Confirmed' :
+                          pattern.forming ? '⋯ Forming' :
+                            pattern.approaching ? '→ Approaching' : 'Pending'}
                       </span>
                     </div>
                   </div>
@@ -649,7 +661,6 @@ const MarketAnalysis = () => {
             </Card>
           </div>
         </TabsContent>
-
 
         {/* Institutional Tab */}
         <TabsContent value="institutional">
@@ -680,7 +691,7 @@ const MarketAnalysis = () => {
               </div>
             </Card>
             <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">DII Activity</h3>
+              <h3 className="text-lg font-semibold mb-4>">DII Activity</h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span>Net Buy:</span>
@@ -713,7 +724,7 @@ const MarketAnalysis = () => {
             <h3 className="text-lg font-semibold mb-4">Market News & Updates</h3>
             <div className="space-y-4">
               {newsItems.map((item, i) => (
-                <motion.div 
+                <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -729,8 +740,8 @@ const MarketAnalysis = () => {
                     </div>
                     <span className={`text-xs px-2 py-1 rounded-full ${
                       item.impact === 'Positive' ? 'bg-green-100 text-green-800' :
-                      item.impact === 'Negative' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
+                        item.impact === 'Negative' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
                     }`}>
                       {item.impact}
                     </span>
@@ -767,32 +778,191 @@ const MarketAnalysis = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {watchlist.map((symbol) => (
-            <Card key={symbol} className="p-4 relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2"
-                onClick={() => removeFromWatchlist(symbol)}
-              >
+            <div key={symbol} className="flex justify-between items-center p-4 bg-accent/10 rounded-lg">
+              <span>{symbol}</span>
+              <Button variant="ghost" size="sm" onClick={() => removeFromWatchlist(symbol)}>
                 <X className="w-4 h-4" />
               </Button>
-              <div className="mt-2">
-                <h4 className="font-semibold">{symbol}</h4>
-                {watchData[symbol] ? (
-                  <div className="space-y-1">
-                    <p className="text-xl font-bold">₹{watchData[symbol].price}</p>
-                    <p className={`text-sm ${
-                      watchData[symbol].change >= 0 ? 'text-green-500' : 'text-red-500'
-                    }`}>
-                      {watchData[symbol].change >= 0 ? '+' : ''}{watchData[symbol].change}%
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">Loading...</p>
-                )}
-              </div>
-            </Card>
+            </div>
           ))}
+        </div>
+      </Card>
+
+      {/* Advanced Trading Section */}
+      <Card className="p-6 mt-6">
+        <h2 className="text-xl font-semibold mb-4">Advanced Trading</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Order Entry */}
+          <div className="space-y-4">
+            <div className="flex flex-col gap-2">
+              <Label>Symbol</Label>
+              <Input
+                placeholder="Enter symbol"
+                value={selectedSymbol}
+                onChange={(e) => setSelectedSymbol(e.target.value.toUpperCase())}
+              />
+            </div>
+
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <Label>Order Type</Label>
+                <Select value={selectedTimeframe} onValueChange={setSelectedTimeframe}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select order type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MARKET">Market</SelectItem>
+                    <SelectItem value="LIMIT">Limit</SelectItem>
+                    <SelectItem value="STOP">Stop</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1">
+                <Label>Side</Label>
+                <Select value={selectedIndicator} onValueChange={setSelectedIndicator}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select side" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="BUY">Buy</SelectItem>
+                    <SelectItem value="SELL">Sell</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <Label>Quantity</Label>
+                <Input type="number" placeholder="Enter quantity" />
+              </div>
+              <div className="flex-1">
+                <Label>Price</Label>
+                <Input type="number" placeholder="Enter price" />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch id="margin-trading" />
+              <Label htmlFor="margin-trading">Enable Margin Trading</Label>
+            </div>
+
+            <Button className="w-full">
+              Place Order
+            </Button>
+          </div>
+
+          {/* Active Orders */}
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Active Orders</h3>
+            <div className="space-y-2">
+              {[
+                { id: 1, symbol: 'RELIANCE', type: 'LIMIT', side: 'BUY', qty: 100, price: 2500 },
+                { id: 2, symbol: 'TCS', type: 'STOP', side: 'SELL', qty: 50, price: 3800 }
+              ].map((order) => (
+                <div key={order.id} className="flex justify-between items-center p-3 bg-accent/10 rounded-lg">
+                  <div>
+                    <div className="font-medium">{order.symbol}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {order.type} {order.side} {order.qty}@₹{order.price}
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Trade History */}
+      <Card className="p-6 mt-6">
+        <h2 className="text-xl font-semibold mb-4">Trade History</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left p-2">Date</th>
+                <th className="text-left p-2">Symbol</th>
+                <th className="text-left p-2">Type</th>
+                <th className="text-left p-2">Side</th>
+                <th className="text-right p-2">Quantity</th>
+                <th className="text-right p-2">Price</th>
+                <th className="text-right p-2">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { date: '2025-02-11', symbol: 'RELIANCE', type: 'MARKET', side: 'BUY', qty: 100, price: 2480, value: 248000 },
+                { date: '2025-02-11', symbol: 'INFY', type: 'LIMIT', side: 'SELL', qty: 50, price: 1560, value: 78000 }
+              ].map((trade, index) => (
+                <tr key={index} className="border-b">
+                  <td className="p-2">{trade.date}</td>
+                  <td className="p-2">{trade.symbol}</td>
+                  <td className="p-2">{trade.type}</td>
+                  <td className="p-2">{trade.side}</td>
+                  <td className="text-right p-2">{trade.qty}</td>
+                  <td className="text-right p-2">₹{trade.price}</td>
+                  <td className="text-right p-2">₹{trade.value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Risk Analysis */}
+      <Card className="p-6 mt-6">
+        <h2 className="text-xl font-semibold mb-4">Risk Analysis</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="p-4 bg-accent/10 rounded-lg">
+            <h3 className="font-medium mb-2">Portfolio Beta</h3>
+            <div className="text-2xl font-bold">1.15</div>
+            <p className="text-sm text-muted-foreground mt-1">Relative to Nifty 50</p>
+          </div>
+          <div className="p-4 bg-accent/10 rounded-lg">
+            <h3 className="font-medium mb-2">Value at Risk (1D)</h3>
+            <div className="text-2xl font-bold">₹15,420</div>
+            <p className="text-sm text-muted-foreground mt-1">95% confidence</p>
+          </div>
+          <div className="p-4 bg-accent/10 rounded-lg">
+            <h3 className="font-medium mb-2">Margin Utilization</h3>
+            <div className="text-2xl font-bold">42%</div>
+            <p className="text-sm text-muted-foreground mt-1">Available: ₹2.8L</p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Economic Calendar */}
+      <Card className="p-6 mt-6">
+        <h2 className="text-xl font-semibold mb-4">Economic Calendar</h2>
+        <div className="overflow-x-auto">
+          <iframe 
+            src="https://sslecal2.investing.com?columns=exc_flags,exc_currency,exc_importance,exc_actual,exc_forecast,exc_previous&features=datepicker,timezone&countries=25,34,32,6,37,72,71,22,17,51,39,14,33,10,35,42,43,45,38,56,36,110,11,26,9,12,41,4,5,178&calType=week&timeZone=23&lang=56" 
+            width="650" 
+            height="467" 
+            frameBorder="0" 
+            allowTransparency={true} 
+            marginWidth={0} 
+            marginHeight={0}
+            className="w-full"
+          />
+          <div className="poweredBy mt-2" style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
+            <span style={{ fontSize: "11px", color: "#333333", textDecoration: "none" }}>
+              Real Time Economic Calendar provided by{" "}
+              <a 
+                href="https://in.Investing.com/" 
+                rel="nofollow" 
+                target="_blank" 
+                style={{ fontSize: "11px", color: "#06529D", fontWeight: "bold" }}
+                className="underline_link"
+              >
+                Investing.com India
+              </a>
+            </span>
+          </div>
         </div>
       </Card>
     </div>
