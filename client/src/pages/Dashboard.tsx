@@ -5,6 +5,7 @@ import StockSelector from "@/components/StockSelector";
 import FXWidget from "@/components/FXWidget";
 import PriceForecastWidget from "@/components/PriceForecastWidget";
 import TechnicalSummaryWidget from "@/components/TechnicalSummaryWidget";
+import TradingViewWidget from "@/components/TradingViewWidget";
 
 const Dashboard = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('GOOG');
@@ -18,6 +19,9 @@ const Dashboard = () => {
       <div className="mb-6">
         <StockSelector onStockChange={setSelectedSymbol} />
       </div>
+
+      {/* TradingView Widget */}
+      <TradingViewWidget />
 
       {/* Price Forecast Widget */}
       <PriceForecastWidget symbol={selectedSymbol} />
