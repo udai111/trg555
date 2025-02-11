@@ -20,6 +20,22 @@
   status = 200
   force = true
 
+[functions]
+  directory = "dist/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["@neondatabase/serverless"]
+
+[functions.api]
+  memory = 1024
+  timeout = 10
+
+[dev]
+  command = "npm run dev"
+  targetPort = 5000
+  port = 8888
+  publish = "dist/public"
+  autoLaunch = true
+
 [[headers]]
   for = "/*"
   [headers.values]
@@ -27,15 +43,4 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "no-referrer-when-downgrade"
-    Content-Security-Policy = "default-src 'self' *.netlify.app; script-src 'self' 'unsafe-inline' 'unsafe-eval' s3.tradingview.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' *.netlify.app ws: wss:;"
-
-[functions]
-  directory = "dist/functions"
-  node_bundler = "esbuild"
-
-[dev]
-  command = "npm run dev"
-  port = 8888
-  targetPort = 5000
-  publish = "dist/public"
-  autoLaunch = true
+    Content-Security-Policy = "default-src 'self' *.netlify.app; script-src 'self' 'unsafe-inline' 'unsafe-eval' s3.tradingview.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' *.netlify.app *.neon.tech ws: wss:; worker-src 'self' blob:;"

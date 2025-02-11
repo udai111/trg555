@@ -15,7 +15,7 @@ setupAuth(app);
 app.get('/api/health', async (_req, res) => {
   try {
     // Add logging
-    console.log('Database URL:', process.env.DATABASE_URL?.replace(/:[^:@]+@/, ':****@')); // Mask password
+    console.log('Checking database connection...');
     console.log('Database Name:', process.env.PGDATABASE);
 
     // Try to get a user to test database connection
@@ -36,7 +36,8 @@ app.get('/api/health', async (_req, res) => {
     res.status(500).json({ 
       status: 'error',
       message: 'Database connection failed',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
+      environment: process.env.NODE_ENV
     });
   }
 });
@@ -49,7 +50,10 @@ app.all('/api/*', (req, res) => {
   });
 });
 
-// Convert express app to serverless function
+// Convert express app to serverless function with optimized settings
 export const handler = serverless(app, {
-  binary: ['application/octet-stream', 'application/x-protobuf', 'image/*']
+  binary: ['application/octet-stream', 'application/x-protobuf', 'image/*'],
+  basePath: '/.netlify/functions', // Add this to ensure proper path handling
+  maxRequestSize: '10mb',
+  callbackWaitsForEmptyEventLoop: false // This improves performance by not waiting for the event loop to empty
 });
