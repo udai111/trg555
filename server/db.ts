@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
 
+// Configure WebSocket for Neon serverless
 neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {
@@ -11,6 +12,7 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+// Configure pool with explicit settings
 const poolConfig = {
   connectionString: process.env.DATABASE_URL,
   max: 20,
@@ -34,7 +36,7 @@ process.on('SIGTERM', () => {
   });
 });
 
-export const db = drizzle({ client: pool, schema });
+export const db = drizzle(pool, { schema });
 
 // Test database connection
 async function testConnection() {
