@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AuthProvider } from "@/hooks/use-auth";
 import AuthPage from "@/pages/auth-page";
 import { ProtectedRoute } from "./lib/protected-route";
+import ProfitKingdom from "./pages/ProfitKingdom";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -165,6 +166,7 @@ function App(): JSX.Element {
                         <ProtectedRoute path="/" component={Dashboard} />
                         <ProtectedRoute path="/pro-trading" component={ProTrading} />
                         <ProtectedRoute path="/stock-market-game" component={StockMarketGamePage} />
+                        <ProtectedRoute path="/profit-kingdom" component={ProfitKingdom} />
                         <ProtectedRoute path="/ml-predictions" component={MLPrediction} />
                         <ProtectedRoute path="/backtest" component={BacktestPanel} />
                         <ProtectedRoute path="/charts" component={TradingViewSection} />
