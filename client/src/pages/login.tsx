@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     if (!username.trim()) {
       toast({
         title: "Error",
@@ -23,37 +23,27 @@ export default function LoginPage() {
       return;
     }
 
-    try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password: 'demo' }), // Demo password
-      });
-
-      if (!response.ok) {
-        throw new Error('Login failed');
-      }
-
-      const user = await response.json();
-      localStorage.setItem("username", user.username);
-      setLocation("/");
-
+    // Check if user exists in localStorage
+    const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+    if (!existingUsers.includes(username.trim())) {
       toast({
-        title: "Welcome back!",
-        description: "Successfully logged in"
-      });
-    } catch (error) {
-      toast({
-        title: "Login failed",
-        description: "Invalid username or user doesn't exist",
+        title: "User not found",
+        description: "This username doesn't exist. Please sign up first.",
         variant: "destructive"
       });
+      return;
     }
+
+    localStorage.setItem("username", username.trim());
+    setLocation("/");
+
+    toast({
+      title: "Welcome back!",
+      description: "Successfully logged in"
+    });
   };
 
-  const handleSignup = async () => {
+  const handleSignup = () => {
     if (!username.trim()) {
       toast({
         title: "Error",
@@ -63,35 +53,27 @@ export default function LoginPage() {
       return;
     }
 
-    try {
-      const response = await fetch('/api/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password: 'demo' }), // Demo password
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      const user = await response.json();
-      localStorage.setItem("username", user.username);
-      setLocation("/");
-
+    // Check if username already exists
+    const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+    if (existingUsers.includes(username.trim())) {
       toast({
-        title: "Welcome!",
-        description: "Your account has been created successfully"
-      });
-    } catch (error) {
-      toast({
-        title: "Registration failed",
-        description: error instanceof Error ? error.message : "Username might already exist",
+        title: "Username taken",
+        description: "This username is already taken. Please try another one.",
         variant: "destructive"
       });
+      return;
     }
+
+    // Add new user to the list
+    existingUsers.push(username.trim());
+    localStorage.setItem("users", JSON.stringify(existingUsers));
+    localStorage.setItem("username", username.trim());
+    setLocation("/");
+
+    toast({
+      title: "Welcome!",
+      description: "Your account has been created successfully"
+    });
   };
 
   return (
