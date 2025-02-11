@@ -3,15 +3,14 @@ import { motion } from "framer-motion";
 import { Home, LineChart, Activity, BarChart2, TrendingUp, Gem, GamepadIcon, Sigma } from "lucide-react";
 import { useEffect, useRef } from "react";
 
-const NavLink = ({ href, children, isActive, badge }: { 
+const NavLink = ({ href, children, isActive }: { 
   href: string; 
   children: React.ReactNode; 
   isActive: boolean;
-  badge?: string;
 }) => (
   <motion.div 
     whileHover={{ scale: 1.02 }}
-    className={`p-3 rounded-lg transition-colors relative ${
+    className={`p-3 rounded-lg transition-colors ${
       isActive ? 'bg-accent text-white' : 'hover:bg-accent/20'
     }`}
   >
@@ -20,11 +19,6 @@ const NavLink = ({ href, children, isActive, badge }: {
         {children}
       </a>
     </Link>
-    {badge && (
-      <span className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-primary/20 text-xs font-medium">
-        {badge}
-      </span>
-    )}
   </motion.div>
 );
 
@@ -125,7 +119,7 @@ const Sidebar = () => {
           Pro Trading
         </NavLink>
 
-        <NavLink href="/intraday-probability" isActive={location === "/intraday-probability"} badge="Coming Soon">
+        <NavLink href="/intraday-probability" isActive={location === "/intraday-probability"}>
           <Sigma className="w-5 h-5 mr-3" />
           Live Intraday Probability
         </NavLink>
