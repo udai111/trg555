@@ -190,6 +190,46 @@ const TradingViewSection = () => {
       {renderIndicators()}
       {renderChart()}
 
+      {/* New Gangster Theme Section */}
+      <Card className="p-6 mb-6 bg-gradient-to-r from-gray-900 to-gray-800">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <h3 className="text-2xl font-bold text-red-500 mb-2 uppercase tracking-wider">Intraday Warriors</h3>
+            <p className="text-xl font-bold text-gray-300 mb-4">THE GANGWARS WILL BE BACK</p>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <LoadingIndicator type="pulse" />
+                  <span className="text-red-400 font-semibold">Battle Zone</span>
+                </div>
+                <span className="text-2xl font-bold text-gray-100">$152.30</span>
+              </div>
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <LoadingIndicator type="spin" />
+                  <span className="text-red-400 font-semibold">War Chest</span>
+                </div>
+                <span className="text-2xl font-bold text-gray-100">$1.2M</span>
+              </div>
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <LoadingIndicator type="pulse" />
+                  <span className="text-red-400 font-semibold">Territory</span>
+                </div>
+                <span className="text-2xl font-bold text-gray-100">+25.8%</span>
+              </div>
+            </div>
+          </div>
+          <div className="w-32 h-32 relative ml-6">
+            <img 
+              src="/attached_assets/bearded-and-mustached-gangster-skull-vector-23488981.jpg" 
+              alt="Gangster Skull"
+              className="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(255,0,0,0.3)]"
+            />
+          </div>
+        </div>
+      </Card>
+
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4">Market Insights</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
