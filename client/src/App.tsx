@@ -37,15 +37,17 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background flex flex-col">
           {!username ? (
-            <Switch>
-              <Route path="/login" component={LoginPage} />
-              <Route path="/" component={LandingPage} />
-              <Route component={LandingPage} />
-            </Switch>
+            <div className="flex-1">
+              <Switch>
+                <Route path="/login" component={LoginPage} />
+                <Route path="/" component={LandingPage} />
+                <Route component={LandingPage} />
+              </Switch>
+            </div>
           ) : (
-            <div className="flex min-h-screen">
+            <div className="flex flex-1">
               {showSidebar && <Sidebar />}
               <main className={`flex-1 p-4 bg-background ${!showSidebar ? 'w-full' : ''}`}>
                 <Switch>
@@ -61,6 +63,25 @@ function App() {
               </main>
             </div>
           )}
+
+          {/* Professional Footer */}
+          <footer className="mt-auto border-t border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="container flex flex-col items-center gap-4 py-6 md:h-24 md:flex-row md:py-0">
+              <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-8 md:px-0">
+                <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
+                  This platform is for educational purposes only. Trading carries significant risks.
+                  Please ensure you understand these risks before trading.
+                </p>
+              </div>
+              <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-8 md:px-0">
+                <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
+                  Not a registered broker. Market data may be delayed. 
+                  Created with ❤️ by <span className="font-semibold">Tanuj Raj Gangwar</span>
+                </p>
+              </div>
+            </div>
+          </footer>
+
           <Toaster />
         </div>
       </ThemeProvider>
