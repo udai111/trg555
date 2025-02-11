@@ -26,21 +26,6 @@ export interface IStorage {
   getStockBySymbol(symbol: string): Promise<Stock | undefined>;
   createStock(stock: InsertStock): Promise<Stock>;
   updateStockPrice(id: number, price: number): Promise<Stock>;
-
-  // Transaction operations
-  getTransaction(id: number): Promise<Transaction | undefined>;
-  getPortfolioTransactions(portfolioId: number): Promise<Transaction[]>;
-  createTransaction(transaction: InsertTransaction): Promise<Transaction>;
-
-  // Educational resource operations
-  getEducationalResource(id: number): Promise<EducationalResource | undefined>;
-  getEducationalResourcesByCategory(category: string): Promise<EducationalResource[]>;
-  createEducationalResource(resource: InsertEducationalResource): Promise<EducationalResource>;
-
-  // Social interaction operations
-  getSocialInteraction(id: number): Promise<SocialInteraction | undefined>;
-  getUserSocialInteractions(userId: number): Promise<SocialInteraction[]>;
-  createSocialInteraction(interaction: InsertSocialInteraction): Promise<SocialInteraction>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -57,7 +42,6 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     try {
-      console.log('Executing getUserByUsername query for username:', username);
       const [user] = await db.select().from(users).where(eq(users.username, username));
       return user;
     } catch (error) {
@@ -76,7 +60,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Portfolio operations with error handling
+  // Portfolio operations
   async getPortfolio(id: number): Promise<Portfolio | undefined> {
     try {
       const [portfolio] = await db.select().from(portfolios).where(eq(portfolios.id, id));
@@ -106,7 +90,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Stock operations with error handling
+  // Stock operations
   async getStock(id: number): Promise<Stock | undefined> {
     try {
       const [stock] = await db.select().from(stocks).where(eq(stocks.id, id));
@@ -150,96 +134,6 @@ export class DatabaseStorage implements IStorage {
       return updatedStock;
     } catch (error) {
       console.error('Error in updateStockPrice:', error);
-      throw error;
-    }
-  }
-
-  // Transaction operations with error handling
-  async getTransaction(id: number): Promise<Transaction | undefined> {
-    try {
-      const [transaction] = await db.select().from(transactions).where(eq(transactions.id, id));
-      return transaction;
-    } catch (error) {
-      console.error('Error in getTransaction:', error);
-      throw error;
-    }
-  }
-
-  async getPortfolioTransactions(portfolioId: number): Promise<Transaction[]> {
-    try {
-      return await db.select().from(transactions).where(eq(transactions.portfolio_id, portfolioId));
-    } catch (error) {
-      console.error('Error in getPortfolioTransactions:', error);
-      throw error;
-    }
-  }
-
-  async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
-    try {
-      const [newTransaction] = await db.insert(transactions).values(transaction).returning();
-      return newTransaction;
-    } catch (error) {
-      console.error('Error in createTransaction:', error);
-      throw error;
-    }
-  }
-
-  // Educational resource operations with error handling
-  async getEducationalResource(id: number): Promise<EducationalResource | undefined> {
-    try {
-      const [resource] = await db.select().from(educational_resources).where(eq(educational_resources.id, id));
-      return resource;
-    } catch (error) {
-      console.error('Error in getEducationalResource:', error);
-      throw error;
-    }
-  }
-
-  async getEducationalResourcesByCategory(category: string): Promise<EducationalResource[]> {
-    try {
-      return await db.select().from(educational_resources).where(eq(educational_resources.category, category));
-    } catch (error) {
-      console.error('Error in getEducationalResourcesByCategory:', error);
-      throw error;
-    }
-  }
-
-  async createEducationalResource(resource: InsertEducationalResource): Promise<EducationalResource> {
-    try {
-      const [newResource] = await db.insert(educational_resources).values(resource).returning();
-      return newResource;
-    } catch (error) {
-      console.error('Error in createEducationalResource:', error);
-      throw error;
-    }
-  }
-
-  // Social interaction operations with error handling
-  async getSocialInteraction(id: number): Promise<SocialInteraction | undefined> {
-    try {
-      const [interaction] = await db.select().from(social_interactions).where(eq(social_interactions.id, id));
-      return interaction;
-    } catch (error) {
-      console.error('Error in getSocialInteraction:', error);
-      throw error;
-    }
-  }
-
-  async getUserSocialInteractions(userId: number): Promise<SocialInteraction[]> {
-    try {
-      return await db.select().from(social_interactions).where(eq(social_interactions.user_id, userId));
-    } catch (error) {
-      console.error('Error in getUserSocialInteractions:', error);
-      throw error;
-    }
-  }
-
-  async createSocialInteraction(interaction: InsertSocialInteraction): Promise<SocialInteraction> {
-    try {
-      const [newInteraction] = await db.insert(social_interactions).values(interaction).returning();
-      return newInteraction;
-    } catch (error) {
-      console.error('Error in createSocialInteraction:', error);
       throw error;
     }
   }

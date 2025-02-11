@@ -6,12 +6,13 @@ import * as schema from "@shared/schema";
 // Configure WebSocket for Neon
 neonConfig.webSocketConstructor = ws;
 
-// Create a simple pool with basic configuration
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL must be set. Did you forget to provision a database?",
+  );
+}
 
-// Create the drizzle database instance
+export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle(pool, { schema });
 
 // Basic error handling for the pool
