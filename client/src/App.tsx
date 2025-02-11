@@ -11,6 +11,7 @@ import BacktestPanel from "./components/BacktestPanel";
 import TradingViewSection from "./components/TradingViewSection";
 import MarketAnalysis from "./components/MarketAnalysis";
 import ProTrading from "./components/ProTrading";
+import StockMarketGamePage from "./pages/StockMarketGamePage";
 import NotFound from "@/pages/not-found";
 import { useEffect, useState } from "react";
 
@@ -35,6 +36,7 @@ function MainContent() {
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/pro-trading" component={ProTrading} />
+          <Route path="/stock-market-game" component={StockMarketGamePage} />
           <Route path="/ml-predictions" component={MLPrediction} />
           <Route path="/backtest" component={BacktestPanel} />
           <Route path="/charts" component={TradingViewSection} />
