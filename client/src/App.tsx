@@ -21,6 +21,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import AuthPage from "@/pages/auth-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import ProfitKingdom from "./pages/ProfitKingdom";
+import TRBot from "./components/TRBot";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -167,6 +168,7 @@ function App(): JSX.Element {
                         <ProtectedRoute path="/pro-trading" component={ProTrading} />
                         <ProtectedRoute path="/stock-market-game" component={StockMarketGamePage} />
                         <ProtectedRoute path="/profit-kingdom" component={ProfitKingdom} />
+                        <ProtectedRoute path="/tr-bot" component={TRBot} />
                         <ProtectedRoute path="/ml-predictions" component={MLPrediction} />
                         <ProtectedRoute path="/backtest" component={BacktestPanel} />
                         <ProtectedRoute path="/charts" component={TradingViewSection} />
