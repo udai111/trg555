@@ -88,8 +88,18 @@ export const insertSocialInteractionSchema = createInsertSchema(social_interacti
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export type InsertPortfolio = z.infer<typeof insertPortfolioSchema>;
 export type Portfolio = typeof portfolios.$inferSelect;
+
+export type InsertStock = z.infer<typeof insertStockSchema>;
 export type Stock = typeof stocks.$inferSelect;
+
+export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type Transaction = typeof transactions.$inferSelect;
+
+export type InsertEducationalResource = z.infer<typeof insertEducationalResourceSchema>;
 export type EducationalResource = typeof educational_resources.$inferSelect;
+
+export type InsertSocialInteraction = z.infer<typeof insertSocialInteractionSchema>;
 export type SocialInteraction = typeof social_interactions.$inferSelect;

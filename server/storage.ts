@@ -94,7 +94,10 @@ export class DatabaseStorage implements IStorage {
   async updateStockPrice(id: number, price: number): Promise<Stock> {
     const [updatedStock] = await db
       .update(stocks)
-      .set({ current_price: price, last_updated: new Date() })
+      .set({ 
+        current_price: price.toString(),
+        last_updated: new Date() 
+      })
       .where(eq(stocks.id, id))
       .returning();
     return updatedStock;
