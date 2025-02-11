@@ -28,6 +28,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
+          VITE_APP_BASE_PATH: '/trgfin'
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Upload artifact
