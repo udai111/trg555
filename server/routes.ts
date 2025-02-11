@@ -7,7 +7,5 @@ export function registerRoutes(app: Express): Server {
     res.json({ status: 'ok' });
   });
 
-  // Create HTTP server
-  const httpServer = createServer(app);
-  return httpServer;
+  return createServer(app);
 }
