@@ -93,11 +93,11 @@ const Sidebar = () => {
         animate={{ x: 0 }}
         transition={{ type: "spring", stiffness: 60 }}
       >
-        <div className="mb-8 flex flex-col items-center justify-center bg-white/10 rounded-lg p-4">
+        <div className="mb-8 flex flex-col items-center justify-center p-4">
           <img 
             src="/assets/logo.webp" 
             alt="TRG Logo" 
-            className="h-16 w-auto object-contain filter brightness-150"
+            className="h-16 w-auto"
           />
           <p className="text-xs text-white/60 mt-2">
             Created by TRG for Gangwar's the market
