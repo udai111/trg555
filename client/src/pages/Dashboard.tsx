@@ -7,12 +7,18 @@ import TechnicalSummaryWidget from "@/components/TechnicalSummaryWidget";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import InterestRatesWidget from "@/components/InterestRatesWidget";
 import ForexCrossRatesWidget from "@/components/ForexCrossRatesWidget";
+import PortfolioManagement from "@/components/PortfolioManagement";
 
 const Dashboard = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('GOOG');
 
   return (
     <div className="p-6">
+      {/* Portfolio Management */}
+      <div className="mb-6">
+        <PortfolioManagement />
+      </div>
+
       {/* FX Widget */}
       <FXWidget />
 
