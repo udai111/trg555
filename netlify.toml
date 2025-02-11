@@ -6,6 +6,9 @@
 [build.environment]
   NODE_VERSION = "20"
   CI = "true"
+  NPM_FLAGS = "--no-optional"
+  GO_IMPORT_PATH = ""
+  HUGO_VERSION = ""
 
 [[redirects]]
   from = "/*"
