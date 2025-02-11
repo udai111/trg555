@@ -17,9 +17,9 @@ import LandingPage from "@/pages/landing";
 import LoginPage from "@/pages/login";
 import { useEffect, useState } from "react";
 
-function MainContent() {
-  const [showSidebar, setShowSidebar] = useState(true);
+function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
 
   useEffect(() => {
     const username = localStorage.getItem("username");
@@ -37,44 +37,34 @@ function MainContent() {
     };
   }, []);
 
-  // Show landing and login pages for unauthenticated users
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Switch>
-          <Route path="/login" component={LoginPage} />
-          <Route path="/*" component={LandingPage} />
-        </Switch>
-      </div>
-    );
-  }
-
-  // Show main application for authenticated users
-  return (
-    <div className="flex min-h-screen">
-      {showSidebar && <Sidebar />}
-      <main className={`flex-1 p-4 bg-background ${!showSidebar ? 'w-full' : ''}`}>
-        <Switch>
-          <Route path="/" component={Dashboard} />
-          <Route path="/pro-trading" component={ProTrading} />
-          <Route path="/stock-market-game" component={StockMarketGamePage} />
-          <Route path="/ml-predictions" component={MLPrediction} />
-          <Route path="/backtest" component={BacktestPanel} />
-          <Route path="/charts" component={TradingViewSection} />
-          <Route path="/market-analysis" component={MarketAnalysis} />
-          <Route component={NotFound} />
-        </Switch>
-      </main>
-    </div>
-  );
-}
-
-function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <Router>
-          <MainContent />
+          {!isAuthenticated ? (
+            <div className="min-h-screen bg-background">
+              <Switch>
+                <Route path="/login" component={LoginPage} />
+                <Route component={LandingPage} />
+              </Switch>
+            </div>
+          ) : (
+            <div className="flex min-h-screen">
+              {showSidebar && <Sidebar />}
+              <main className={`flex-1 p-4 bg-background ${!showSidebar ? 'w-full' : ''}`}>
+                <Switch>
+                  <Route path="/" component={Dashboard} />
+                  <Route path="/pro-trading" component={ProTrading} />
+                  <Route path="/stock-market-game" component={StockMarketGamePage} />
+                  <Route path="/ml-predictions" component={MLPrediction} />
+                  <Route path="/backtest" component={BacktestPanel} />
+                  <Route path="/charts" component={TradingViewSection} />
+                  <Route path="/market-analysis" component={MarketAnalysis} />
+                  <Route component={NotFound} />
+                </Switch>
+              </main>
+            </div>
+          )}
         </Router>
         <Toaster />
       </ThemeProvider>
