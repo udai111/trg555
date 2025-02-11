@@ -93,8 +93,12 @@ const Sidebar = () => {
       animate={{ x: 0 }}
       transition={{ type: "spring", stiffness: 60 }}
     >
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-accent">Pro Trader</h1>
+      <div className="mb-8 flex justify-center">
+        <img 
+          src="/trg-logo-260nw-368435801.webp" 
+          alt="TRG Logo" 
+          className="h-12 w-auto object-contain"
+        />
       </div>
 
       <nav className="space-y-2">
