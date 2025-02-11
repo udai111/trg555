@@ -46,7 +46,7 @@ const Sidebar = () => {
         "showSymbolLogo": true,
         "showFloatingTooltip": false,
         "width": "100%",
-        "height": "400",
+        "height": "300",
         "plotLineColorGrowing": "rgba(41, 98, 255, 1)",
         "plotLineColorFalling": "rgba(41, 98, 255, 1)",
         "gridLineColor": "rgba(42, 46, 57, 0)",
@@ -116,14 +116,14 @@ const Sidebar = () => {
       </Button>
 
       <motion.aside 
-        className={`fixed md:static top-0 left-0 z-40 w-64 bg-primary text-white h-full md:min-h-screen flex flex-col ${
+        className={`fixed md:static top-0 left-0 z-40 w-64 bg-primary text-white h-screen md:h-screen flex flex-col ${
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         } transition-transform duration-200 ease-in-out`}
         initial={false}
       >
-        {/* Header - Fixed */}
-        <div className="flex-shrink-0 pt-6 px-6">
-          <div className="flex flex-col items-center justify-center p-4">
+        {/* Logo Section */}
+        <div className="flex-shrink-0 p-6">
+          <div className="flex flex-col items-center justify-center">
             <img 
               src="/assets/logo.webp" 
               alt="TRG Logo" 
@@ -135,61 +135,62 @@ const Sidebar = () => {
           </div>
         </div>
 
-        {/* Navigation - Scrollable */}
-        <nav className="flex-1 px-6 py-6 space-y-2 overflow-y-auto">
-          <NavLink href="/" isActive={location === "/"} onClick={handleLinkClick}>
-            <Home className="w-5 h-5 mr-3" />
-            Home
-          </NavLink>
+        {/* Navigation Links - Scrollable */}
+        <nav className="flex-1 px-6 overflow-y-auto">
+          <div className="space-y-2">
+            <NavLink href="/" isActive={location === "/"} onClick={handleLinkClick}>
+              <Home className="w-5 h-5 mr-3" />
+              Home
+            </NavLink>
 
-          <NavLink href="/pro-trading" isActive={location === "/pro-trading"} onClick={handleLinkClick}>
-            <Gem className="w-5 h-5 mr-3" />
-            Pro Trading
-          </NavLink>
+            <NavLink href="/pro-trading" isActive={location === "/pro-trading"} onClick={handleLinkClick}>
+              <Gem className="w-5 h-5 mr-3" />
+              Pro Trading
+            </NavLink>
 
-          <NavLink href="/intraday-probability" isActive={location === "/intraday-probability"} onClick={handleLinkClick}>
-            <Sigma className="w-5 h-5 mr-3" />
-            Live Intraday Probability
-          </NavLink>
+            <NavLink href="/intraday-probability" isActive={location === "/intraday-probability"} onClick={handleLinkClick}>
+              <Sigma className="w-5 h-5 mr-3" />
+              Live Intraday Probability
+            </NavLink>
 
-          <NavLink href="/candlestick-patterns" isActive={location === "/candlestick-patterns"} onClick={handleLinkClick}>
-            <CandlestickChart className="w-5 h-5 mr-3" />
-            Candlestick Patterns
-          </NavLink>
+            <NavLink href="/candlestick-patterns" isActive={location === "/candlestick-patterns"} onClick={handleLinkClick}>
+              <CandlestickChart className="w-5 h-5 mr-3" />
+              Candlestick Patterns
+            </NavLink>
 
-          <NavLink href="/stock-market-game" isActive={location === "/stock-market-game"} onClick={handleLinkClick}>
-            <GamepadIcon className="w-5 h-5 mr-3" />
-            Trading Game
-          </NavLink>
+            <NavLink href="/stock-market-game" isActive={location === "/stock-market-game"} onClick={handleLinkClick}>
+              <GamepadIcon className="w-5 h-5 mr-3" />
+              Trading Game
+            </NavLink>
 
-          <NavLink href="/ml-predictions" isActive={location === "/ml-predictions"} onClick={handleLinkClick}>
-            <Activity className="w-5 h-5 mr-3" />
-            ML Predictions
-          </NavLink>
+            <NavLink href="/ml-predictions" isActive={location === "/ml-predictions"} onClick={handleLinkClick}>
+              <Activity className="w-5 h-5 mr-3" />
+              ML Predictions
+            </NavLink>
 
-          <NavLink href="/backtest" isActive={location === "/backtest"} onClick={handleLinkClick}>
-            <BarChart2 className="w-5 h-5 mr-3" />
-            Backtesting
-          </NavLink>
+            <NavLink href="/backtest" isActive={location === "/backtest"} onClick={handleLinkClick}>
+              <BarChart2 className="w-5 h-5 mr-3" />
+              Backtesting
+            </NavLink>
 
-          <NavLink href="/charts" isActive={location === "/charts"} onClick={handleLinkClick}>
-            <LineChart className="w-5 h-5 mr-3" />
-            Charts
-          </NavLink>
+            <NavLink href="/charts" isActive={location === "/charts"} onClick={handleLinkClick}>
+              <LineChart className="w-5 h-5 mr-3" />
+              Charts
+            </NavLink>
 
-          <NavLink href="/market-analysis" isActive={location === "/market-analysis"} onClick={handleLinkClick}>
-            <TrendingUp className="w-5 h-5 mr-3" />
-            Market Analysis
-          </NavLink>
+            <NavLink href="/market-analysis" isActive={location === "/market-analysis"} onClick={handleLinkClick}>
+              <TrendingUp className="w-5 h-5 mr-3" />
+              Market Analysis
+            </NavLink>
+          </div>
         </nav>
 
-        {/* Widget Container - Fixed at bottom */}
-        <div className="flex-shrink-0 px-6 pb-6 mt-auto">
+        {/* Widget Section */}
+        <div className="flex-shrink-0 p-6 border-t border-white/10">
           <div ref={widgetContainer} className="tradingview-widget-container">
             <div className="tradingview-widget-container__widget"></div>
           </div>
-
-          <div className="mt-4 text-sm opacity-70">
+          <div className="mt-4 text-sm text-white/60">
             <p className="text-center">Data provided for educational purposes only. Trading involves risk.</p>
           </div>
         </div>
