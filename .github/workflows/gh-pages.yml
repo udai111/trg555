@@ -29,7 +29,7 @@ jobs:
         run: npm run build
         env:
           VITE_APP_BASE_PATH: '/trgfin'
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PORT: 80
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
