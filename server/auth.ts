@@ -1,14 +1,27 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, Request } from "express";
 import session from "express-session";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import { randomBytes } from "crypto";
 
+// Augment express-session with a custom SessionData interface
+declare module 'express-session' {
+  interface SessionData {
+    passport?: any;
+  }
+}
+
+// Augment Express Request type
 declare global {
   namespace Express {
     interface User extends SelectUser {}
+    interface Request {
+      user?: User;
+      login(user: User, done: (err: any) => void): void;
+      logout(done: (err: any) => void): void;
+    }
   }
 }
 
@@ -34,7 +47,11 @@ export function setupAuth(app: Express) {
   app.use(passport.session());
 
   passport.use(
-    new LocalStrategy(async (username, password, done) => {
+    new LocalStrategy(async (
+      username: string, 
+      password: string, 
+      done: (error: any, user?: SelectUser | false, options?: { message: string }) => void
+    ) => {
       try {
         const user = await storage.getUserByUsername(username);
         if (!user) {
@@ -48,8 +65,11 @@ export function setupAuth(app: Express) {
     }),
   );
 
-  passport.serializeUser((user, done) => done(null, user.id));
-  passport.deserializeUser(async (id: number, done) => {
+  passport.serializeUser((user: Express.User, done: (err: any, id?: number) => void) => {
+    done(null, user.id)
+  });
+
+  passport.deserializeUser(async (id: number, done: (err: any, user?: Express.User | false) => void) => {
     try {
       const user = await storage.getUser(id);
       done(null, user);
@@ -58,7 +78,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/register", async (req, res) => {
+  app.post("/api/register", async (req: Request, res) => {
     try {
       const { username } = req.body;
 
@@ -90,8 +110,8 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+  app.post("/api/login", (req: Request, res, next) => {
+    passport.authenticate("local", (err: any, user: Express.User | false, info?: { message: string }) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: info?.message || "Authentication failed" });
 
@@ -102,7 +122,7 @@ export function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.post("/api/logout", (req, res) => {
+  app.post("/api/logout", (req: Request, res) => {
     const username = req.user?.username;
     req.logout(() => {
       req.session.destroy((err) => {
@@ -115,7 +135,7 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/user", (req, res) => {
+  app.get("/api/user", (req: Request, res) => {
     if (!req.user) {
       return res.status(401).json({ message: "Not authenticated" });
     }
