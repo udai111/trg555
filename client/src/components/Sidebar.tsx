@@ -95,7 +95,7 @@ const Sidebar = () => {
     >
       <div className="mb-8 flex justify-center">
         <img 
-          src="./trg-logo-260nw-368435801.webp" 
+          src="/trg-logo-260nw-368435801.webp" 
           alt="TRG Logo" 
           className="h-12 w-auto object-contain"
         />
