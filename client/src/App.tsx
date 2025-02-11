@@ -18,10 +18,11 @@ import LoginPage from "@/pages/login";
 import { useEffect, useState } from "react";
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null); // Use null for initial state
   const [showSidebar, setShowSidebar] = useState(true);
 
   useEffect(() => {
+    // Check authentication status
     const username = localStorage.getItem("username");
     setIsAuthenticated(!!username);
   }, []);
@@ -37,17 +38,28 @@ function App() {
     };
   }, []);
 
+  // Show nothing while checking authentication
+  if (isAuthenticated === null) {
+    return null;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <Router>
           <div className="min-h-screen bg-background">
             {!isAuthenticated ? (
+              // Public routes
               <Switch>
-                <Route path="/login" component={LoginPage} />
-                <Route component={LandingPage} />
+                <Route path="/login">
+                  <LoginPage />
+                </Route>
+                <Route>
+                  <LandingPage />
+                </Route>
               </Switch>
             ) : (
+              // Protected routes
               <div className="flex min-h-screen">
                 {showSidebar && <Sidebar />}
                 <main className={`flex-1 p-4 bg-background ${!showSidebar ? 'w-full' : ''}`}>
