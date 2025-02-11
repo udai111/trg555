@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import MLPrediction from "./components/MLPrediction";
 import BacktestPanel from "./components/BacktestPanel";
 import TradingViewSection from "./components/TradingViewSection";
+import MarketAnalysis from "./components/MarketAnalysis";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -21,6 +22,7 @@ function Router() {
           <Route path="/ml-predictions" component={MLPrediction} />
           <Route path="/backtest" component={BacktestPanel} />
           <Route path="/charts" component={TradingViewSection} />
+          <Route path="/market-analysis" component={MarketAnalysis} />
           <Route component={NotFound} />
         </Switch>
       </main>
