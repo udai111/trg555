@@ -1,6 +1,10 @@
 import { useEffect } from 'react';
 
-const TickerTape = () => {
+interface TickerTapeProps {
+  symbol: string;
+}
+
+const TickerTape = ({ symbol }: TickerTapeProps) => {
   useEffect(() => {
     // Load Trendlyne widget script
     const script = document.createElement('script');
@@ -18,7 +22,7 @@ const TickerTape = () => {
   return (
     <blockquote 
       className="trendlyne-widgets" 
-      data-get-url="https://trendlyne.com/web-widget/technical-widget/Poppins/INFY/?posCol=00A25B&primaryCol=006AFF&negCol=EB3B00&neuCol=F7941E" 
+      data-get-url={`https://trendlyne.com/web-widget/technical-widget/Poppins/${symbol}/?posCol=00A25B&primaryCol=006AFF&negCol=EB3B00&neuCol=F7941E`}
       data-theme="light"
     />
   );

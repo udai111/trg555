@@ -1,6 +1,10 @@
 import { useEffect } from 'react';
 
-const SwotWidget = () => {
+interface SwotWidgetProps {
+  symbol: string;
+}
+
+const SwotWidget = ({ symbol }: SwotWidgetProps) => {
   useEffect(() => {
     // Load Trendlyne widget script if not already loaded
     if (!document.querySelector('script[src*="tl-widgets.js"]')) {
@@ -19,7 +23,7 @@ const SwotWidget = () => {
   return (
     <blockquote 
       className="trendlyne-widgets" 
-      data-get-url="https://trendlyne.com/web-widget/swot-widget/Poppins/INFY/?posCol=00A25B&primaryCol=006AFF&negCol=EB3B00&neuCol=F7941E" 
+      data-get-url={`https://trendlyne.com/web-widget/swot-widget/Poppins/${symbol}/?posCol=00A25B&primaryCol=006AFF&negCol=EB3B00&neuCol=F7941E`}
       data-theme="light"
     />
   );

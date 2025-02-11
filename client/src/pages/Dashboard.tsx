@@ -1,31 +1,40 @@
 import { Card } from "@/components/ui/card";
 import { LineChart, Activity, BarChart2, Wallet } from "lucide-react";
+import { useState } from "react";
 import TickerTape from "@/components/TickerTape";
 import SwotWidget from "@/components/SwotWidget";
 import QVTWidget from "@/components/QVTWidget";
 import ChecklistWidget from "@/components/ChecklistWidget";
+import StockSelector from "@/components/StockSelector";
 
 const Dashboard = () => {
+  const [selectedSymbol, setSelectedSymbol] = useState('INFY');
+
   return (
     <div className="p-6">
+      {/* Stock Selector */}
+      <div className="mb-6">
+        <StockSelector onStockChange={setSelectedSymbol} />
+      </div>
+
       {/* Add Trendlyne widget at the top */}
       <div className="w-full mb-6 -mx-6 -mt-6 bg-white rounded-lg shadow">
-        <TickerTape />
+        <TickerTape symbol={selectedSymbol} />
       </div>
 
       {/* Add SWOT widget */}
       <div className="w-full mb-6 bg-white rounded-lg shadow">
-        <SwotWidget />
+        <SwotWidget symbol={selectedSymbol} />
       </div>
 
       {/* Add QVT widget */}
       <div className="w-full mb-6 bg-white rounded-lg shadow">
-        <QVTWidget />
+        <QVTWidget symbol={selectedSymbol} />
       </div>
 
       {/* Add Checklist widget */}
       <div className="w-full mb-6 bg-white rounded-lg shadow">
-        <ChecklistWidget />
+        <ChecklistWidget symbol={selectedSymbol} />
       </div>
 
       <h1 className="text-3xl font-bold mb-6">Premium Trading Dashboard</h1>
@@ -77,7 +86,7 @@ const Dashboard = () => {
           <div className="space-y-4">
             <ActivityItem 
               action="ML Prediction Generated"
-              detail="AAPL +2.4% expected"
+              detail={`${selectedSymbol} +2.4% expected`}
               time="2 mins ago"
             />
             <ActivityItem 
@@ -87,7 +96,7 @@ const Dashboard = () => {
             />
             <ActivityItem 
               action="New Signal Alert"
-              detail="RSI oversold on TSLA"
+              detail={`RSI oversold on ${selectedSymbol}`}
               time="3 hours ago"
             />
           </div>
