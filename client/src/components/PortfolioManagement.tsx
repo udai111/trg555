@@ -17,10 +17,12 @@ interface Portfolio {
 
 interface StockHolding {
   symbol: string;
+  company: string;
   quantity: number;
   current_price: number;
   total_value: number;
   profit_loss: number;
+  profit_loss_percentage: number;
 }
 
 interface PerformanceData {
@@ -33,33 +35,51 @@ const PortfolioManagement = () => {
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Mock data - Replace with actual API calls
   useEffect(() => {
     const mockPortfolio: Portfolio = {
       id: 1,
-      name: "My Growth Portfolio",
-      cash_balance: 10000,
-      total_value: 25000,
+      name: "Growth & Tech Portfolio",
+      cash_balance: 25478.92,
+      total_value: 157892.45,
       holdings: [
         {
           symbol: "AAPL",
-          quantity: 10,
-          current_price: 150,
-          total_value: 1500,
-          profit_loss: 200,
+          company: "Apple Inc.",
+          quantity: 85,
+          current_price: 187.68,
+          total_value: 15952.80,
+          profit_loss: 3245.60,
+          profit_loss_percentage: 25.5
+        },
+        {
+          symbol: "MSFT",
+          company: "Microsoft Corporation",
+          quantity: 45,
+          current_price: 420.55,
+          total_value: 18924.75,
+          profit_loss: 4567.25,
+          profit_loss_percentage: 31.8
         },
         {
           symbol: "GOOGL",
-          quantity: 5,
-          current_price: 2800,
-          total_value: 14000,
-          profit_loss: 1000,
+          company: "Alphabet Inc.",
+          quantity: 32,
+          current_price: 142.85,
+          total_value: 45712.00,
+          profit_loss: 8923.84,
+          profit_loss_percentage: 15.2
         },
+        {
+          symbol: "NVDA",
+          company: "NVIDIA Corporation",
+          quantity: 65,
+          current_price: 721.28,
+          total_value: 46883.20,
+          profit_loss: 12445.85,
+          profit_loss_percentage: 42.3
+        }
       ],
-      performance: Array.from({ length: 30 }, (_, i) => ({
-        date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        value: 20000 + Math.random() * 10000,
-      })),
+      performance: generatePerformanceData(),
     };
     setPortfolios([mockPortfolio]);
     setSelectedPortfolio(mockPortfolio);
@@ -71,14 +91,18 @@ const PortfolioManagement = () => {
         <div>
           <h3 className="font-semibold">{holding.symbol}</h3>
           <p className="text-sm text-muted-foreground">
-            {holding.quantity} shares
+            {holding.company}
+          </p>
+          <p className="text-sm mt-1">
+            {holding.quantity} shares @ ${holding.current_price.toFixed(2)}
           </p>
         </div>
         <div className="text-right">
           <p className="font-semibold">${holding.total_value.toLocaleString()}</p>
-          <p className={`text-sm ${holding.profit_loss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-            {holding.profit_loss >= 0 ? '+' : ''}{holding.profit_loss.toLocaleString()}
-          </p>
+          <div className={`flex items-center justify-end gap-1 text-sm ${holding.profit_loss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            <span>{holding.profit_loss >= 0 ? '+' : ''}{holding.profit_loss.toLocaleString()}</span>
+            <span>({holding.profit_loss_percentage.toFixed(1)}%)</span>
+          </div>
         </div>
       </div>
     </Card>
@@ -107,7 +131,7 @@ const PortfolioManagement = () => {
             <p className="text-2xl font-bold">
               ${selectedPortfolio?.total_value.toLocaleString()}
             </p>
-            <p className="text-sm text-green-500">+15.3% all time</p>
+            <p className="text-sm text-green-500">+28.4% all time</p>
           </div>
         </Card>
         <Card className="p-6">
@@ -128,8 +152,8 @@ const PortfolioManagement = () => {
             <ArrowUpRight className="w-4 h-4 text-green-500" />
           </div>
           <div className="space-y-1">
-            <p className="text-2xl font-bold text-green-500">+$892.50</p>
-            <p className="text-sm text-muted-foreground">+3.2% today</p>
+            <p className="text-2xl font-bold text-green-500">+$3,892.50</p>
+            <p className="text-sm text-muted-foreground">+2.8% today</p>
           </div>
         </Card>
       </div>
@@ -154,7 +178,7 @@ const PortfolioManagement = () => {
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="date" />
-                  <YAxis />
+                  <YAxis domain={['dataMin - 1000', 'dataMax + 1000']} />
                   <Tooltip />
                   <Area
                     type="monotone"
@@ -181,9 +205,18 @@ const PortfolioManagement = () => {
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
             <div className="space-y-4">
-              <p className="text-muted-foreground text-center">
-                No recent transactions
-              </p>
+              {generateMockTransactions().map((transaction, index) => (
+                <div key={index} className="flex justify-between items-center py-2 border-b last:border-0">
+                  <div>
+                    <p className="font-medium">{transaction.type} {transaction.symbol}</p>
+                    <p className="text-sm text-muted-foreground">{transaction.date}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium">${transaction.amount.toLocaleString()}</p>
+                    <p className="text-sm text-muted-foreground">{transaction.shares} shares @ ${transaction.price}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </Card>
         </TabsContent>
@@ -191,5 +224,42 @@ const PortfolioManagement = () => {
     </div>
   );
 };
+
+// Helper function to generate performance data
+const generatePerformanceData = () => {
+  const baseValue = 140000;
+  return Array.from({ length: 30 }, (_, i) => ({
+    date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toLocaleDateString(),
+    value: baseValue + Math.random() * 20000 + i * 1000,
+  }));
+};
+
+// Helper function to generate mock transactions
+const generateMockTransactions = () => [
+  {
+    type: "Buy",
+    symbol: "NVDA",
+    shares: 15,
+    price: 715.45,
+    amount: 10731.75,
+    date: "2024-02-10"
+  },
+  {
+    type: "Sell",
+    symbol: "AAPL",
+    shares: 10,
+    price: 185.85,
+    amount: 1858.50,
+    date: "2024-02-09"
+  },
+  {
+    type: "Buy",
+    symbol: "MSFT",
+    shares: 8,
+    price: 415.25,
+    amount: 3322.00,
+    date: "2024-02-08"
+  }
+];
 
 export default PortfolioManagement;
