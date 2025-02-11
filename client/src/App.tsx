@@ -13,6 +13,7 @@ import MarketAnalysis from "./components/MarketAnalysis";
 import ProTrading from "./components/ProTrading";
 import StockMarketGamePage from "./pages/StockMarketGamePage";
 import IntradayProbabilityPage from "./pages/intraday-probability";
+import CandlestickPatternsPage from "./pages/candlestick-patterns"; // This line is added
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
 import LoginPage from "@/pages/login";
@@ -60,6 +61,7 @@ function App() {
                   <Route path="/charts" component={TradingViewSection} />
                   <Route path="/market-analysis" component={MarketAnalysis} />
                   <Route path="/intraday-probability" component={IntradayProbabilityPage} />
+                  <Route path="/candlestick-patterns" component={CandlestickPatternsPage} /> {/* This line is added */}
                   <Route component={NotFound} />
                 </Switch>
               </main>

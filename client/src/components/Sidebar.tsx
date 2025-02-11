@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Home, LineChart, Activity, BarChart2, TrendingUp, Gem, GamepadIcon, Sigma } from "lucide-react";
+import { Home, LineChart, Activity, BarChart2, TrendingUp, Gem, GamepadIcon, Sigma, CandlestickChart } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 const NavLink = ({ href, children, isActive }: { 
@@ -122,6 +122,11 @@ const Sidebar = () => {
         <NavLink href="/intraday-probability" isActive={location === "/intraday-probability"}>
           <Sigma className="w-5 h-5 mr-3" />
           Live Intraday Probability
+        </NavLink>
+
+        <NavLink href="/candlestick-patterns" isActive={location === "/candlestick-patterns"}>
+          <CandlestickChart className="w-5 h-5 mr-3" />
+          Candlestick Patterns
         </NavLink>
 
         <NavLink href="/stock-market-game" isActive={location === "/stock-market-game"}>
