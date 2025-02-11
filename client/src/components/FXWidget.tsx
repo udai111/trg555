@@ -9,20 +9,6 @@ const FXWidget = () => {
         height="85" 
         style={{ border: 'unset' }}
       />
-      <div 
-        id="fx-pricing-widget-copyright"
-        className="text-center text-sm font-sans my-2.5 text-[#9db2bd]"
-      >
-        <span>Powered by </span>
-        <a 
-          href="https://fxpricing.com/" 
-          target="_blank"
-          className="no-underline text-[#bb3534] font-semibold"
-          rel="noopener noreferrer"
-        >
-          FX Pricing
-        </a>
-      </div>
     </div>
   );
 };

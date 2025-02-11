@@ -9,19 +9,6 @@ const TechnicalSummaryWidget = () => {
         height="467"
         style={{ border: 'none' }}
       />
-      <div 
-        className="poweredBy text-center py-2.5 text-xs text-[#333333] font-sans"
-      >
-        Technical Summary Widget Powered by{' '}
-        <a 
-          href="https://in.investing.com/" 
-          rel="nofollow" 
-          target="_blank" 
-          className="text-[#06529D] font-bold underline"
-        >
-          Investing.com India
-        </a>
-      </div>
     </div>
   );
 };
