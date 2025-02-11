@@ -12,12 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
@@ -25,6 +19,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+// Types
+interface EquityDataPoint {
+  month: string;
+  value: number;
+  isProjected: boolean;
+}
+
+interface LoadingStepProps {
+  step: number;
+  currentStep: number;
+  text: string;
+}
 
 // Mock strategies
 const strategies = [
@@ -61,9 +68,9 @@ const popularSymbols = [
 ];
 
 // Mock equity curve data with projection
-const generateEquityData = (initialAmount) => {
+const generateEquityData = (initialAmount: number): EquityDataPoint[] => {
   let amount = initialAmount;
-  const data = [];
+  const data: EquityDataPoint[] = [];
   for (let month = 0; month <= 12; month++) {
     const isProjected = month > 6;
     amount *= (1 + (Math.random() * 0.08 - 0.02));
@@ -76,7 +83,7 @@ const generateEquityData = (initialAmount) => {
   return data;
 };
 
-const LoadingStep = ({ step, currentStep, text }) => (
+const LoadingStep = ({ step, currentStep, text }: LoadingStepProps) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -128,74 +135,85 @@ const strategyComparisons: StrategyComparison[] = [
 
 const BacktestPanel = () => {
   const [selectedSymbol, setSelectedSymbol] = useState("");
-  const [startDate, setStartDate] = useState(new Date(2024, 0, 1));
-  const [endDate, setEndDate] = useState(new Date());
+  const [startDate, setStartDate] = useState<Date>(new Date(2024, 0, 1));
+  const [endDate, setEndDate] = useState<Date>(new Date());
   const [initialInvestment, setInitialInvestment] = useState(1000);
   const [selectedStrategy, setSelectedStrategy] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [progress, setProgress] = useState(0);
   const [downloadStatus, setDownloadStatus] = useState("");
-  const [equityData, setEquityData] = useState([]);
+  const [equityData, setEquityData] = useState<EquityDataPoint[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [riskLevel, setRiskLevel] = useState<"low" | "medium" | "high">("medium");
-  const [marketSentiment, setMarketSentiment] = useState<number>(65); // 0-100 scale
+  const [marketSentiment, setMarketSentiment] = useState(65); // 0-100 scale
 
   const simulateDataDownload = async () => {
     setIsLoading(true);
     setLoadingStep(0);
     setProgress(0);
 
-    // Step 1: Connecting to data source
-    setDownloadStatus("Connecting to data source...");
-    await new Promise(r => setTimeout(r, 500));
-    setLoadingStep(1);
-    setProgress(25);
+    // Enhanced simulation steps
+    const steps = [
+      {
+        name: "Connecting to data source",
+        duration: 500,
+        progress: 10
+      },
+      {
+        name: "Fetching historical data",
+        duration: 800,
+        progress: 30
+      },
+      {
+        name: "Analyzing market conditions",
+        duration: 600,
+        progress: 50
+      },
+      {
+        name: "Running strategy simulations",
+        duration: 1000,
+        progress: 70
+      },
+      {
+        name: "Calculating risk metrics",
+        duration: 700,
+        progress: 85
+      },
+      {
+        name: "Generating final report",
+        duration: 500,
+        progress: 100
+      }
+    ];
 
-    // Step 2: Fetching historical data
-    setDownloadStatus(`Fetching historical data for ${selectedSymbol}...`);
-    for (let i = 25; i <= 60; i += 10) {
-      setProgress(i);
-      await new Promise(r => setTimeout(r, 100));
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+      setDownloadStatus(step.name);
+      setLoadingStep(i);
+      setProgress(step.progress);
+      await new Promise(r => setTimeout(r, step.duration));
     }
-    setLoadingStep(2);
 
-    // Step 3: Processing and validating
-    setDownloadStatus("Processing and validating data...");
-    for (let i = 60; i <= 90; i += 10) {
-      setProgress(i);
-      await new Promise(r => setTimeout(r, 75));
-    }
-    setLoadingStep(3);
-
-    // Step 4: Finalizing
-    setDownloadStatus("Generating backtest results...");
-    for (let i = 90; i <= 100; i += 5) {
-      setProgress(i);
-      await new Promise(r => setTimeout(r, 50));
-    }
-    setLoadingStep(4);
-
-    await new Promise(r => setTimeout(r, 200));
     setEquityData(generateEquityData(initialInvestment));
     setIsLoading(false);
     setShowResults(true);
     setDownloadStatus("Backtest completed successfully!");
   };
 
-  const formatDate = (date) => {
+  const formatDateStr = (date: Date) => {
     return format(date, "PPP");
   };
 
   // Calculate potential returns based on investment and risk level
-  const calculatePotentialReturns = (amount: number, risk: string) => {
+  const calculatePotentialReturns = (amount: number, risk: "low" | "medium" | "high") => {
     const riskMultipliers = {
       low: { min: 0.05, max: 0.12 },
       medium: { min: 0.10, max: 0.25 },
       high: { min: 0.20, max: 0.40 }
     };
-    const multiplier = riskMultipliers[risk as keyof typeof riskMultipliers];
+    const multiplier = riskMultipliers[risk];
     return {
       conservative: amount * (1 + multiplier.min),
       aggressive: amount * (1 + multiplier.max)
@@ -204,7 +222,7 @@ const BacktestPanel = () => {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Strategy Backtester</h1>
+      <h1 className="text-2xl font-bold mb-6">Advanced Strategy Backtester</h1>
 
       {/* Loading Overlay */}
       <AnimatePresence>
@@ -221,12 +239,14 @@ const BacktestPanel = () => {
                   <h3 className="text-lg font-semibold text-center">{downloadStatus}</h3>
                   <Progress value={progress} className="w-full" />
                 </div>
-
                 <div className="space-y-4">
-                  <LoadingStep step={0} currentStep={loadingStep} text="Connecting to data source" />
-                  <LoadingStep step={1} currentStep={loadingStep} text="Fetching historical data" />
-                  <LoadingStep step={2} currentStep={loadingStep} text="Processing and validating" />
-                  <LoadingStep step={3} currentStep={loadingStep} text="Calculating returns" />
+                  <LoadingStep step={0} currentStep={loadingStep} text="Initializing backtest" />
+                  <LoadingStep step={1} currentStep={loadingStep} text="Fetching market data" />
+                  <LoadingStep step={2} currentStep={loadingStep} text="Running simulations" />
+                  <LoadingStep step={3} currentStep={loadingStep} text="Analyzing results" />
+                  <LoadingStep step={4} currentStep={loadingStep} text="Calculating risk metrics" />
+                  <LoadingStep step={5} currentStep={loadingStep} text="Generating final report" />
+
                 </div>
               </div>
             </Card>
@@ -260,11 +280,15 @@ const BacktestPanel = () => {
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start">
-                    {formatDate(startDate)}
+                    {formatDateStr(startDate)}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent>
-                  <Calendar mode="single" selected={startDate} onSelect={setStartDate} />
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date: Date | undefined) => date && setStartDate(date)}
+                  />
                 </PopoverContent>
               </Popover>
             </div>
@@ -272,11 +296,15 @@ const BacktestPanel = () => {
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start">
-                    {formatDate(endDate)}
+                    {formatDateStr(endDate)}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent>
-                  <Calendar mode="single" selected={endDate} onSelect={setEndDate} />
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={(date: Date | undefined) => date && setEndDate(date)}
+                  />
                 </PopoverContent>
               </Popover>
             </div>
@@ -286,7 +314,7 @@ const BacktestPanel = () => {
 
       {/* Strategy Selection */}
       <Card className="p-6 mb-6">
-        <Label className="text-lg font-semibold mb-4 block">Choose Strategy</Label>
+        <Label className="text-lg font-semibold mb-4 block">Strategy Configuration</Label>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {strategies.map((strategy) => (
             <motion.div
@@ -306,21 +334,7 @@ const BacktestPanel = () => {
         </div>
       </Card>
 
-      {/* Investment Amount */}
-      <Card className="p-6 mb-6">
-        <Label className="text-lg font-semibold mb-4 block">Investment Amount</Label>
-        <div className="flex items-center space-x-4">
-          <Input
-            type="number"
-            value={initialInvestment}
-            onChange={(e) => setInitialInvestment(Number(e.target.value))}
-            className="text-lg"
-          />
-          <span className="text-lg font-semibold">₹</span>
-        </div>
-      </Card>
-
-      {/* New Market Sentiment Section */}
+      {/* Market Sentiment Section */}
       <Card className="p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Market Sentiment</h2>
@@ -342,7 +356,7 @@ const BacktestPanel = () => {
         </p>
       </Card>
 
-      {/* Strategy Comparison Section */}
+      {/* Strategy Comparison */}
       <Card className="p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Strategy Comparison</h2>
