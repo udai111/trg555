@@ -1,8 +1,9 @@
-import 'dotenv/config';  // Add this at the top to load environment variables
+import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
+import serverless from 'serverless-http';
 
 const app = express();
 app.use(express.json());
@@ -51,7 +52,7 @@ app.get('/api/health', async (_req, res) => {
       status: 'ok',
       database: {
         connected: true,
-        url: process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'hidden', // Only show host/port
+        url: process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'hidden',
         database: process.env.PGDATABASE || 'neondb',
         test_query: testUser ? 'success' : 'no test user found'
       },
@@ -68,41 +69,21 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
-// Global error handler
-app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('Error:', err);
+// Register routes
+registerRoutes(app);
 
-  // Don't expose internal error details in production
-  const status = err.status || err.statusCode || 500;
-  const message = app.get('env') === 'production'
-    ? 'Internal Server Error'
-    : err.message || 'Internal Server Error';
-
-  res.status(status).json({
-    status: 'error',
-    message,
-    ...(app.get('env') !== 'production' && { stack: err.stack })
-  });
+// Export the serverless handler for Netlify Functions
+export const handler = serverless(app, {
+  binary: ['application/octet-stream', 'application/x-protobuf', 'image/*']
 });
 
-(async () => {
-  const server = registerRoutes(app);
-
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
-  // Fix port configuration - ensure it's a number
+// Only start the server if we're not in a serverless environment
+if (!process.env.NETLIFY) {
   const PORT = Number(process.env.PORT) || 5000;
-  server.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     log(`serving on port ${PORT}`);
   });
-})().catch(err => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
+}
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {

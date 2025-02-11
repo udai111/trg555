@@ -7,7 +7,7 @@ import {
   type EducationalResource, type InsertEducationalResource,
   type SocialInteraction, type InsertSocialInteraction
 } from "@shared/schema";
-import { db } from "./db";
+import { db, sql } from "./db";
 import { eq } from "drizzle-orm";
 
 export interface IStorage {
@@ -51,8 +51,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    try {
+      console.log('Executing getUserByUsername query for username:', username);
+      const query = db.select().from(users).where(eq(users.username, username));
+      console.log('Query:', query.toSQL());
+      const [user] = await query;
+      console.log('Query result:', user);
+      return user;
+    } catch (error) {
+      console.error('Error in getUserByUsername:', error);
+      throw error;
+    }
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
