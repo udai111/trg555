@@ -7,10 +7,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-type MarketType = 'indian' | 'crypto' | 'forex';
+type MarketType = 'indian' | 'us' | 'crypto' | 'forex';
 
 const MARKET_SYMBOLS = {
   indian: ['INFY', 'TCS', 'RELIANCE', 'HDFCBANK', 'WIPRO'],
+  us: ['AAPL', 'GOOG', 'MSFT', 'AMZN', 'TSLA', 'META', 'NVDA'],
   crypto: ['BTCUSD', 'ETHUSD', 'BNBUSD', 'SOLUSD', 'ADAUSD'],
   forex: ['USDINR', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD']
 };
@@ -20,7 +21,7 @@ interface StockSelectorProps {
 }
 
 export default function StockSelector({ onStockChange }: StockSelectorProps) {
-  const [market, setMarket] = useState<MarketType>('indian');
+  const [market, setMarket] = useState<MarketType>('us');
   const [currentSymbol, setCurrentSymbol] = useState(MARKET_SYMBOLS[market][0]);
 
   const handleMarketChange = (value: MarketType) => {
@@ -42,6 +43,7 @@ export default function StockSelector({ onStockChange }: StockSelectorProps) {
           <SelectValue placeholder="Select market" />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="us">US Market</SelectItem>
           <SelectItem value="indian">Indian Market</SelectItem>
           <SelectItem value="crypto">Cryptocurrency</SelectItem>
           <SelectItem value="forex">Forex</SelectItem>
