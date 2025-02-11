@@ -121,7 +121,8 @@ const Sidebar = () => {
         } transition-transform duration-200 ease-in-out`}
         initial={false}
       >
-        <div className="sticky top-0 z-10 bg-primary pt-6">
+        {/* Header - Fixed */}
+        <div className="flex-shrink-0 pt-6 px-6">
           <div className="flex flex-col items-center justify-center p-4">
             <img 
               src="/assets/logo.webp" 
@@ -134,7 +135,8 @@ const Sidebar = () => {
           </div>
         </div>
 
-        <nav className="flex-1 px-6 pb-6 space-y-2 overflow-y-auto">
+        {/* Navigation - Scrollable */}
+        <nav className="flex-1 px-6 py-6 space-y-2 overflow-y-auto">
           <NavLink href="/" isActive={location === "/"} onClick={handleLinkClick}>
             <Home className="w-5 h-5 mr-3" />
             Home
@@ -181,7 +183,8 @@ const Sidebar = () => {
           </NavLink>
         </nav>
 
-        <div className="px-6 pb-6">
+        {/* Widget Container - Fixed at bottom */}
+        <div className="flex-shrink-0 px-6 pb-6 mt-auto">
           <div ref={widgetContainer} className="tradingview-widget-container">
             <div className="tradingview-widget-container__widget"></div>
           </div>
