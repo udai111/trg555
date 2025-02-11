@@ -3,6 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import { Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -19,6 +21,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Mock data for equity curve
 const mockEquityData = [
@@ -29,8 +32,25 @@ const mockEquityData = [
   { time: 'End', value: 11000 }
 ];
 
+const LoadingStep = ({ step, currentStep, text }) => (
+  <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className={`flex items-center space-x-2 ${currentStep >= step ? 'text-primary' : 'text-muted-foreground'}`}
+  >
+    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+      currentStep > step ? 'bg-primary text-white' : 
+      currentStep === step ? 'border-2 border-primary' : 
+      'border-2 border-muted'
+    }`}>
+      {currentStep > step ? '✓' : step + 1}
+    </div>
+    <span>{text}</span>
+  </motion.div>
+);
+
 const BacktestPanel = () => {
-  // State for form values
+  // Previous state
   const [dataSource, setDataSource] = useState("");
   const [timeframe, setTimeframe] = useState("1d");
   const [adjustSplits, setAdjustSplits] = useState(true);
@@ -45,7 +65,13 @@ const BacktestPanel = () => {
   const [orderType, setOrderType] = useState("market");
   const [latency, setLatency] = useState(100);
 
-  // State for performance metrics
+  // New state for loading and progress
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [downloadStatus, setDownloadStatus] = useState("");
+
+  // Performance metrics state
   const [metrics, setMetrics] = useState({
     totalReturn: "--",
     annualReturn: "--",
@@ -58,8 +84,51 @@ const BacktestPanel = () => {
     numTrades: "--"
   });
 
-  const runBacktest = () => {
-    // Simulate backtest results
+  const simulateDataDownload = async () => {
+    setIsLoading(true);
+    setLoadingStep(0);
+    setProgress(0);
+
+    // Step 1: Connecting to data source - faster connection
+    setDownloadStatus("Connecting to data source...");
+    await new Promise(r => setTimeout(r, 500));
+    setLoadingStep(1);
+    setProgress(25);
+
+    // Step 2: Fetching historical data - faster increments
+    setDownloadStatus("Fetching historical data...");
+    for (let i = 25; i <= 60; i += 10) {
+      setProgress(i);
+      await new Promise(r => setTimeout(r, 100));
+    }
+    setLoadingStep(2);
+
+    // Step 3: Processing and validating - faster processing
+    setDownloadStatus("Processing and validating data...");
+    for (let i = 60; i <= 90; i += 10) {
+      setProgress(i);
+      await new Promise(r => setTimeout(r, 75));
+    }
+    setLoadingStep(3);
+
+    // Step 4: Finalizing - quick completion
+    setDownloadStatus("Finalizing...");
+    for (let i = 90; i <= 100; i += 5) {
+      setProgress(i);
+      await new Promise(r => setTimeout(r, 50));
+    }
+    setLoadingStep(4);
+
+    await new Promise(r => setTimeout(r, 200));
+    setIsLoading(false);
+    setDownloadStatus("Data ready for backtesting!");
+  };
+
+  const runBacktest = async () => {
+    if (!isLoading) {
+      await simulateDataDownload();
+    }
+
     setMetrics({
       totalReturn: "10%",
       annualReturn: "8%",
@@ -77,8 +146,47 @@ const BacktestPanel = () => {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Advanced Backtesting Platform</h1>
 
+      {/* Loading Overlay */}
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50"
+          >
+            <Card className="p-6 w-[400px]">
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-center">{downloadStatus}</h3>
+                  <Progress value={progress} className="w-full" />
+                </div>
+
+                <div className="space-y-4">
+                  <LoadingStep step={0} currentStep={loadingStep} text="Connecting to data source" />
+                  <LoadingStep step={1} currentStep={loadingStep} text="Fetching historical data" />
+                  <LoadingStep step={2} currentStep={loadingStep} text="Processing and validating" />
+                  <LoadingStep step={3} currentStep={loadingStep} text="Finalizing" />
+                </div>
+
+                {loadingStep === 4 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex justify-center"
+                  >
+                    <Button onClick={() => setIsLoading(false)}>
+                      Continue to Backtest
+                    </Button>
+                  </motion.div>
+                )}
+              </div>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Accordion type="single" collapsible className="w-full space-y-4">
-        {/* Historical Data Integration */}
         <AccordionItem value="item-1">
           <AccordionTrigger className="text-lg font-semibold">
             Historical Data Integration
@@ -114,7 +222,7 @@ const BacktestPanel = () => {
                   <Checkbox
                     id="adjustSplits"
                     checked={adjustSplits}
-                    onCheckedChange={setAdjustSplits}
+                    onCheckedChange={(checked) => setAdjustSplits(!!checked)}
                   />
                   <Label htmlFor="adjustSplits">Adjust for Splits</Label>
                 </div>
@@ -122,16 +230,29 @@ const BacktestPanel = () => {
                   <Checkbox
                     id="adjustDividends"
                     checked={adjustDividends}
-                    onCheckedChange={setAdjustDividends}
+                    onCheckedChange={(checked) => setAdjustDividends(!!checked)}
                   />
                   <Label htmlFor="adjustDividends">Adjust for Dividends</Label>
                 </div>
               </div>
+
+              <Button 
+                onClick={simulateDataDownload}
+                disabled={isLoading}
+                className="w-full"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Downloading Data...
+                  </>
+                ) : (
+                  'Download Historical Data'
+                )}
+              </Button>
             </div>
           </AccordionContent>
         </AccordionItem>
-
-        {/* Risk Management */}
         <AccordionItem value="item-2">
           <AccordionTrigger className="text-lg font-semibold">
             Risk Management
@@ -184,15 +305,13 @@ const BacktestPanel = () => {
                 <Checkbox
                   id="useATR"
                   checked={useATR}
-                  onCheckedChange={setUseATR}
+                  onCheckedChange={(checked) => setUseATR(!!checked)}
                 />
                 <Label htmlFor="useATR">Use ATR-based sizing</Label>
               </div>
             </div>
           </AccordionContent>
         </AccordionItem>
-
-        {/* Execution Simulation */}
         <AccordionItem value="item-3">
           <AccordionTrigger className="text-lg font-semibold">
             Execution Simulation
@@ -241,8 +360,6 @@ const BacktestPanel = () => {
             </div>
           </AccordionContent>
         </AccordionItem>
-
-        {/* Performance Metrics */}
         <AccordionItem value="item-4">
           <AccordionTrigger className="text-lg font-semibold">
             Performance Metrics
@@ -321,10 +438,26 @@ const BacktestPanel = () => {
       </Accordion>
 
       <div className="mt-6 flex justify-center space-x-4">
-        <Button size="lg" onClick={runBacktest}>
-          Run Backtest
+        <Button 
+          size="lg" 
+          onClick={runBacktest}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            'Run Backtest'
+          )}
         </Button>
-        <Button size="lg" variant="destructive" onClick={() => window.location.reload()}>
+        <Button 
+          size="lg" 
+          variant="destructive" 
+          onClick={() => window.location.reload()}
+          disabled={isLoading}
+        >
           Reset All
         </Button>
       </div>
