@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { ArrowUpCircle, ArrowDownCircle, TrendingUp, TrendingDown, Brain, Settings, Play, BarChart2 } from "lucide-react";
+import { ArrowUpCircle, ArrowDownCircle, TrendingUp, TrendingDown, Brain, Settings, Play, BarChart2, Loader2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
 import { Progress } from "@/components/ui/progress";
 
@@ -34,6 +34,29 @@ interface PredictionResult {
   };
 }
 
+interface LoadingStepProps {
+  step: number;
+  currentStep: number;
+  text: string;
+}
+
+const LoadingStep = ({ step, currentStep, text }: LoadingStepProps) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className={`flex items-center space-x-2 ${currentStep >= step ? 'text-primary' : 'text-muted-foreground'}`}
+  >
+    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+      currentStep > step ? 'bg-primary text-white' :
+        currentStep === step ? 'border-2 border-primary' :
+          'border-2 border-muted'
+    }`}>
+      {currentStep > step ? '✓' : step + 1}
+    </div>
+    <span>{text}</span>
+  </motion.div>
+);
+
 const MLPrediction = () => {
   const [selectedStock, setSelectedStock] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
@@ -42,8 +65,10 @@ const MLPrediction = () => {
   const [activeTab, setActiveTab] = useState("selection");
   const [trainingProgress, setTrainingProgress] = useState(0);
   const [isTraining, setIsTraining] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [downloadStatus, setDownloadStatus] = useState("");
 
-  // Hyperparameters
+
   const [hyperparameters, setHyperparameters] = useState({
     lstmUnits: 50,
     denseUnits: 32,
@@ -52,7 +77,6 @@ const MLPrediction = () => {
     batchSize: 16
   });
 
-  // Model selection options
   const modelOptions = [
     { value: "lstm", label: "LSTM Network" },
     { value: "cnn", label: "CNN" },
@@ -63,7 +87,6 @@ const MLPrediction = () => {
 
   const [selectedModels, setSelectedModels] = useState<string[]>(["lstm"]);
 
-  // Performance metrics
   const [metrics, setMetrics] = useState({
     accuracy: 0,
     mse: 0,
@@ -76,28 +99,58 @@ const MLPrediction = () => {
     setIsTraining(true);
     setTrainingProgress(0);
 
-    // Simulate training progress
-    const interval = setInterval(() => {
-      setTrainingProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsTraining(false);
-          // Mock metrics after training
-          setMetrics({
-            accuracy: 85.5,
-            mse: 0.0023,
-            mae: 0.0456,
-            sharpeRatio: 1.8,
-            profitFactor: 2.1
-          });
-          return prev;
-        }
-        return prev + 1;
-      });
-    }, 100);
+    const steps = [
+      {
+        name: "Connecting to data source",
+        duration: 500,
+        progress: 10
+      },
+      {
+        name: "Fetching historical data",
+        duration: 800,
+        progress: 30
+      },
+      {
+        name: "Analyzing market conditions",
+        duration: 600,
+        progress: 50
+      },
+      {
+        name: "Running strategy simulations",
+        duration: 1000,
+        progress: 70
+      },
+      {
+        name: "Calculating risk metrics",
+        duration: 700,
+        progress: 85
+      },
+      {
+        name: "Generating final report",
+        duration: 500,
+        progress: 100
+      }
+    ];
+
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+      setDownloadStatus(step.name);
+      setLoadingStep(i);
+      setTrainingProgress(step.progress);
+      await new Promise(r => setTimeout(r, step.duration));
+    }
+
+    setMetrics({
+      accuracy: 85.5,
+      mse: 0.0023,
+      mae: 0.0456,
+      sharpeRatio: 1.8,
+      profitFactor: 2.1
+    });
+    setIsTraining(false);
+    setDownloadStatus("Training completed successfully!");
   };
 
-  // Mock stocks data
   const stocks = [
     { value: "RELIANCE", label: "Reliance Industries" },
     { value: "TCS", label: "Tata Consultancy Services" },
@@ -106,21 +159,15 @@ const MLPrediction = () => {
     { value: "ICICI", label: "ICICI Bank" }
   ];
 
-  // Simulate fetching predictions
   const fetchPredictions = async (symbol: string) => {
     setIsLoading(true);
-    // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Mock historical data for chart
     const mockHistoricalData = Array.from({ length: 30 }, (_, i) => ({
       date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toLocaleDateString(),
       price: 1000 + Math.random() * 200,
       predicted: 1000 + Math.random() * 200
     }));
     setHistoricalData(mockHistoricalData);
-
-    // Mock prediction results
     const mockPredictions: PredictionResult = {
       shortTerm: {
         prediction: 5.2,
@@ -144,7 +191,6 @@ const MLPrediction = () => {
         movingAverage: 1450.75
       }
     };
-
     setPredictions(mockPredictions);
     setIsLoading(false);
   };
@@ -188,7 +234,6 @@ const MLPrediction = () => {
           <TabsTrigger value="hyperparameters">Hyperparameters</TabsTrigger>
         </TabsList>
 
-        {/* Model Selection Tab */}
         <TabsContent value="selection" className="space-y-4">
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">Select Models</h2>
@@ -236,51 +281,110 @@ const MLPrediction = () => {
           </Card>
         </TabsContent>
 
-        {/* Training Tab */}
         <TabsContent value="training" className="space-y-4">
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">Model Training</h2>
             <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-medium mb-2">Training Progress</h3>
-                <Progress value={trainingProgress} className="w-full" />
-                <p className="text-sm text-muted-foreground mt-2">
-                  {isTraining ? 'Training in progress...' : 'Ready to train'}
-                </p>
-              </div>
+              <AnimatePresence>
+                {isTraining && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50"
+                  >
+                    <Card className="p-6 w-[400px]">
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                          <h3 className="text-lg font-semibold text-center">{downloadStatus}</h3>
+                          <Progress value={trainingProgress} className="w-full" />
+                        </div>
+                        <div className="space-y-4">
+                          <LoadingStep step={0} currentStep={loadingStep} text="Initializing model" />
+                          <LoadingStep step={1} currentStep={loadingStep} text="Loading market data" />
+                          <LoadingStep step={2} currentStep={loadingStep} text="Training neural network" />
+                          <LoadingStep step={3} currentStep={loadingStep} text="Optimizing weights" />
+                          <LoadingStep step={4} currentStep={loadingStep} text="Validating results" />
+                          <LoadingStep step={5} currentStep={loadingStep} text="Finalizing model" />
 
-              <div className="flex gap-4">
-                <Button
-                  onClick={handleTraining}
-                  disabled={isTraining || selectedModels.length === 0 || !selectedStock}
-                  className="flex-1"
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  Start Training
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setTrainingProgress(0);
-                    setMetrics({
-                      accuracy: 0,
-                      mse: 0,
-                      mae: 0,
-                      sharpeRatio: 0,
-                      profitFactor: 0
-                    });
-                  }}
-                  disabled={isTraining}
-                  className="flex-1"
-                >
-                  Reset
-                </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="relative">
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  {[1, 2, 3].map((layer) => (
+                    <motion.div
+                      key={layer}
+                      className="h-32 bg-accent/10 rounded-lg relative overflow-hidden"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: layer * 0.2 }}
+                    >
+                      {isTraining && (
+                        <motion.div
+                          className="absolute inset-0 bg-primary/20"
+                          animate={{
+                            y: ["0%", "100%"],
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "linear",
+                          }}
+                        />
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <p className="text-sm font-medium">Layer {layer}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                <div className="flex gap-4">
+                  <Button
+                    onClick={handleTraining}
+                    disabled={isTraining || selectedModels.length === 0 || !selectedStock}
+                    className="flex-1"
+                  >
+                    {isTraining ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Training...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4 mr-2" />
+                        Start Training
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setTrainingProgress(0);
+                      setMetrics({
+                        accuracy: 0,
+                        mse: 0,
+                        mae: 0,
+                        sharpeRatio: 0,
+                        profitFactor: 0
+                      });
+                    }}
+                    disabled={isTraining}
+                    className="flex-1"
+                  >
+                    Reset
+                  </Button>
+                </div>
               </div>
             </div>
           </Card>
         </TabsContent>
 
-        {/* Performance Metrics Tab */}
         <TabsContent value="performance" className="space-y-4">
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">Model Performance</h2>
@@ -309,7 +413,6 @@ const MLPrediction = () => {
           </Card>
         </TabsContent>
 
-        {/* Hyperparameters Tab */}
         <TabsContent value="hyperparameters" className="space-y-4">
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">Hyperparameter Tuning</h2>
@@ -377,7 +480,7 @@ const MLPrediction = () => {
               </div>
 
               <div className="flex gap-4">
-                <Button 
+                <Button
                   onClick={() => handleTraining()}
                   disabled={isTraining}
                   className="flex-1"
@@ -406,7 +509,6 @@ const MLPrediction = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Predictions Display */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
@@ -496,8 +598,8 @@ const MLPrediction = () => {
                   <span className="text-sm">RSI</span>
                   <span className={`font-mono ${
                     predictions.technicalIndicators.rsi > 70 ? 'text-red-500' :
-                    predictions.technicalIndicators.rsi < 30 ? 'text-green-500' :
-                    'text-muted-foreground'
+                      predictions.technicalIndicators.rsi < 30 ? 'text-green-500' :
+                        'text-muted-foreground'
                   }`}>
                     {predictions.technicalIndicators.rsi.toFixed(2)}
                   </span>
@@ -533,7 +635,6 @@ const MLPrediction = () => {
   );
 };
 
-// Helper function to get model descriptions
 const getModelDescription = (modelType: string): string => {
   const descriptions: Record<string, string> = {
     lstm: "Long Short-Term Memory network for sequential data",
