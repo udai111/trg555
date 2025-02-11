@@ -30,8 +30,11 @@ export default function LandingPage() {
           <img 
             src="/assets/logo.webp" 
             alt="TRG Logo" 
-            className="mx-auto mb-8 h-20 w-auto"
+            className="mx-auto mb-2 h-20 w-auto"
           />
+          <p className="text-xs text-muted-foreground/60 mb-6">
+            Created by TRG for Gangwar's the market
+          </p>
           <h1 className="text-4xl font-bold mb-4">
             Virtual Trading Platform
           </h1>

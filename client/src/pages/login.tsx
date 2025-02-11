@@ -42,8 +42,11 @@ export default function LoginPage() {
           <img 
             src="/assets/logo.webp" 
             alt="TRG Logo" 
-            className="mx-auto mb-6 h-16 w-auto"
+            className="mx-auto mb-2 h-16 w-auto"
           />
+          <p className="text-xs text-muted-foreground/60 mb-4">
+            Created by TRG for Gangwar's the market
+          </p>
           <h1 className="text-2xl font-bold">Start Trading</h1>
           <p className="mt-2 text-muted-foreground">
             Enter a username to begin with ₹10,00,000 virtual currency
