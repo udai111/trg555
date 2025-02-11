@@ -10,6 +10,14 @@ export const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Add base path middleware for Netlify Functions
+app.use((req, res, next) => {
+  if (process.env.NETLIFY) {
+    req.url = req.url.replace('/.netlify/functions/server', '');
+  }
+  next();
+});
+
 // Register API routes
 const server = registerRoutes(app);
 
