@@ -93,11 +93,11 @@ const Sidebar = () => {
       animate={{ x: 0 }}
       transition={{ type: "spring", stiffness: 60 }}
     >
-      <div className="mb-8 flex justify-center">
+      <div className="mb-8 flex justify-center items-center bg-white/10 rounded-lg p-4">
         <img 
-          src="/trg-logo-260nw-368435801.webp" 
+          src="/assets/logo.webp" 
           alt="TRG Logo" 
-          className="h-12 w-auto object-contain"
+          className="h-16 w-auto object-contain filter brightness-150"
         />
       </div>
 
