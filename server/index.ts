@@ -21,11 +21,6 @@ app.use(express.urlencoded({ extended: false }));
 // Setup authentication
 setupAuth(app);
 
-// Basic health check endpoint
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok' });
-});
-
 // Register API routes before frontend middleware
 registerRoutes(app);
 
@@ -49,42 +44,18 @@ export const handler = serverless(app);
 
 // Only start the server if we're not in a serverless environment
 if (!process.env.NETLIFY) {
-  const PORT = process.env.PORT || 5000;
-  const HOST = '0.0.0.0';
-
-  server.listen(PORT, HOST, () => {
-    console.log(`Server running at http://${HOST}:${PORT}`);
+  const PORT = Number(process.env.PORT || 5000);
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running at http://0.0.0.0:${PORT}`);
     console.log('Press Ctrl+C to stop');
-  });
-
-  // Handle server errors
-  server.on('error', (error: NodeJS.ErrnoException) => {
-    if (error.syscall !== 'listen') {
-      throw error;
-    }
-
-    switch (error.code) {
-      case 'EACCES':
-        console.error(`Port ${PORT} requires elevated privileges`);
-        process.exit(1);
-        break;
-      case 'EADDRINUSE':
-        console.error(`Port ${PORT} is already in use`);
-        process.exit(1);
-        break;
-      default:
-        throw error;
-    }
   });
 }
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
-  process.exit(1);
 });
 
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Rejection:', err);
-  process.exit(1);
 });
