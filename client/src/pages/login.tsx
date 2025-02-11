@@ -42,7 +42,7 @@ export default function LoginPage() {
       className="min-h-screen w-full flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat overflow-hidden"
       style={{
         backgroundColor: '#1a1b1e', // Fallback color
-        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/world-map-bg.jpg')`,
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/world-map-background.jpg')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed'
