@@ -2,6 +2,7 @@ import 'dotenv/config';  // Add this at the top to load environment variables
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { storage } from "./storage";
 
 const app = express();
 app.use(express.json());
@@ -39,6 +40,32 @@ app.use((req, res, next) => {
   });
 
   next();
+});
+
+// Add health check endpoint
+app.get('/api/health', async (_req, res) => {
+  try {
+    // Try to get a user to test database connection
+    const testUser = await storage.getUserByUsername('test');
+    res.json({ 
+      status: 'ok',
+      database: {
+        connected: true,
+        url: process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'hidden', // Only show host/port
+        database: process.env.PGDATABASE || 'neondb',
+        test_query: testUser ? 'success' : 'no test user found'
+      },
+      environment: process.env.NODE_ENV,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Database connection failed',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
 });
 
 // Global error handler
