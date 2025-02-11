@@ -1,44 +1,26 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 const TickerTape = () => {
-  const widgetRef = useRef<HTMLIFrameElement>(null);
-  const widgetId = 'TickerTape-7xktr4e';
-
   useEffect(() => {
-    const handleMessage = (msg: MessageEvent) => {
-      const widget = widgetRef.current;
-      if (!widget) return;
+    // Load Trendlyne widget script
+    const script = document.createElement('script');
+    script.src = "https://cdn-static.trendlyne.com/static/js/webwidgets/tl-widgets.js";
+    script.async = true;
+    script.charset = "utf-8";
+    document.body.appendChild(script);
 
-      const styles = msg.data?.styles;
-      const token = msg.data?.token;
-      const urlToken = new URL(widget.src)?.searchParams?.get?.('token');
-
-      if (styles && token === urlToken) {
-        Object.keys(styles).forEach(key => 
-          widget.style.setProperty(key, styles[key])
-        );
-      }
-
-      const height = msg.data?.tickerTapeHeight;
-      if (height) {
-        widget.style.setProperty('height', `${height}px`);
-      }
+    // Cleanup
+    return () => {
+      document.body.removeChild(script);
     };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
   }, []);
 
   return (
-    <div className="w-full bg-background">
-      <iframe
-        ref={widgetRef}
-        id={widgetId}
-        style={{ border: 'none', width: '100%', height: '100%' }}
-        data-widget-name="TickerTape"
-        src="https://widget.darqube.com/ticker-tape?token=67ab1d7b1d16f9859324d193"
-      />
-    </div>
+    <blockquote 
+      className="trendlyne-widgets" 
+      data-get-url="https://trendlyne.com/web-widget/technical-widget/Poppins/INFY/?posCol=00A25B&primaryCol=006AFF&negCol=EB3B00&neuCol=F7941E" 
+      data-theme="light"
+    />
   );
 };
 

@@ -5,8 +5,8 @@ import TickerTape from "@/components/TickerTape";
 const Dashboard = () => {
   return (
     <div className="p-6">
-      {/* Add TickerTape at the top */}
-      <div className="w-full h-12 mb-6 -mx-6 -mt-6">
+      {/* Add Trendlyne widget at the top */}
+      <div className="w-full mb-6 -mx-6 -mt-6 bg-white rounded-lg shadow">
         <TickerTape />
       </div>
 
