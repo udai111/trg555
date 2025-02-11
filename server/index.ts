@@ -12,52 +12,19 @@ const app = express();
 
 // Security middleware with adjusted CSP for development and production
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'", "*.replit.dev"],
-      scriptSrc: [
-        "'self'",
-        "'unsafe-inline'",
-        "'unsafe-eval'",
-        "*.tradingview.com",
-        "https://cdn.jsdelivr.net",
-        "*.replit.dev"
-      ],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "*.replit.dev"],
-      imgSrc: ["'self'", "data:", "https:", "blob:", "*.replit.dev"],
-      connectSrc: ["'self'", "wss:", "ws:", "*.neon.tech", "https:", "*.replit.dev"],
-      frameSrc: ["'self'", "*.tradingview.com", "*.replit.dev"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      workerSrc: ["'self'", "blob:"]
-    }
-  },
-  // Disable HSTS in development
-  strictTransportSecurity: process.env.NODE_ENV === 'production'
+  contentSecurityPolicy: false // Disable CSP temporarily for debugging
 }));
-
-// Add CORS headers for Replit domains
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin && (origin.endsWith('.replit.dev') || origin === 'https://replit.com')) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.header('Access-Control-Allow-Credentials', 'true');
-  }
-
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Setup authentication
 setupAuth(app);
+
+// Basic health check endpoint
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok' });
+});
 
 // Register API routes before frontend middleware
 registerRoutes(app);
@@ -78,15 +45,36 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Export serverless handler for Netlify
-export const handler = serverless(app, {
-  binary: ['application/octet-stream', 'application/x-protobuf', 'image/*']
-});
+export const handler = serverless(app);
 
 // Only start the server if we're not in a serverless environment
 if (!process.env.NETLIFY) {
-  const PORT = Number(process.env.PORT) || 5000;
-  server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
+  const PORT = process.env.PORT || 5000;
+  const HOST = '0.0.0.0';
+
+  server.listen(PORT, HOST, () => {
+    console.log(`Server running at http://${HOST}:${PORT}`);
+    console.log('Press Ctrl+C to stop');
+  });
+
+  // Handle server errors
+  server.on('error', (error: NodeJS.ErrnoException) => {
+    if (error.syscall !== 'listen') {
+      throw error;
+    }
+
+    switch (error.code) {
+      case 'EACCES':
+        console.error(`Port ${PORT} requires elevated privileges`);
+        process.exit(1);
+        break;
+      case 'EADDRINUSE':
+        console.error(`Port ${PORT} is already in use`);
+        process.exit(1);
+        break;
+      default:
+        throw error;
+    }
   });
 }
 
