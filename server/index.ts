@@ -14,18 +14,19 @@ const app = express();
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"],
+      defaultSrc: ["'self'", "*.replit.dev"],
       scriptSrc: [
         "'self'",
         "'unsafe-inline'",
         "'unsafe-eval'",
         "*.tradingview.com",
-        "https://cdn.jsdelivr.net"
+        "https://cdn.jsdelivr.net",
+        "*.replit.dev"
       ],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "wss:", "ws:", "*.neon.tech", "https:"],
-      frameSrc: ["'self'", "*.tradingview.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "*.replit.dev"],
+      imgSrc: ["'self'", "data:", "https:", "blob:", "*.replit.dev"],
+      connectSrc: ["'self'", "wss:", "ws:", "*.neon.tech", "https:", "*.replit.dev"],
+      frameSrc: ["'self'", "*.tradingview.com", "*.replit.dev"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
@@ -35,6 +36,22 @@ app.use(helmet({
   // Disable HSTS in development
   strictTransportSecurity: process.env.NODE_ENV === 'production'
 }));
+
+// Add CORS headers for Replit domains
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && (origin.endsWith('.replit.dev') || origin === 'https://replit.com')) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
