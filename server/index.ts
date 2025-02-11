@@ -3,7 +3,8 @@ import express from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
-const app = express();
+// Create and export the Express app
+export const app = express();
 
 // Basic middleware
 app.use(express.json());
@@ -25,13 +26,15 @@ if (process.env.NODE_ENV === 'production') {
     });
 }
 
-// Start server on Replit's port or default to 5000
-const PORT = Number(process.env.PORT || 5000);
-server.listen(PORT, '0.0.0.0', () => {
-  log(`Server running at http://0.0.0.0:${PORT}`);
-});
+// Only start the server if we're not in a serverless environment
+if (!process.env.NETLIFY) {
+  const PORT = Number(process.env.PORT || 5000);
+  server.listen(PORT, '0.0.0.0', () => {
+    log(`Server running at http://0.0.0.0:${PORT}`);
+  });
 
-// Basic error handling
-server.on('error', (error) => {
-  console.error('Server error:', error);
-});
+  // Basic error handling
+  server.on('error', (error) => {
+    console.error('Server error:', error);
+  });
+}

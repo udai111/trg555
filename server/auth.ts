@@ -94,19 +94,21 @@ export function setupAuth(app: Express) {
 
     if (!username || typeof username !== 'string' || username.length < 3) {
       console.log('[Auth] Invalid username:', username);
-      return res.status(400).json({
+      res.status(400).json({
         error: true,
         message: "Username must be at least 3 characters"
       });
+      return;
     }
 
     const existingUser = await storage.getUserByUsername(username);
     if (existingUser) {
       console.log('[Auth] Username exists:', username);
-      return res.status(400).json({
+      res.status(400).json({
         error: true,
         message: "Username already exists"
       });
+      return;
     }
 
     try {
@@ -120,10 +122,11 @@ export function setupAuth(app: Express) {
       req.login(user, (err) => {
         if (err) {
           console.error('[Auth] Login after registration failed:', err);
-          return res.status(500).json({
+          res.status(500).json({
             error: true,
             message: "Login failed after registration"
           });
+          return;
         }
         console.log('[Auth] Login after registration successful:', username);
         res.json({ user, isAuthenticated: true });
