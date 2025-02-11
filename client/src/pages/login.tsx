@@ -5,23 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-
-// Predefined valid usernames
-const VALID_USERNAMES = [
-  'trader123',
-  'investor456',
-  'market789',
-  'stock101',
-  'crypto202'
-];
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!username.trim()) {
       toast({
         title: "Error",
@@ -31,28 +23,80 @@ export default function LoginPage() {
       return;
     }
 
-    // Check if username is valid
-    if (!VALID_USERNAMES.includes(username.trim())) {
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password: 'demo' }), // Demo password
+      });
+
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
+
+      const user = await response.json();
+      localStorage.setItem("username", user.username);
+      setLocation("/");
+
       toast({
-        title: "Invalid Username",
-        description: "Please use one of the following usernames: trader123, investor456, market789, stock101, crypto202",
+        title: "Welcome back!",
+        description: "Successfully logged in"
+      });
+    } catch (error) {
+      toast({
+        title: "Login failed",
+        description: "Invalid username or user doesn't exist",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSignup = async () => {
+    if (!username.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a username",
         variant: "destructive"
       });
       return;
     }
 
-    localStorage.setItem("username", username.trim());
-    setLocation("/");
+    try {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password: 'demo' }), // Demo password
+      });
 
-    toast({
-      title: "Success",
-      description: "Welcome to the Trading Platform!"
-    });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Registration failed');
+      }
+
+      const user = await response.json();
+      localStorage.setItem("username", user.username);
+      setLocation("/");
+
+      toast({
+        title: "Welcome!",
+        description: "Your account has been created successfully"
+      });
+    } catch (error) {
+      toast({
+        title: "Registration failed",
+        description: error instanceof Error ? error.message : "Username might already exist",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
-      {/* TradingView Background */}
+      {/* Background */}
       <div className="absolute inset-0 z-0">
         <iframe
           className="h-full w-full"
@@ -61,7 +105,6 @@ export default function LoginPage() {
           allowTransparency={true}
           scrolling="no"
         />
-        {/* Overlay */}
         <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
       </div>
 
@@ -76,41 +119,57 @@ export default function LoginPage() {
             <div className="mb-6">
               <h1 className="text-2xl font-bold">Virtual Trading Platform</h1>
               <p className="text-sm text-muted-foreground">
-                Enter one of the valid usernames to start trading
+                Choose a username to start trading
               </p>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <Label>Username</Label>
-                <Input
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter username: e.g. trader123"
-                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                />
-              </div>
+            <Tabs defaultValue="login" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Login</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              </TabsList>
 
-              <Button
-                className="w-full"
-                onClick={handleLogin}
-                disabled={!username.trim()}
-              >
-                Start Trading
-              </Button>
+              <TabsContent value="login" className="space-y-4">
+                <div>
+                  <Label>Username</Label>
+                  <Input
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter your username"
+                    onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                  />
+                </div>
+                <Button 
+                  className="w-full" 
+                  onClick={handleLogin}
+                  disabled={!username.trim()}
+                >
+                  Login
+                </Button>
+              </TabsContent>
 
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <p className="text-center">Valid usernames:</p>
-                <ul className="list-disc pl-6">
-                  {VALID_USERNAMES.map(user => (
-                    <li key={user}>{user}</li>
-                  ))}
-                </ul>
-                <p className="text-center mt-4">
+              <TabsContent value="signup" className="space-y-4">
+                <div>
+                  <Label>Choose Username</Label>
+                  <Input
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter a new username"
+                    onKeyDown={(e) => e.key === "Enter" && handleSignup()}
+                  />
+                </div>
+                <Button 
+                  className="w-full" 
+                  onClick={handleSignup}
+                  disabled={!username.trim()}
+                >
+                  Create Account
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
                   ₹10,00,000 virtual currency will be credited to your account
                 </p>
-              </div>
-            </div>
+              </TabsContent>
+            </Tabs>
           </Card>
         </motion.div>
       </div>
