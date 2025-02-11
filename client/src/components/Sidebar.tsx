@@ -74,8 +74,8 @@ const Sidebar = () => {
         <nav className="flex-1 px-6 overflow-y-auto">
           <div className="space-y-2">
             <NavLink href="/" isActive={location === "/"} onClick={handleLinkClick}>
-              <Home className="w-5 h-5 mr-3" />
-              Home
+              <GamepadIcon className="w-5 h-5 mr-3" />
+              Trading Game
             </NavLink>
 
             <NavLink href="/pro-trading" isActive={location === "/pro-trading"} onClick={handleLinkClick}>
@@ -91,11 +91,6 @@ const Sidebar = () => {
             <NavLink href="/candlestick-patterns" isActive={location === "/candlestick-patterns"} onClick={handleLinkClick}>
               <CandlestickChart className="w-5 h-5 mr-3" />
               Candlestick Patterns
-            </NavLink>
-
-            <NavLink href="/stock-market-game" isActive={location === "/stock-market-game"} onClick={handleLinkClick}>
-              <GamepadIcon className="w-5 h-5 mr-3" />
-              Trading Game
             </NavLink>
 
             <NavLink href="/ml-predictions" isActive={location === "/ml-predictions"} onClick={handleLinkClick}>
