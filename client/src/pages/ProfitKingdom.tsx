@@ -74,8 +74,9 @@ const ProfitKingdom = () => {
     <div 
       className="min-h-screen relative bg-cover bg-center bg-no-repeat"
       style={{
-        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/world-map-bg.jpg')`,
-        backgroundAttachment: 'fixed'
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/attached_assets/caption.jpg')`,
+        backgroundAttachment: 'fixed',
+        backgroundColor: '#1a1b1e' // Fallback color
       }}
     >
       <div className="container mx-auto p-6">
