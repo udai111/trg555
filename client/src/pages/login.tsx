@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,12 +8,12 @@ import { Card } from "@/components/ui/card";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
-  const navigate = useNavigate();
+  const [_, setLocation] = useLocation();
 
   const handleLogin = () => {
     if (!username) return;
     localStorage.setItem("username", username);
-    navigate("/game");
+    setLocation("/");
   };
 
   return (

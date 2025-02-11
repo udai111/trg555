@@ -13,10 +13,18 @@ import MarketAnalysis from "./components/MarketAnalysis";
 import ProTrading from "./components/ProTrading";
 import StockMarketGamePage from "./pages/StockMarketGamePage";
 import NotFound from "@/pages/not-found";
+import LandingPage from "@/pages/landing";
+import LoginPage from "@/pages/login";
 import { useEffect, useState } from "react";
 
 function MainContent() {
   const [showSidebar, setShowSidebar] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const username = localStorage.getItem("username");
+    setIsAuthenticated(!!username);
+  }, []);
 
   // Listen for fullscreen events from TradingView component
   useEffect(() => {
@@ -28,6 +36,16 @@ function MainContent() {
       window.removeEventListener('tradingview-fullscreen', handleFullScreen as EventListener);
     };
   }, []);
+
+  if (!isAuthenticated) {
+    return (
+      <Switch>
+        <Route path="/" component={LandingPage} />
+        <Route path="/login" component={LoginPage} />
+        <Route component={LandingPage} />
+      </Switch>
+    );
+  }
 
   return (
     <div className="flex min-h-screen">

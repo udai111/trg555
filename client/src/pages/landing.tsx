@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 
 export default function LandingPage() {
-  const navigate = useNavigate();
+  const [_, setLocation] = useLocation();
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-gradient-to-br from-background to-background/80">
@@ -47,7 +47,7 @@ export default function LandingPage() {
           <Button
             size="lg"
             className="text-lg"
-            onClick={() => navigate("/login")}
+            onClick={() => setLocation("/login")}
           >
             Enter Platform
           </Button>
