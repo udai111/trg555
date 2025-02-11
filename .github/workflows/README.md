@@ -3,7 +3,7 @@
 This repository is configured to automatically deploy to GitHub Pages when changes are pushed to the main branch.
 
 ## Deployment URL
-The application will be available at: https://udai111.github.io/trgfin/
+The application will be available at: https://udai111.github.io/trg11fin/
 
 ## Configuration
 - Deployment source: GitHub Actions
