@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createChart, CandlestickData, Time } from "lightweight-charts";
+import { createChart, ColorType, IChartApi, CandlestickData, Time } from "lightweight-charts";
 import { motion } from "framer-motion";
 import { Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle, Bitcoin, LineChart, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,7 +26,7 @@ interface StockPattern {
   patterns: PatternData[];
 }
 
-const TradingViewChart = memo(({ symbol }: { symbol: string }) => {
+const TradingViewChart = memo(({ symbol, marketType }: { symbol: string; marketType: string }) => {
   const container = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,9 +36,20 @@ const TradingViewChart = memo(({ symbol }: { symbol: string }) => {
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
     script.type = "text/javascript";
     script.async = true;
+
+    // Format symbol based on market type
+    let formattedSymbol = symbol;
+    if (marketType === 'crypto') {
+      formattedSymbol = `BINANCE:${symbol.replace('/', '')}`;
+    } else if (marketType === 'indian') {
+      formattedSymbol = `NSE:${symbol}`;
+    } else {
+      formattedSymbol = `NASDAQ:${symbol}`;
+    }
+
     script.innerHTML = JSON.stringify({
       "autosize": true,
-      "symbol": symbol.includes('/') ? `BINANCE:${symbol.replace('/', '')}` : `NSE:${symbol}`,
+      "symbol": formattedSymbol,
       "timezone": "Etc/UTC",
       "theme": "dark",
       "style": "1",
@@ -64,7 +75,7 @@ const TradingViewChart = memo(({ symbol }: { symbol: string }) => {
         }
       }
     };
-  }, [symbol]);
+  }, [symbol, marketType]);
 
   return (
     <div ref={container} className="tradingview-widget-container h-[500px] w-full">
@@ -81,6 +92,7 @@ export default function CandlestickPatternsPage() {
   const [marketType, setMarketType] = useState<'indian' | 'international' | 'crypto'>('indian');
   const [chartType, setChartType] = useState<'lightweight' | 'tradingview'>('lightweight');
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<any>(null);
 
   const patterns = [
@@ -105,7 +117,7 @@ export default function CandlestickPatternsPage() {
     "SOL/USDT", "DOT/USDT", "DOGE/USDT", "MATIC/USDT", "LINK/USDT"
   ];
 
-  const getStockBasePrice = (symbol: string): number => {
+  const getBasePrice = (symbol: string): number => {
     const indianPrices: { [key: string]: number } = {
       'RELIANCE': 2432.50,
       'TCS': 3890.75,
@@ -132,13 +144,7 @@ export default function CandlestickPatternsPage() {
       'WMT': 175.45,
     };
 
-    return marketType === 'indian'
-      ? (indianPrices[symbol] || 1000)
-      : (internationalPrices[symbol] || 100);
-  };
-
-  const getCryptoBasePrice = (symbol: string): number => {
-    const prices: { [key: string]: number } = {
+    const cryptoPrices: { [key: string]: number } = {
       'BTC/USDT': 48000,
       'ETH/USDT': 2800,
       'BNB/USDT': 320,
@@ -148,13 +154,19 @@ export default function CandlestickPatternsPage() {
       'DOT/USDT': 15,
       'DOGE/USDT': 0.08,
       'MATIC/USDT': 0.85,
-      'LINK/USDT': 18
+      'LINK/USDT': 18,
     };
-    return prices[symbol] || 100;
-  };
 
-  const getBasePrice = (symbol: string): number => {
-    return marketType === 'crypto' ? getCryptoBasePrice(symbol) : getStockBasePrice(symbol);
+    switch (marketType) {
+      case 'indian':
+        return indianPrices[symbol] || 1000;
+      case 'international':
+        return internationalPrices[symbol] || 100;
+      case 'crypto':
+        return cryptoPrices[symbol] || 100;
+      default:
+        return 100;
+    }
   };
 
   const getAvailableSymbols = () => {
@@ -170,13 +182,20 @@ export default function CandlestickPatternsPage() {
     }
   };
 
+  // Initialize and update chart
   useEffect(() => {
-    if (!chartContainerRef.current || chartType === 'tradingview') return;
+    if (!chartContainerRef.current || chartType !== 'lightweight') return;
 
     try {
+      // Cleanup previous chart instance
+      if (chartRef.current) {
+        chartRef.current.remove();
+        chartRef.current = null;
+      }
+
       const chart = createChart(chartContainerRef.current, {
         layout: {
-          background: { type: 'solid', color: '#131722' },
+          background: { type: 'solid' as ColorType, color: '#131722' },
           textColor: '#D9D9D9',
         },
         grid: {
@@ -202,7 +221,9 @@ export default function CandlestickPatternsPage() {
         height: 500,
       });
 
-      const series = chart.addCandlestickSeries({
+      chartRef.current = chart;
+
+      const candlestickSeries = chart.addCandlestickSeries({
         upColor: '#26a69a',
         downColor: '#ef5350',
         borderUpColor: '#26a69a',
@@ -211,12 +232,15 @@ export default function CandlestickPatternsPage() {
         wickDownColor: '#ef5350',
       });
 
+      candlestickSeriesRef.current = candlestickSeries;
+
+      // Generate and set data
       const currentDate = new Date();
       const basePrice = getBasePrice(selectedStock);
       const volatility = marketType === 'crypto' ? 0.02 : 0.01;
 
       const data: CandlestickData[] = Array.from({ length: 50 }).map((_, i) => {
-        const date = new Date();
+        const date = new Date(currentDate);
         date.setMinutes(date.getMinutes() - (50 - i) * 15);
 
         const variance = Math.random() * (basePrice * volatility) - (basePrice * volatility / 2);
@@ -234,12 +258,13 @@ export default function CandlestickPatternsPage() {
         };
       });
 
-      series.setData(data);
+      candlestickSeries.setData(data);
       chart.timeScale().fitContent();
 
+      // Handle resize
       const handleResize = () => {
-        if (chartContainerRef.current) {
-          chart.applyOptions({
+        if (chartContainerRef.current && chartRef.current) {
+          chartRef.current.applyOptions({
             width: chartContainerRef.current.clientWidth,
           });
         }
@@ -249,13 +274,17 @@ export default function CandlestickPatternsPage() {
 
       return () => {
         window.removeEventListener('resize', handleResize);
-        chart.remove();
+        if (chartRef.current) {
+          chartRef.current.remove();
+          chartRef.current = null;
+        }
       };
     } catch (error) {
       console.error('Error initializing chart:', error);
     }
   }, [selectedStock, marketType, chartType]);
 
+  // Handle market type change
   const handleMarketTypeChange = (type: string) => {
     if (type === 'indian' || type === 'international' || type === 'crypto') {
       setMarketType(type as 'indian' | 'international' | 'crypto');
@@ -268,6 +297,7 @@ export default function CandlestickPatternsPage() {
     }
   };
 
+  // Update patterns periodically
   useEffect(() => {
     const interval = setInterval(() => {
       const availableStocks = getAvailableSymbols();
@@ -313,11 +343,15 @@ export default function CandlestickPatternsPage() {
             </ToggleGroupItem>
           </ToggleGroup>
 
-          <ToggleGroup type="single" value={chartType} onValueChange={(value: string) => {
-            if (value === 'lightweight' || value === 'tradingview') {
-              setChartType(value);
-            }
-          }}>
+          <ToggleGroup 
+            type="single" 
+            value={chartType} 
+            onValueChange={(value: string) => {
+              if (value === 'lightweight' || value === 'tradingview') {
+                setChartType(value);
+              }
+            }}
+          >
             <ToggleGroupItem value="lightweight" aria-label="Lightweight Charts">
               <LineChart className="h-4 w-4 mr-2" />
               Custom Chart
@@ -359,7 +393,7 @@ export default function CandlestickPatternsPage() {
           {chartType === 'lightweight' ? (
             <div ref={chartContainerRef} className="h-[500px] w-full" />
           ) : (
-            <TradingViewChart symbol={selectedStock} />
+            <TradingViewChart symbol={selectedStock} marketType={marketType} />
           )}
         </Card>
 
