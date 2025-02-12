@@ -68,7 +68,7 @@ const NormalChart = memo(({ data }: { data: CandlestickData[] }) => {
       const x = (candleWidth + spacing) * i;
 
       // Calculate y coordinates
-      const getY = (price: number) => 
+      const getY = (price: number) =>
         ((maxPrice - price) / priceRange) * (canvas.height * 0.8) + (canvas.height * 0.1);
 
       // Draw candle body
@@ -143,8 +143,8 @@ const NormalChart = memo(({ data }: { data: CandlestickData[] }) => {
         )}
       </AnimatePresence>
       <div className="relative">
-        <canvas 
-          ref={canvasRef} 
+        <canvas
+          ref={canvasRef}
           className="w-full h-[500px]"
           style={{ height: '500px' }}
         />
@@ -257,7 +257,7 @@ const ChartScanAIChart = memo(({ data }: { data: CandlestickData[] }) => {
     const spacing = (canvas.width / data.length) * 0.2;
 
     // Helper function for price to y-coordinate conversion
-    const getY = (price: number) => 
+    const getY = (price: number) =>
       ((maxPrice + padding - price) / (priceRange + 2 * padding)) * canvas.height;
 
     // Draw candlesticks with patterns
@@ -342,7 +342,7 @@ const ChartScanAIChart = memo(({ data }: { data: CandlestickData[] }) => {
       const x = e.clientX - rect.left;
       const candleIndex = Math.floor(x / (candleWidth + spacing));
 
-      const patternAtPosition = patterns.find(p => 
+      const patternAtPosition = patterns.find(p =>
         p.startIndex <= candleIndex && p.endIndex >= candleIndex
       );
 
@@ -381,8 +381,8 @@ const ChartScanAIChart = memo(({ data }: { data: CandlestickData[] }) => {
         )}
       </AnimatePresence>
       <div className="relative">
-        <canvas 
-          ref={canvasRef} 
+        <canvas
+          ref={canvasRef}
           className="w-full h-[500px]"
           style={{ height: '500px' }}
         />
@@ -399,10 +399,22 @@ const ChartScanAIChart = memo(({ data }: { data: CandlestickData[] }) => {
 ChartScanAIChart.displayName = 'ChartScanAIChart';
 
 // Main Component
+type MarketType = 'indian' | 'international' | 'crypto';
+
+interface PriceData {
+  [key: string]: number;
+}
+
+interface MarketPrices {
+  indian: PriceData;
+  international: PriceData;
+  crypto: PriceData;
+}
+
 export default function CandlestickPatternsPage() {
   const [activePatterns, setActivePatterns] = useState<StockPattern[]>([]);
   const [selectedStock, setSelectedStock] = useState("RELIANCE");
-  const [marketType, setMarketType] = useState<'indian' | 'international' | 'crypto'>('indian');
+  const [marketType, setMarketType] = useState<MarketType>('indian');
   const [chartType, setChartType] = useState<'normal' | 'lightweight' | 'tradingview' | 'chartscanai'>('normal'); // Updated chartType
   const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [drawings, setDrawings] = useState<CustomDrawing[]>([]);
@@ -430,7 +442,7 @@ export default function CandlestickPatternsPage() {
 
   // Price calculation functions
   const getBasePrice = (symbol: string): number => {
-    const prices = {
+    const prices: MarketPrices = {
       indian: {
         'RELIANCE': 2432.50, 'TCS': 3890.75, 'INFY': 1567.25,
         'HDFCBANK': 1678.90, 'ICICIBANK': 987.45, 'WIPRO': 456.78,
@@ -536,7 +548,7 @@ export default function CandlestickPatternsPage() {
   // Event Handlers
   const handleMarketTypeChange = (type: string) => {
     if (type === 'indian' || type === 'international' || type === 'crypto') {
-      setMarketType(type as 'indian' | 'international' | 'crypto');
+      setMarketType(type as MarketType);
       const defaultSymbols = {
         indian: 'RELIANCE',
         international: 'AAPL',
