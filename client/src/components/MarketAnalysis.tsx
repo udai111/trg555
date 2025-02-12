@@ -18,7 +18,7 @@ import IntradayPatternScanner from './IntradayPatternScanner';
 import IntradayTradingPanel from './IntradayTradingPanel';
 import { CandlestickChart } from './CandlestickChart';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast"; // Added import for useToast
+import { useToast } from "@/hooks/use-toast"; 
 
 interface PatternMarker {
   time: Time;
@@ -60,12 +60,12 @@ interface MarketBreadthData {
 }
 
 const MarketAnalysis = () => {
-  const { toast } = useToast(); // Using the custom toast hook
+  const { toast } = useToast();
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [patterns, setPatterns] = useState<PatternMarker[]>([]);
   const chartRef = useRef<IChartApi | null>(null);
-  const [watchlistItems, setWatchlistItems] = useState<string[]>(["RELIANCE", "TCS", "INFY"]); // Corrected state declaration
+  const [watchlistItems, setWatchlistItems] = useState<string[]>(["RELIANCE", "TCS", "INFY"]);
   const [newSymbol, setNewSymbol] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState("");
   const [selectedTimeframe, setSelectedTimeframe] = useState("1D");
@@ -73,7 +73,6 @@ const MarketAnalysis = () => {
   const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false);
 
 
-  // Generate mock data
   useEffect(() => {
     const generateCandlestickData = () => {
       const data: CandlestickData[] = [];
@@ -97,7 +96,6 @@ const MarketAnalysis = () => {
           close,
         });
 
-        // Add pattern markers
         if (i > 0 && Math.random() > 0.9) {
           const isUpPattern = Math.random() > 0.5;
           const pattern: PatternMarker = {
@@ -115,7 +113,6 @@ const MarketAnalysis = () => {
 
     setChartData(generateCandlestickData());
 
-    // Simulate real-time updates
     const interval = setInterval(() => {
       setChartData(prevData => {
         const lastCandle = prevData[prevData.length - 1];
@@ -134,14 +131,12 @@ const MarketAnalysis = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Initialize chart
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
-    // Create the chart
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { type: 'solid', color: 'transparent' },
+        background: { color: 'transparent' },
         textColor: 'rgba(255, 255, 255, 0.9)',
       },
       grid: {
@@ -149,7 +144,7 @@ const MarketAnalysis = () => {
         horzLines: { color: 'rgba(197, 203, 206, 0.1)' },
       },
       crosshair: {
-        mode: 1, // Use numeric value instead of enum
+        mode: 1,
       },
       rightPriceScale: {
         borderColor: 'rgba(197, 203, 206, 0.8)',
@@ -163,8 +158,9 @@ const MarketAnalysis = () => {
 
     chartRef.current = chart;
 
-    // Create the candlestick series
-    const mainSeries = chart.addCandlestickSeries({
+    const mainSeries = chart.addCandlestickSeries();
+
+    mainSeries.applyOptions({
       upColor: '#26a69a',
       downColor: '#ef5350',
       borderVisible: false,
@@ -172,10 +168,8 @@ const MarketAnalysis = () => {
       wickDownColor: '#ef5350',
     });
 
-    // Set the data
     mainSeries.setData(chartData);
 
-    // Add markers for patterns
     if (patterns.length > 0) {
       mainSeries.setMarkers(
         patterns.map(pattern => ({
@@ -188,7 +182,6 @@ const MarketAnalysis = () => {
       );
     }
 
-    // Handle resize
     const handleResize = () => {
       if (chartContainerRef.current && chartRef.current) {
         chartRef.current.applyOptions({
@@ -200,7 +193,6 @@ const MarketAnalysis = () => {
 
     window.addEventListener('resize', handleResize);
 
-    // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize);
       if (chartRef.current) {
@@ -209,7 +201,6 @@ const MarketAnalysis = () => {
     };
   }, [chartData, patterns]);
 
-  // Mock data
   const institutionalData: InstitutionalData = {
     fii: {
       netBuy: 1245.8,
@@ -241,7 +232,6 @@ const MarketAnalysis = () => {
     vwap: 18245.75
   };
 
-  // Functions
   const addToWatchlist = (symbol: string) => {
     if (symbol && !watchlistItems.includes(symbol)) {
       setWatchlistItems([...watchlistItems, symbol]);
@@ -274,7 +264,6 @@ const MarketAnalysis = () => {
 
         <TabsContent value="profit">
           <div className="space-y-6">
-            {/* HD Chart Card */}
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <BarChart2 className="w-5 h-5" />
@@ -283,7 +272,6 @@ const MarketAnalysis = () => {
               <div className="h-[600px]" ref={chartContainerRef} />
             </Card>
 
-            {/* Pattern Recognition Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -354,7 +342,6 @@ const MarketAnalysis = () => {
                 </div>
               </Card>
 
-              {/* Additional Profit Metrics */}
               <Card className="md:col-span-2 p-6">
                 <h3 className="text-lg font-semibold mb-4">Performance Metrics</h3>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -384,7 +371,6 @@ const MarketAnalysis = () => {
           </div>
         </TabsContent>
 
-        {/* Overview Tab */}
         <TabsContent value="overview">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="p-6">
@@ -439,7 +425,6 @@ const MarketAnalysis = () => {
           </div>
         </TabsContent>
 
-        {/* Institutional Tab */}
         <TabsContent value="institutional">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="p-6">
@@ -503,7 +488,6 @@ const MarketAnalysis = () => {
           </div>
         </TabsContent>
 
-        {/* Technical Tab */}
         <TabsContent value="technical">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="p-6">
@@ -543,7 +527,6 @@ const MarketAnalysis = () => {
           </div>
         </TabsContent>
 
-        {/* Patterns Tab */}
         <TabsContent value="patterns">
           <div className="space-y-6">
             <Card className="p-6">
@@ -574,7 +557,6 @@ const MarketAnalysis = () => {
           </div>
         </TabsContent>
 
-        {/* Add new Intraday Scanner tab with side panel */}
         <TabsContent value="intraday">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="lg:col-span-1">
