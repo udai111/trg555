@@ -27,6 +27,7 @@ export default function CandlestickPatternsPage() {
   const [activePatterns, setActivePatterns] = useState<StockPattern[]>([]);
   const chartRef = useRef<IChartApi | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const candlestickSeriesRef = useRef<any>(null);
 
   const patterns = [
     "Doji",
@@ -55,11 +56,15 @@ export default function CandlestickPatternsPage() {
   ];
 
   useEffect(() => {
-    // Initialize chart
-    if (containerRef.current) {
+    if (!containerRef.current) return;
+
+    try {
       const chart = createChart(containerRef.current, {
         layout: {
-          background: { color: 'transparent' },
+          background: { 
+            type: 'solid',
+            color: 'transparent' 
+          },
           textColor: 'rgba(255, 255, 255, 0.9)',
         },
         grid: {
@@ -70,14 +75,22 @@ export default function CandlestickPatternsPage() {
           timeVisible: true,
           secondsVisible: false,
         },
+        width: containerRef.current.clientWidth,
+        height: 500,
       });
 
       chartRef.current = chart;
 
-      // Add candlestick series
-      const candlestickSeries = chart.addCandlestickSeries();
+      const candlestickSeries = chart.addCandlestickSeries({
+        upColor: '#26a69a',
+        downColor: '#ef5350',
+        borderVisible: false,
+        wickUpColor: '#26a69a',
+        wickDownColor: '#ef5350',
+      });
 
-      // Generate mock data
+      candlestickSeriesRef.current = candlestickSeries;
+
       const currentDate = new Date();
       const data: CandlestickData[] = Array.from({ length: 50 }).map((_, i) => {
         const date = new Date(currentDate);
@@ -101,7 +114,6 @@ export default function CandlestickPatternsPage() {
 
       candlestickSeries.setData(data);
 
-      // Handle resize
       const handleResize = () => {
         if (containerRef.current && chartRef.current) {
           chartRef.current.applyOptions({
@@ -111,17 +123,19 @@ export default function CandlestickPatternsPage() {
       };
 
       window.addEventListener('resize', handleResize);
+
       return () => {
         window.removeEventListener('resize', handleResize);
         if (chartRef.current) {
           chartRef.current.remove();
         }
       };
+    } catch (error) {
+      console.error('Error initializing chart:', error);
     }
   }, []);
 
   useEffect(() => {
-    // Simulate real-time pattern detection
     const interval = setInterval(() => {
       const newPatterns = mockStockData.map(symbol => ({
         symbol,
@@ -187,8 +201,8 @@ export default function CandlestickPatternsPage() {
                         <span className={cn(
                           "px-2 py-1 rounded text-xs",
                           pattern.probability > 70 ? "bg-green-500/20 text-green-500" :
-                          pattern.probability > 40 ? "bg-yellow-500/20 text-yellow-500" :
-                          "bg-red-500/20 text-red-500"
+                            pattern.probability > 40 ? "bg-yellow-500/20 text-yellow-500" :
+                              "bg-red-500/20 text-red-500"
                         )}>
                           {pattern.probability}% Probability
                         </span>
