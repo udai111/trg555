@@ -14,6 +14,7 @@ import {
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
+import IntradayPatternScanner from './IntradayPatternScanner';
 
 interface PatternMarker {
   time: Time;
@@ -259,12 +260,13 @@ const MarketAnalysis = () => {
       </div>
 
       <Tabs defaultValue="profit" className="space-y-4">
-        <TabsList className="grid grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-6 w-full">
           <TabsTrigger value="profit">Profit</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="institutional">Institutional</TabsTrigger>
           <TabsTrigger value="technical">Technical</TabsTrigger>
           <TabsTrigger value="patterns">Patterns</TabsTrigger>
+          <TabsTrigger value="intraday">Intraday Scanner</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profit">
@@ -541,6 +543,11 @@ const MarketAnalysis = () => {
         {/* Patterns Tab */}
         <TabsContent value="patterns">
           <p>Patterns Tab Content</p>
+        </TabsContent>
+
+        {/* Add new Intraday Scanner tab */}
+        <TabsContent value="intraday">
+          <IntradayPatternScanner />
         </TabsContent>
       </Tabs>
     </div>
