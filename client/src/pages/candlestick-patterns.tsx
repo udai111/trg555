@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createChart } from "lightweight-charts";
+import * as LightweightCharts from "lightweight-charts";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle,
@@ -39,9 +39,9 @@ const NormalChart = memo(({
 
     setIsLoading(true);
 
-    const chart = createChart(chartContainerRef.current, {
+    const chart = LightweightCharts.createChart(chartContainerRef.current, {
       layout: {
-        background: { type: 'solid', color: '#131722' },
+        background: { color: '#131722' },
         textColor: '#D9D9D9',
       },
       grid: {
@@ -51,80 +51,24 @@ const NormalChart = memo(({
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
-        borderColor: '#2B2B43',
-      },
-      rightPriceScale: {
-        borderColor: '#2B2B43',
-      },
-      crosshair: {
-        mode: 0,
       },
       width: chartContainerRef.current.clientWidth,
       height: 500,
     });
 
-    const series = chart.addCandlestickSeries();
-    series.setData(data);
-
-    // Set the markers if available
-    if (patterns && patterns.length > 0) {
-      const markers = patterns.map(pattern => ({
-        time: data[data.length - 1].time,
-        position: 'aboveBar',
-        color: pattern.successRate > 70 ? '#26a69a' : '#ef5350',
-        shape: pattern.signalType === 'buy' ? 'arrowUp' : 'arrowDown',
-        text: `${pattern.name} (${pattern.successRate}% success)`
-      }));
-      series.setMarkers(markers);
-    }
-
-    // Handle drawings
-    drawings.forEach(drawing => {
-      if (drawing.type === 'trendline' && drawing.points.length === 2) {
-        const lineSeries = chart.addLineSeries({
-          color: drawing.color,
-          lineWidth: 2,
-        });
-        lineSeries.setData([
-          { time: drawing.points[0].x, value: drawing.points[0].y },
-          { time: drawing.points[1].x, value: drawing.points[1].y }
-        ]);
-      }
+    const candleSeries = chart.addHistogramSeries({
+      color: '#26a69a',
+      priceFormat: {
+        type: 'price',
+      },
     });
 
-    // Drawing mode setup
-    if (isDrawingMode && chartContainerRef.current) {
-      const points: any[] = [];
-      const clickHandler = (e: MouseEvent) => {
-        const rect = chartContainerRef.current!.getBoundingClientRect();
-        points.push({
-          x: chart.timeScale().coordinateToTime(e.clientX - rect.left),
-          y: chart.priceScale('right').coordinateToPrice(e.clientY - rect.top)!
-        });
-
-        if (points.length === 2) {
-          onDrawingComplete({
-            type: 'trendline',
-            points: points.slice(),
-            color: '#ffffff'
-          });
-          points.length = 0;
-        }
-      };
-
-      chartContainerRef.current.addEventListener('click', clickHandler);
-      return () => {
-        chartContainerRef.current?.removeEventListener('click', clickHandler);
-        chart.remove();
-      };
-    }
+    candleSeries.setData(data);
 
     const handleResize = () => {
-      if (chartContainerRef.current) {
-        chart.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-        });
-      }
+      chart.applyOptions({
+        width: chartContainerRef.current?.clientWidth || 800,
+      });
     };
 
     window.addEventListener('resize', handleResize);
