@@ -299,6 +299,8 @@ function StockMarketGame() {
     }, 0);
   };
 
+  const currentAssets = activeMarket === 'NSE' ? nseStocks : cryptos;
+
   if (showRetroMode) {
     return (
       <div className="p-6 font-mono">
@@ -365,135 +367,76 @@ Enter command: _
           </TabsList>
 
           <TabsContent value="market">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Market Overview */}
-              <Card className="md:col-span-2 p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold">Market Overview</h3>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm">1D</Button>
-                    <Button variant="outline" size="sm">5D</Button>
-                    <Button variant="outline" size="sm">1M</Button>
-                    <Button variant="outline" size="sm">3M</Button>
-                    <Button variant="outline" size="sm">1Y</Button>
-                  </div>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Market Overview */}
+                <div className="col-span-2">
+                  <Tabs defaultValue="NSE" className="w-full" onValueChange={(v) => setActiveMarket(v as 'NSE' | 'CRYPTO')}>
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="NSE">NSE</TabsTrigger>
+                      <TabsTrigger value="CRYPTO">Crypto</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="NSE">
+                      <div className="space-y-2 mt-4">
+                        {nseStocks.map((stock) => (
+                          <motion.div
+                            key={stock.symbol}
+                            className={`p-3 rounded-lg cursor-pointer ${
+                              selectedAsset?.symbol === stock.symbol ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
+                            }`}
+                            onClick={() => setSelectedAsset(stock)}
+                            whileHover={{ scale: 1.01 }}
+                          >
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <div className="font-medium">{stock.symbol}</div>
+                                <div className="text-sm text-muted-foreground">{stock.name}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-mono">₹{stock.price.toFixed(2)}</div>
+                                <div className={`text-sm ${stock.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                  {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)}%
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="CRYPTO">
+                      <div className="space-y-2 mt-4">
+                        {cryptos.map((crypto) => (
+                          <motion.div
+                            key={crypto.symbol}
+                            className={`p-3 rounded-lg cursor-pointer ${
+                              selectedAsset?.symbol === crypto.symbol ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
+                            }`}
+                            onClick={() => setSelectedAsset(crypto)}
+                            whileHover={{ scale: 1.01 }}
+                          >
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <div className="font-medium">{crypto.symbol}</div>
+                                <div className="text-sm text-muted-foreground">{crypto.name}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-mono">₹{crypto.price.toFixed(2)}</div>
+                                <div className={`text-sm ${crypto.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                  {crypto.change >= 0 ? '+' : ''}{crypto.change.toFixed(2)}%
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </div>
-                <div className="h-[480px] rounded-lg mb-4 overflow-hidden">
-                  {/* Investing.com Chart */}
-                  <iframe
-                    height="480"
-                    width="100%"
-                    src="https://ssltvc.investing.com/?pair_ID=160&height=480&width=650&interval=300&plotStyle=area&domain_ID=56&lang_ID=56&timezone_ID=20"
-                    frameBorder="0"
-                    allowTransparency={true}
-                    scrolling="no"
-                    className="w-full"
-                  />
-                </div>
-                <div className="grid grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Open</span>
-                    <div className="font-mono">₹{(selectedAsset?.price || 0).toFixed(2)}</div>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">High</span>
-                    <div className="font-mono text-green-500">₹{((selectedAsset?.price || 0) * 1.02).toFixed(2)}</div>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Low</span>
-                    <div className="font-mono text-red-500">₹{((selectedAsset?.price || 0) * 0.98).toFixed(2)}</div>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Volume</span>
-                    <div className="font-mono">{Math.floor(Math.random() * 1000000).toLocaleString()}</div>
-                  </div>
-                </div>
-              </Card>
 
-              {/* Market Stats */}
-              <div className="space-y-6">
-                {/* Order Book */}
+                {/* Trading Interface */}
                 <Card className="p-4">
-                  <h3 className="text-lg font-semibold mb-4">Order Book</h3>
+                  <h3 className="text-lg font-semibold mb-4">New Order</h3>
                   <div className="space-y-4">
-                    <div>
-                      <div className="grid grid-cols-3 text-xs text-muted-foreground mb-2">
-                        <span>Price</span>
-                        <span className="text-right">Size</span>
-                        <span className="text-right">Total</span>
-                      </div>
-                      <div className="space-y-1">
-                        {Array.from({ length: 10 }).map((_, i) => {
-                          const price = (selectedAsset?.price || 0) + (9 - i) * 0.25;
-                          const size = Math.floor(Math.random() * 1000);
-                          return (
-                            <div key={`ask-${i}`} className="grid grid-cols-3 text-xs">
-                              <span className="text-red-500 font-mono">₹{price.toFixed(2)}</span>
-                              <span className="text-right font-mono">{size}</span>
-                              <span className="text-right font-mono">{(price * size).toFixed(0)}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="py-2 border-y border-border">
-                      <div className="text-center font-mono text-xl font-bold">
-                        ₹{(selectedAsset?.price || 0).toFixed(2)}
-                      </div>
-                      <div className="text-center text-xs text-muted-foreground">
-                        Spread: ₹0.25 ({((0.25 / (selectedAsset?.price || 1)) * 100).toFixed(3)}%)
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="space-y-1">
-                        {Array.from({ length: 10 }).map((_, i) => {
-                          const price = (selectedAsset?.price || 0) - (i + 1) * 0.25;
-                          const size = Math.floor(Math.random() * 1000);
-                          return (
-                            <div key={`bid-${i}`} className="grid grid-cols-3 text-xs">
-                              <span className="text-green-500 font-mono">₹{price.toFixed(2)}</span>
-                              <span className="text-right font-mono">{size}</span>
-                              <span className="text-right font-mono">{(price * size).toFixed(0)}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-            </div>
-
-            {/* Trading Interface */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-              {/* Order Entry */}
-              <Card className="p-4">
-                <h3 className="text-lg font-semibold mb-4">New Order</h3>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Order Type</Label>
-                      <select className="w-full px-3 py-2 rounded-md border border-input bg-background">
-                        <option>Market</option>
-                        <option>Limit</option>
-                        <option>Stop</option>
-                        <option>Stop Limit</option>
-                      </select>
-                    </div>
-                    <div>
-                      <Label>TIF</Label>
-                      <select className="w-full px-3 py-2 rounded-md border border-input bg-background">
-                        <option>Day</option>
-                        <option>GTC</option>
-                        <option>IOC</option>
-                        <option>FOK</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label>Quantity</Label>
                       <Input
@@ -503,167 +446,76 @@ Enter command: _
                         className="font-mono"
                       />
                     </div>
-                    <div>
-                      <Label>Price</Label>
-                      <Input
-                        type="number"
-                        defaultValue={selectedAsset?.price}
-                        className="font-mono"
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <Button
+                        className="bg-green-500 hover:bg-green-600"
+                        onClick={handleBuy}
+                        disabled={!selectedAsset}
+                      >
+                        BUY
+                      </Button>
+                      <Button
+                        className="bg-red-500 hover:bg-red-600"
+                        onClick={handleSell}
+                        disabled={!selectedAsset}
+                      >
+                        SELL
+                      </Button>
                     </div>
                   </div>
+                </Card>
+              </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button
-                      className="bg-green-500 hover:bg-green-600"
-                      onClick={handleBuy}
-                    >
-                      BUY / LONG
-                    </Button>
-                    <Button
-                      className="bg-red-500 hover:bg-red-600"
-                      onClick={handleSell}
-                    >
-                      SELL / SHORT
-                    </Button>
+              {/* Market Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <Card className="p-4">
+                  <Label>Portfolio Value</Label>
+                  <div className="text-2xl font-semibold mt-1">
+                    ₹{calculatePortfolioValue().toFixed(2)}
                   </div>
-                </div>
-              </Card>
+                  <div className="text-xs text-muted-foreground">
+                    Including wallet balance
+                  </div>
+                </Card>
 
-              {/* Trade History */}
-              <Card className="p-4">
-                <h3 className="text-lg font-semibold mb-4">Trade History</h3>
-                <div className="space-y-2">
-                  {Array.from({ length: 5 }).map((_, i) => {
-                    const isBuy = Math.random() > 0.5;
-                    return (
-                      <div key={i} className="flex items-center justify-between text-xs p-2 bg-accent/10 rounded-lg">
-                        <div>
-                          <div className={isBuy ? "text-green-500" : "text-red-500"}>
-                            {isBuy ? "BUY" : "SELL"} {selectedAsset?.symbol || 'RELIANCE'}
-                          </div>
-                          <div className="text-muted-foreground">
-                            {new Date(Date.now() - i * 60000).toLocaleTimeString()}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-mono">₹{(selectedAsset?.price || 0).toFixed(2)}</div>
-                          <div className="text-muted-foreground">
-                            Qty: {Math.floor(Math.random() * 100)}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
+                <Card className="p-4">
+                  <Label>Available Balance</Label>
+                  <div className="text-2xl font-semibold mt-1">
+                    ₹{user.wallet.toFixed(2)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Ready to trade
+                  </div>
+                </Card>
 
-              {/* Open Orders */}
-              <Card className="p-4">
-                <h3 className="text-lg font-semibold mb-4">Open Orders</h3>
-                <div className="space-y-2">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="p-2 bg-accent/10 rounded-lg text-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{selectedAsset?.symbol || 'RELIANCE'}</span>
-                        <Button variant="ghost" size="sm">
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 mt-1 text-xs text-muted-foreground">
-                        <div>Type: Limit</div>
-                        <div>Price: ₹{(selectedAsset?.price || 0).toFixed(2)}</div>
-                        <div>Qty: {Math.floor(Math.random() * 100)}</div>
-                        <div>TIF: Day</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </div>
+                <Card className="p-4">
+                  <Label>Total Profit/Loss</Label>
+                  <div className={`text-2xl font-semibold mt-1 ${calculateTotalProfits() >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {calculateTotalProfits() >= 0 ? '+' : ''}₹{calculateTotalProfits().toFixed(2)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Overall P&L
+                  </div>
+                </Card>
 
-            {/* Market Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
-              <Card className="p-4">
-                <Label>Market Depth</Label>
-                <div className="text-2xl font-semibold mt-1">
-                  {Math.floor(Math.random() * 10000).toLocaleString()}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Total Orders: {Math.floor(Math.random() * 1000).toLocaleString()}
-                </div>
-              </Card>
-
-              <Card className="p-4">
-                <Label>VWAP</Label>
-                <div className="text-2xl font-semibold mt-1">
-                  ₹{((selectedAsset?.price || 0) * (1 + (Math.random() - 0.5) * 0.01)).toFixed(2)}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Volume: {Math.floor(Math.random() * 1000000).toLocaleString()}
-                </div>
-              </Card>
-
-              <Card className="p-4">
-                <Label>Open Interest</Label>
-                <div className="text-2xl font-semibold mt-1">
-                  {Math.floor(Math.random() * 50000).toLocaleString()}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Change: +{Math.floor(Math.random() * 1000).toLocaleString()}
-                </div>
-              </Card>
-
-              <Card className="p-4">
-                <Label>Market Impact</Label>
-                <div className="text-2xl font-semibold mt-1">
-                  {(Math.random() * 0.1).toFixed(3)}%
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Liquidity Score: {(Math.random() * 100).toFixed(1)}
-                </div>
-              </Card>
+                <Card className="p-4">
+                  <Label>Session Time</Label>
+                  <div className="text-2xl font-semibold mt-1">
+                    {formatTime(timeElapsed)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Trading duration
+                  </div>
+                </Card>
+              </div>
             </div>
           </TabsContent>
 
           <TabsContent value="profits">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Overall Performance Card */}
+              {/* Portfolio Performance */}
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                  <DollarSign className="mr-2 h-5 w-5" />
-                  Overall Performance
-                </h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Total Profits/Loss</span>
-                    <span className={`text-xl font-bold ${calculateTotalProfits() >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {calculateTotalProfits() >= 0 ? '+' : ''}₹{calculateTotalProfits().toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Initial Investment</span>
-                    <span className="font-mono">₹1,000,000.00</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Current Portfolio Value</span>
-                    <span className="font-mono">₹{calculatePortfolioValue().toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Return on Investment</span>
-                    <span className={`font-mono ${(calculatePortfolioValue() - 1000000) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {(((calculatePortfolioValue() - 1000000) / 1000000) * 100).toFixed(2)}%
-                    </span>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Asset Performance Card */}
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                  <LineChart className="mr-2 h-5 w-5" />
-                  Asset Performance
-                </h3>
+                <h3 className="text-lg font-semibold mb-4">Portfolio Performance</h3>
                 <div className="space-y-4">
                   {Object.entries(user.portfolio).map(([symbol, holding]) => {
                     const asset = holding.market === 'NSE'
@@ -678,18 +530,22 @@ Enter command: _
                     const profitPercentage = (profit / initialValue) * 100;
 
                     return (
-                      <div key={symbol} className="flex justify-between items-center p-3 bg-accent/10 rounded-lg">
-                        <div>
-                          <span className="font-medium">{symbol}</span>
-                          <span className="text-xs ml-2 text-muted-foreground">({holding.market})</span>
-                        </div>
-                        <div className="text-right">
-                          <span className={`block ${profit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                            {profit >= 0 ? '+' : ''}₹{profit.toFixed(2)}
-                          </span>
-                          <span className={`text-sm ${profitPercentage >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                            ({profitPercentage >= 0 ? '+' : ''}{profitPercentage.toFixed(2)}%)
-                          </span>
+                      <div key={symbol} className="p-3 bg-accent/10 rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="font-medium">{symbol}</span>
+                            <span className="text-xs ml-2 text-muted-foreground">
+                              ({holding.quantity} {holding.market === 'CRYPTO' ? 'coins' : 'shares'})
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <div className={profit >= 0 ? 'text-green-500' : 'text-red-500'}>
+                              {profit >= 0 ? '+' : ''}₹{profit.toFixed(2)}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {profitPercentage >= 0 ? '+' : ''}{profitPercentage.toFixed(2)}%
+                            </div>
+                          </div>
                         </div>
                       </div>
                     );
@@ -697,45 +553,23 @@ Enter command: _
                 </div>
               </Card>
 
-              {/* Market Statistics */}
-              <Card className="p-6 md:col-span-2">
-                <h3 className="text-lg font-semibold mb-4">Market Statistics</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div>
-                    <Label>Total Trades</Label>
-                    <div className="text-2xl font-semibold mt-1">
-                      {Object.keys(user.portfolio).length}
-                    </div>
+              {/* Analytics */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Trading Analytics</h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Initial Investment</span>
+                    <span className="font-mono">₹1,000,000.00</span>
                   </div>
-                  <div>
-                    <Label>Profitable Trades</Label>
-                    <div className="text-2xl font-semibold mt-1 text-green-500">
-                      {Object.entries(user.portfolio).filter(([symbol, holding]) => {
-                        const asset = holding.market === 'NSE'
-                          ? nseStocks.find(s => s.symbol === symbol)
-                          : cryptos.find(c => c.symbol === symbol);
-                        if (!asset) return false;
-                        return (asset.price * holding.quantity) > (holding.avgCost * holding.quantity);
-                      }).length}
-                    </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Current Value</span>
+                    <span className="font-mono">₹{calculatePortfolioValue().toFixed(2)}</span>
                   </div>
-                  <div>
-                    <Label>Average Profit per Trade</Label>
-                    <div className="text-2xl font-semibold mt-1">
-                      ₹{(calculateTotalProfits() / (Object.keys(user.portfolio).length || 1)).toFixed(2)}
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Win Rate</Label>
-                    <div className="text-2xl font-semibold mt-1">
-                      {((Object.entries(user.portfolio).filter(([symbol, holding]) => {
-                        const asset = holding.market === 'NSE'
-                          ? nseStocks.find(s => s.symbol === symbol)
-                          : cryptos.find(c => c.symbol === symbol);
-                        if (!asset) return false;
-                        return (asset.price * holding.quantity) > (holding.avgCost * holding.quantity);
-                      }).length / (Object.keys(user.portfolio).length || 1)) * 100).toFixed(1)}%
-                    </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Total Return</span>
+                    <span className={`font-mono ${(calculatePortfolioValue() - 1000000) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {(((calculatePortfolioValue() - 1000000) / 1000000) * 100).toFixed(2)}%
+                    </span>
                   </div>
                 </div>
               </Card>
@@ -746,158 +580,128 @@ Enter command: _
     );
   }
 
-  const currentAssets = activeMarket === 'NSE' ? nseStocks : cryptos;
-
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Virtual Trading Platform</h1>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            <span>{user.username}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            <span className="font-mono">{formatTime(timeElapsed)}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Wallet className="h-5 w-5" />
-            <span className="font-mono">₹{user.wallet.toFixed(2)}</span>
-          </div>
-          <Button variant="outline" onClick={handleProMode}>
-            <BarChart2 className="mr-2 h-4 w-4" />
-            Pro Mode
-          </Button>
-          <Button variant="outline" onClick={handleRetroMode}>
-            <Terminal className="mr-2 h-4 w-4" />
-            Terminal Mode
-          </Button>
-        </div>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+      <div className="col-span-2">
+        <Tabs defaultValue="NSE" className="w-full" onValueChange={(v) => setActiveMarket(v as 'NSE' | 'CRYPTO')}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="NSE">NSE Stocks</TabsTrigger>
+            <TabsTrigger value="CRYPTO">Crypto</TabsTrigger>
+          </TabsList>
+
+          <Card className="mt-4 p-4">
+            <h2 className="text-lg font-semibold mb-4">
+              {activeMarket === 'NSE' ? 'NSE Market' : 'Crypto Market'}
+            </h2>
+            <div className="grid grid-cols2 lg:grid-cols-3 gap-4">
+              {currentAssets.map((asset) => (
+                <motion.div
+                  key={asset.symbol}
+                  whileHover={{ scale: 1.02 }}
+                  className={`p-4 rounded-lg border cursor-pointer ${
+                    selectedAsset?.symbol === asset.symbol ? 'border-primary bg-primary/5' : 'border-border'
+                  }`}
+                  onClick={() => setSelectedAsset(asset)}
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">{asset.symbol}</span>
+                    <span className={`flex items-center ${asset.change > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {asset.change > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                      {Math.abs(asset.change).toFixed(1)}%
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{asset.name}</p>
+                  <p className="text-lg font-mono mt-1">₹{asset.price.toFixed(2)}</p>
+                </motion.div>
+              ))}
+            </div>
+          </Card>
+        </Tabs>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="col-span-2">
-          <Tabs defaultValue="NSE" className="w-full" onValueChange={(v) => setActiveMarket(v as 'NSE' | 'CRYPTO')}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="NSE">NSE Stocks</TabsTrigger>
-              <TabsTrigger value="CRYPTO">Crypto</TabsTrigger>
-            </TabsList>
+      <div className="space-y-6">
+        <Card className="p-4">
+          <h2 className="text-lg font-semibold mb-4">Your Portfolio</h2>
+          <div className="space-y-4">
+            {Object.entries(user.portfolio).map(([symbol, holding]) => {
+              const asset = holding.market === 'NSE'
+                ? nseStocks.find(s => s.symbol === symbol)
+                : cryptos.find(c => c.symbol === symbol);
 
-            <Card className="mt-4 p-4">
-              <h2 className="text-lg font-semibold mb-4">
-                {activeMarket === 'NSE' ? 'NSE Market' : 'Crypto Market'}
-              </h2>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                {currentAssets.map((asset) => (
-                  <motion.div
-                    key={asset.symbol}
-                    whileHover={{ scale: 1.02 }}
-                    className={`p-4 rounded-lg border cursor-pointer ${
-                      selectedAsset?.symbol === asset.symbol ? 'border-primary bg-primary/5' : 'border-border'
-                    }`}
-                    onClick={() => setSelectedAsset(asset)}
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold">{asset.symbol}</span>
-                      <span className={`flex items-center ${asset.change > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {asset.change > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                        {Math.abs(asset.change).toFixed(1)}%
-                      </span>
+              if (!asset) return null;
+
+              const currentValue = asset.price * holding.quantity;
+              const profit = currentValue - (holding.avgCost * holding.quantity);
+
+              return (
+                <div key={symbol} className="p-3 bg-accent/10 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="font-medium">{symbol}</span>
+                      <span className="text-xs ml-2 text-muted-foreground">({holding.market})</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">{asset.name}</p>
-                    <p className="text-lg font-mono mt-1">₹{asset.price.toFixed(2)}</p>
-                  </motion.div>
-                ))}
-              </div>
-            </Card>
-          </Tabs>
-        </div>
-
-        <div className="space-y-6">
-          <Card className="p-4">
-            <h2 className="text-lg font-semibold mb-4">Your Portfolio</h2>
-            <div className="space-y-4">
-              {Object.entries(user.portfolio).map(([symbol, holding]) => {
-                const asset = holding.market === 'NSE'
-                  ? nseStocks.find(s => s.symbol === symbol)
-                  : cryptos.find(c => c.symbol === symbol);
-
-                if (!asset) return null;
-
-                const currentValue = asset.price * holding.quantity;
-                const profit = currentValue - (holding.avgCost * holding.quantity);
-
-                return (
-                  <div key={symbol} className="p-3 bg-accent/10 rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="font-medium">{symbol}</span>
-                        <span className="text-xs ml-2 text-muted-foreground">({holding.market})</span>
-                      </div>
-                      <span className={profit >= 0 ? 'text-green-500' : 'text-red-500'}>
-                        {profit >= 0 ? '+' : ''}₹{profit.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      <div>Quantity: {holding.quantity}</div>
-                      <div>Avg Cost: ₹{holding.avgCost.toFixed(2)}</div>
-                      <div>Current: ₹{asset.price.toFixed(2)}</div>
-                    </div>
+                    <span className={profit >= 0 ? 'text-green-500' : 'text-red-500'}>
+                      {profit >= 0 ? '+' : ''}₹{profit.toFixed(2)}
+                    </span>
                   </div>
-                );
-              })}
-
-              <div className="pt-4 border-t">
-                <div className="flex justify-between items-center">
-                  <span>Total Value</span>
-                  <span className="font-bold">₹{calculatePortfolioValue().toFixed(2)}</span>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    <div>Quantity: {holding.quantity}</div>
+                    <div>Avg Cost: ₹{holding.avgCost.toFixed(2)}</div>
+                    <div>Current: ₹{asset.price.toFixed(2)}</div>
+                  </div>
                 </div>
+              );
+            })}
+
+            <div className="pt-4 border-t">
+              <div className="flex justify-between items-center">
+                <span>Total Value</span>
+                <span className="font-bold">₹{calculatePortfolioValue().toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {selectedAsset && (
+          <Card className="p-4">
+            <h3 className="text-lg font-semibold mb-4">
+              Trade {selectedAsset.symbol}
+              <span className="text-sm font-normal ml-2 text-muted-foreground">({selectedAsset.market})</span>
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <Label>Current Price</Label>
+                <p className="text-lg font-mono">₹{selectedAsset.price.toFixed(2)}</p>
+              </div>
+              <div>
+                <Label>Quantity</Label>
+                <Input
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  min="1"
+                />
+              </div>
+              <div className="flex gap-4">
+                <Button
+                  className="flex-1"
+                  onClick={handleBuy}
+                  disabled={!quantity || parseInt(quantity) < 1}
+                >
+                  Buy
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={handleSell}
+                  disabled={!quantity || parseInt(quantity) < 1}
+                >
+                  Sell
+                </Button>
               </div>
             </div>
           </Card>
-
-          {selectedAsset && (
-            <Card className="p-4">
-              <h3 className="text-lg font-semibold mb-4">
-                Trade {selectedAsset.symbol}
-                <span className="text-sm font-normal ml-2 text-muted-foreground">({selectedAsset.market})</span>
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <Label>Current Price</Label>
-                  <p className="text-lg font-mono">₹{selectedAsset.price.toFixed(2)}</p>
-                </div>
-                <div>
-                  <Label>Quantity</Label>
-                  <Input
-                    type="number"
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    min="1"
-                  />
-                </div>
-                <div className="flex gap-4">
-                  <Button
-                    className="flex-1"
-                    onClick={handleBuy}
-                    disabled={!quantity || parseInt(quantity) < 1}
-                  >
-                    Buy
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    className="flex-1"
-                    onClick={handleSell}
-                    disabled={!quantity || parseInt(quantity) < 1}
-                  >
-                    Sell
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
