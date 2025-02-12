@@ -8,10 +8,12 @@ import { Switch } from "@/components/ui/switch";
 import {
   Activity, TrendingUp, TrendingDown, RefreshCw, PlayCircle,
   PauseCircle, Settings2, AlertTriangle, BarChart2, LineChart, Workflow,
-  ArrowLeft, Home
+  ArrowLeft, Home, AlertCircle, Zap
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
+import { performanceManager, type PerformanceSettings } from "@/lib/performance-manager";
+import { cn } from "@/lib/utils";
 
 interface Strategy {
   id: string;
@@ -145,6 +147,14 @@ const TRAlgoBot = () => {
       histogram: 25.3
     }
   });
+  const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettings>({
+    useHighPerformanceMode: false,
+    enableBackgroundProcessing: false,
+    renderQuality: 'medium',
+    updateInterval: 1000,
+    maxParallelOperations: 2
+  });
+  const [performanceWarnings, setPerformanceWarnings] = useState<string[]>([]);
 
   // Advanced risk management
   const validateRiskParameters = useCallback(() => {
@@ -288,6 +298,36 @@ const TRAlgoBot = () => {
     });
   };
 
+  const toggleHighPerformance = () => {
+    const newSettings = {
+      ...performanceSettings,
+      useHighPerformanceMode: !performanceSettings.useHighPerformanceMode
+    };
+    setPerformanceSettings(newSettings);
+    performanceManager.updateSettings(newSettings);
+
+    toast({
+      title: newSettings.useHighPerformanceMode ? "High Performance Mode Enabled" : "High Performance Mode Disabled",
+      description: newSettings.useHighPerformanceMode
+        ? "Using maximum available system resources"
+        : "Using balanced system resources",
+      variant: "default"
+    });
+  };
+
+  useEffect(() => {
+    const initializePerformance = async () => {
+      await performanceManager.detectCapabilities();
+      const recommendedSettings = performanceManager.getRecommendedSettings();
+      setPerformanceSettings(recommendedSettings);
+      performanceManager.updateSettings(recommendedSettings);
+      setPerformanceWarnings(performanceManager.getPerformanceWarnings());
+    };
+
+    initializePerformance();
+  }, []);
+
+
   const strategiesCount = strategies.length;
   const activeTradesCount = trades.filter(t => t.status === 'open').length;
 
@@ -304,23 +344,51 @@ const TRAlgoBot = () => {
           <h2 className="text-2xl font-bold">TRAlgoBot - Advanced Trading System</h2>
           {isRunning && <Activity className="h-5 w-5 text-green-500 animate-pulse" />}
         </div>
-        <Button
-          onClick={toggleBot}
-          variant={isRunning ? "destructive" : "default"}
-          className="flex items-center gap-2"
-        >
-          {isRunning ? (
-            <>
-              <PauseCircle className="h-5 w-5" />
-              Stop Bot
-            </>
-          ) : (
-            <>
-              <PlayCircle className="h-5 w-5" />
-              Start Bot
-            </>
-          )}
-        </Button>
+        {performanceWarnings.length > 0 && (
+          <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+            <div className="flex items-center gap-2 text-yellow-500">
+              <AlertCircle className="h-5 w-5" />
+              <span className="font-semibold">Performance Warnings</span>
+            </div>
+            <ul className="mt-2 space-y-1">
+              {performanceWarnings.map((warning, index) => (
+                <li key={index} className="text-sm text-muted-foreground flex items-center gap-2">
+                  <span>•</span> {warning}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={toggleHighPerformance}
+            variant={performanceSettings.useHighPerformanceMode ? "default" : "outline"}
+            className="flex items-center gap-2"
+          >
+            <Zap className={cn(
+              "h-4 w-4",
+              performanceSettings.useHighPerformanceMode && "text-yellow-500"
+            )} />
+            {performanceSettings.useHighPerformanceMode ? "High Performance" : "Normal Mode"}
+          </Button>
+          <Button
+            onClick={toggleBot}
+            variant={isRunning ? "destructive" : "default"}
+            className="flex items-center gap-2"
+          >
+            {isRunning ? (
+              <>
+                <PauseCircle className="h-5 w-5" />
+                Stop Bot
+              </>
+            ) : (
+              <>
+                <PlayCircle className="h-5 w-5" />
+                Start Bot
+              </>
+            )}
+          </Button>
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Link href="/strategy-builder">
