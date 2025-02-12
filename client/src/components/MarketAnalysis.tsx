@@ -70,30 +70,32 @@ interface MarketBreadthData {
 
 interface AlphaSignal {
   symbol: string;
-  momentum: {
-    momentum_1m: number;
-    momentum_3m: number;
-    momentum_6m: number;
-    momentum_12m: number;
+  technical: {
+    trend: string;
+    strength: number;
+    momentum: number;
   };
-  volatility: {
-    volatility_1m: number;
-    volatility_3m: number;
-    parkinson_volatility: number;
+  statistical: {
+    mean_reversion: number;
+    cointegration: number;
+    volatility: number;
   };
-  value: {
-    price_to_volume: number;
-    turnover_ratio: number;
+  ml_predictions: {
+    direction: string;
+    probability: number;
+    confidence: number;
   };
-  quality: {
-    sharpe_ratio: number;
-    sortino_ratio: number;
+  fundamental: {
+    value: number;
+    growth: number;
+    quality: number;
   };
-  market_sentiment: {
-    volume_trend: string;
-    price_trend: string;
-    volume_price_correlation: number;
-  };
+}
+
+interface MarketRegime {
+  current_regime: string;
+  volatility_regime: string;
+  regime_probability: number[];
 }
 
 const MarketAnalysis = () => {
@@ -109,10 +111,18 @@ const MarketAnalysis = () => {
   const [activeAlgorithm, setActiveAlgorithm] = useState("deeplearning");
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
 
-  const { data: alphaSignals } = useQuery({
+  const { data: marketRegime } = useQuery<MarketRegime>({
+    queryKey: ['marketRegime'],
+    queryFn: async () => {
+      const response = await fetch(`/api/market-regime?symbols=${selectedSymbol}`);
+      return response.json();
+    }
+  });
+
+  const { data: alphaSignals } = useQuery<AlphaSignal>({
     queryKey: ['alphaSignals', selectedSymbol],
     queryFn: async () => {
-      const response = await fetch(`/api/alpha-signals?symbol=${selectedSymbol}`);
+      const response = await fetch(`/api/alpha-signals?symbols=${selectedSymbol}`);
       return response.json();
     }
   });
@@ -345,7 +355,35 @@ const MarketAnalysis = () => {
                 <Activity className="w-5 h-5 text-primary" />
                 Market Regime Detection
               </h3>
-              {/* Add Market Regime Visualization Here */}
+              {marketRegime && (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span>Current Regime</span>
+                    <span className="text-primary font-bold">{marketRegime.current_regime}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Volatility Regime</span>
+                    <span className="text-primary font-bold">{marketRegime.volatility_regime}</span>
+                  </div>
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium mb-2">Regime Probabilities</h4>
+                    <div className="grid grid-cols-3 gap-2">
+                      {marketRegime.regime_probability.map((prob, index) => (
+                        <div
+                          key={index}
+                          className="h-20 bg-primary/10 rounded-lg relative overflow-hidden"
+                        >
+                          <div
+                            className="absolute bottom-0 w-full bg-primary transition-all duration-500"
+                            style={{ height: `${prob * 100}%` }}
+                          />
+                          <span className="absolute top-2 left-2 text-xs">{(prob * 100).toFixed(1)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </Card>
 
             <Card className="p-6 backdrop-blur-lg bg-card/30">

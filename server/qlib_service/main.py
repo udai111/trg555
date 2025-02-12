@@ -11,8 +11,10 @@ import pandas as pd
 from datetime import datetime
 import pytz
 import numpy as np
+from typing import List, Dict, Any
+from .quantum_service import QuantumTradingService
 
-app = FastAPI(title="Qlib Trading Service")
+app = FastAPI(title="Quantum Trading Service")
 
 # Configure CORS
 app.add_middleware(
@@ -26,6 +28,13 @@ app.add_middleware(
 # Initialize Qlib
 provider_uri = "~/.qlib/qlib_data/cn_data"  # target_dir
 qlib.init(provider_uri=provider_uri, region=REG_CN)
+
+# Initialize services
+quantum_service = QuantumTradingService()
+
+@app.on_event("startup")
+async def startup_event():
+    await quantum_service.initialize_services()
 
 @app.get("/api/market-status")
 async def get_market_status():
@@ -104,6 +113,54 @@ async def get_portfolio_analysis():
             "status": "success",
             "metrics": metrics
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/market-analysis")
+async def get_market_analysis(symbols: List[str]):
+    """Get comprehensive market analysis"""
+    try:
+        return await quantum_service.get_market_analysis(symbols)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/market-regime")
+async def get_market_regime(symbols: List[str]):
+    """Get current market regime analysis"""
+    try:
+        return await quantum_service._detect_market_regime(symbols)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/alpha-signals")
+async def get_alpha_signals(symbols: List[str]):
+    """Get alpha signals for given symbols"""
+    try:
+        return await quantum_service._generate_alpha_signals(symbols)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/portfolio/optimize")
+async def optimize_portfolio(portfolio_id: str, constraints: Dict[str, Any]):
+    """Optimize portfolio with given constraints"""
+    try:
+        return await quantum_service.optimize_portfolio(portfolio_id, constraints)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/portfolio/analytics/{portfolio_id}")
+async def get_portfolio_analytics(portfolio_id: str):
+    """Get comprehensive portfolio analytics"""
+    try:
+        return await quantum_service.get_portfolio_analytics(portfolio_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/trades/execute")
+async def execute_trades(trades: List[Dict[str, Any]], execution_style: str = "vwap"):
+    """Execute trades with specified algorithm"""
+    try:
+        return await quantum_service.execute_trades(trades, execution_style)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
