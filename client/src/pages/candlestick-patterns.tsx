@@ -1,12 +1,12 @@
 import { useEffect, useState, useRef, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createChart, ColorType, IChartApi, CandlestickData, Time } from "lightweight-charts";
+import { createChart, ColorType, SeriesOptionsCommon } from "lightweight-charts";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle,
   Bitcoin, LineChart, Globe, CandlestickChart, Bell,
-  Pencil, Settings, Info, AlertTriangle, CheckCircle
+  Pencil, Settings, Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,123 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
+
+// Chart Components
+const NormalChart = memo(({
+  data,
+  patterns,
+  drawings,
+  onDrawingComplete,
+  isDrawingMode
+}: {
+  data: any[];
+  patterns: any[];
+  drawings: any[];
+  onDrawingComplete: (drawing: any) => void;
+  isDrawingMode: boolean;
+}) => {
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+
+    setIsLoading(true);
+
+    const chart = createChart(chartContainerRef.current, {
+      layout: {
+        background: { color: '#131722', type: 'solid' },
+        textColor: '#D9D9D9',
+      },
+      grid: {
+        vertLines: { color: 'rgba(42, 46, 57, 0.5)' },
+        horzLines: { color: 'rgba(42, 46, 57, 0.5)' },
+      },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+      },
+      width: chartContainerRef.current.clientWidth,
+      height: 500,
+    });
+
+    const candlestickSeries = chart.addSeries('candlestick', {
+      upColor: '#26a69a',
+      downColor: '#ef5350',
+      borderVisible: false,
+      wickUpColor: '#26a69a',
+      wickDownColor: '#ef5350',
+    } as SeriesOptionsCommon);
+
+    candlestickSeries.setData(data);
+
+    // Add markers for patterns
+    const markers = patterns.map(pattern => ({
+      time: data[data.length - 1].time,
+      position: 'aboveBar',
+      color: pattern.successRate > 70 ? '#26a69a' : '#ef5350',
+      shape: pattern.signalType === 'buy' ? 'arrowUp' : 'arrowDown',
+      text: `${pattern.name} (${pattern.successRate}% success)`
+    }));
+
+    candlestickSeries.setMarkers(markers);
+
+    // Handle drawings
+    drawings.forEach(drawing => {
+      if (drawing.type === 'trendline' && drawing.points.length === 2) {
+        const line = chart.addSeries('line', {
+          color: drawing.color,
+          lineWidth: 2,
+        });
+        line.setData([
+          { time: drawing.points[0].x, value: drawing.points[0].y },
+          { time: drawing.points[1].x, value: drawing.points[1].y }
+        ]);
+      }
+    });
+
+    setTimeout(() => setIsLoading(false), 500);
+
+    const handleResize = () => {
+      if (chartContainerRef.current) {
+        chart.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chart.remove();
+    };
+  }, [data, patterns, drawings, isDrawingMode]);
+
+  return (
+    <div className="relative">
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-background/80 flex items-center justify-center z-50"
+          >
+            <div className="flex flex-col items-center gap-4">
+              <Activity className="w-8 h-8 animate-pulse" />
+              <p>Loading Chart...</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div ref={chartContainerRef} className="h-[500px] w-full" />
+    </div>
+  );
+});
+
+NormalChart.displayName = 'NormalChart';
 
 // Extended pattern types
 interface PatternData {
@@ -61,163 +176,13 @@ const ALL_PATTERNS = [
   "Bat Pattern", "Crab Pattern", "Shark Pattern", "ABCD Pattern"
 ];
 
-// Chart Components
-const NormalChart = memo(({
-  data,
-  patterns,
-  drawings,
-  onDrawingComplete,
-  isDrawingMode
-}: {
-  data: CandlestickData[];
-  patterns: PatternData[];
-  drawings: CustomDrawing[];
-  onDrawingComplete: (drawing: CustomDrawing) => void;
-  isDrawingMode: boolean;
-}) => {
-  const chartContainerRef = useRef<HTMLDivElement>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (!chartContainerRef.current) return;
-
-    setIsLoading(true);
-
-    const chart = createChart(chartContainerRef.current, {
-      layout: {
-        background: { type: 'solid' as ColorType, color: '#131722' },
-        textColor: '#D9D9D9',
-      },
-      grid: {
-        vertLines: { color: 'rgba(42, 46, 57, 0.5)' },
-        horzLines: { color: 'rgba(42, 46, 57, 0.5)' },
-      },
-      timeScale: {
-        timeVisible: true,
-        secondsVisible: false,
-        borderColor: '#2B2B43',
-      },
-      rightPriceScale: {
-        borderColor: '#2B2B43',
-        scaleMargins: {
-          top: 0.1,
-          bottom: 0.1,
-        },
-      },
-      crosshair: {
-        mode: 1,
-      },
-      width: chartContainerRef.current.clientWidth,
-      height: 500,
-    });
-
-    const mainSeries = chart.addCandlestickSeries({
-      upColor: '#26a69a',
-      downColor: '#ef5350',
-      borderUpColor: '#26a69a',
-      borderDownColor: '#ef5350',
-      wickUpColor: '#26a69a',
-      wickDownColor: '#ef5350',
-    });
-
-    // Add markers for patterns with success rate coloring
-    const markers = patterns.map(pattern => ({
-      time: data[data.length - 1].time,
-      position: 'aboveBar' as const,
-      color: pattern.successRate > 70 ? '#26a69a' :
-        pattern.successRate > 50 ? '#f0ad4e' : '#ef5350',
-      shape: pattern.signalType === 'buy' ? 'arrowUp' : 'arrowDown' as const,
-      text: `${pattern.name} (${pattern.successRate}% success)`
-    }));
-
-    mainSeries.setData(data);
-    mainSeries.setMarkers(markers);
-
-    // Render custom drawings
-    drawings.forEach(drawing => {
-      if (drawing.type === 'trendline' && drawing.points.length === 2) {
-        const line = chart.addLineSeries({
-          color: drawing.color,
-          lineWidth: 2,
-        });
-        line.setData([
-          { time: drawing.points[0].x as Time, value: drawing.points[0].y },
-          { time: drawing.points[1].x as Time, value: drawing.points[1].y }
-        ]);
-      }
-    });
-
-    // Drawing mode handlers
-    if (isDrawingMode) {
-      let drawingPoints: { x: number; y: number }[] = [];
-
-      chartContainerRef.current.addEventListener('click', (e) => {
-        const rect = chartContainerRef.current!.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        drawingPoints.push({ x, y });
-
-        if (drawingPoints.length === 2) {
-          onDrawingComplete({
-            type: 'trendline',
-            points: drawingPoints,
-            color: '#ffffff'
-          });
-          drawingPoints = [];
-        }
-      });
-    }
-
-    setTimeout(() => setIsLoading(false), 500);
-
-    const handleResize = () => {
-      if (chartContainerRef.current) {
-        chart.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-        });
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      chart.remove();
-    };
-  }, [data, patterns, drawings, isDrawingMode]);
-
-  return (
-    <div className="relative">
-      <AnimatePresence>
-        {isLoading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-background/80 flex items-center justify-center z-50"
-          >
-            <div className="flex flex-col items-center gap-4">
-              <Activity className="w-8 h-8 animate-pulse" />
-              <p>Loading Chart...</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <div ref={chartContainerRef} className="h-[500px] w-full" />
-    </div>
-  );
-});
-
-NormalChart.displayName = 'NormalChart';
-
 // Main Component
 export default function CandlestickPatternsPage() {
   const [activePatterns, setActivePatterns] = useState<StockPattern[]>([]);
   const [selectedStock, setSelectedStock] = useState("RELIANCE");
   const [marketType, setMarketType] = useState<'indian' | 'international' | 'crypto'>('indian');
   const [chartType, setChartType] = useState<'normal' | 'lightweight' | 'tradingview'>('normal');
-  const [chartData, setChartData] = useState<CandlestickData[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
   const [drawings, setDrawings] = useState<CustomDrawing[]>([]);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [showTutorial, setShowTutorial] = useState(true);
@@ -279,7 +244,7 @@ export default function CandlestickPatternsPage() {
     const basePrice = getBasePrice(selectedStock);
     const volatility = marketType === 'crypto' ? 0.02 : 0.01;
 
-    const data: CandlestickData[] = Array.from({ length: 50 }).map((_, i) => {
+    const data: any[] = Array.from({ length: 50 }).map((_, i) => {
       const date = new Date(currentDate);
       date.setMinutes(date.getMinutes() - (50 - i) * 15);
 
@@ -290,7 +255,7 @@ export default function CandlestickPatternsPage() {
       const close = (open + high + low) / 3 + (Math.random() - 0.5) * (basePrice * volatility / 2);
 
       return {
-        time: Math.floor(date.getTime() / 1000) as Time,
+        time: Math.floor(date.getTime() / 1000),
         open,
         high,
         low,
