@@ -1,33 +1,21 @@
 from typing import List, Dict, Any
 import numpy as np
 import pandas as pd
-from datetime import datetime, timedelta
-import tensorflow as tf
-from qlib.workflow import R
-from qlib.data import D
-import lightgbm as lgb
-import xgboost as xgb
-from prophet import Prophet
-from arch import arch_model
-import networkx as nx
-import optuna
-from sklearn.preprocessing import StandardScaler
-import empyrical as ep
-import cvxopt as opt
+from datetime import datetime
+from .market_analysis_service import MarketAnalysisService
+from .risk_management_service import RiskManagementService
 from .data_manager import AdvancedDataManager
 from .model_manager import AdvancedModelManager
-from .portfolio_optimizer import AdvancedPortfolioOptimizer
-from .strategy_engine import AdvancedStrategyEngine
 
 class QuantumTradingService:
     def __init__(self):
+        self.market_analysis = MarketAnalysisService()
+        self.risk_management = RiskManagementService()
         self.data_manager = AdvancedDataManager()
         self.model_manager = AdvancedModelManager()
-        self.portfolio_optimizer = AdvancedPortfolioOptimizer()
-        self.strategy_engine = AdvancedStrategyEngine()
         self.market_state = {}
         self.cached_signals = {}
-        
+
     async def initialize_services(self):
         """Initialize all trading services"""
         try:
@@ -42,29 +30,33 @@ class QuantumTradingService:
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
-    async def get_market_analysis(self, symbols: List[str]) -> Dict[str, Any]:
-        """Comprehensive market analysis"""
+    async def get_market_analysis(self, symbols: List[str], timeframe: str = '1d') -> Dict[str, Any]:
+        """Get comprehensive market analysis"""
         try:
             analysis = {}
-            
-            # Market Regime Detection
-            analysis["market_regime"] = await self._detect_market_regime(symbols)
-            
-            # Alpha Signals
-            analysis["alpha_signals"] = await self._generate_alpha_signals(symbols)
-            
-            # Order Flow Analysis
-            analysis["order_flow"] = await self._analyze_order_flow(symbols)
-            
-            # Market Microstructure
-            analysis["microstructure"] = await self._analyze_market_microstructure(symbols)
-            
-            # Volume Profile
-            analysis["volume_profile"] = await self._analyze_volume_profile(symbols)
-            
-            # Institutional Flow
-            analysis["institutional_flow"] = await self._analyze_institutional_flow(symbols)
-            
+
+            # Parallel analysis for each symbol
+            for symbol in symbols:
+                symbol_analysis = {}
+
+                # Price Action Analysis
+                price_action = await self.market_analysis.analyze_price_action(symbol, timeframe)
+                symbol_analysis["price_action"] = price_action
+
+                # Volume Profile Analysis
+                volume_profile = await self.market_analysis.analyze_volume_profile(symbol, timeframe)
+                symbol_analysis["volume_profile"] = volume_profile
+
+                # Market Regime Detection
+                market_regime = await self.market_analysis.detect_market_regime(symbol)
+                symbol_analysis["market_regime"] = market_regime
+
+                # Institutional Flow Analysis
+                institutional_flow = await self.market_analysis.analyze_institutional_flow(symbol)
+                symbol_analysis["institutional_flow"] = institutional_flow
+
+                analysis[symbol] = symbol_analysis
+
             return {
                 "status": "success",
                 "analysis": analysis
@@ -72,93 +64,70 @@ class QuantumTradingService:
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
-    async def _detect_market_regime(self, symbols: List[str]) -> Dict[str, Any]:
-        """Advanced market regime detection"""
+    async def optimize_portfolio(self, portfolio_id: str, constraints: Dict[str, Any]) -> Dict[str, Any]:
+        """Optimize portfolio with given constraints"""
         try:
-            data = await self.data_manager.fetch_market_data(symbols, "1y", "now")
-            
-            # Hidden Markov Model for regime detection
-            regime_model = self._train_regime_model(data)
-            current_regime = regime_model.predict(data["returns"])
-            
-            # Volatility regime using GARCH
-            garch_model = arch_model(data["returns"])
-            garch_result = garch_model.fit(disp="off")
-            volatility_regime = self._classify_volatility(garch_result.conditional_volatility[-1])
-            
-            return {
-                "current_regime": current_regime,
-                "volatility_regime": volatility_regime,
-                "regime_probability": regime_model.predict_proba(data["returns"])[-1].tolist()
-            }
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
+            # Get historical data for portfolio assets
+            portfolio_data = await self.data_manager.fetch_market_data(
+                instruments=constraints.get("instruments", []),
+                start_time=constraints.get("start_time", "1y"),
+                end_time=constraints.get("end_time", "now")
+            )
 
-    async def _generate_alpha_signals(self, symbols: List[str]) -> Dict[str, Any]:
-        """Generate comprehensive alpha signals"""
-        try:
-            signals = {}
-            
-            # Technical Alpha
-            signals["technical"] = await self.strategy_engine.generate_technical_signals(symbols)
-            
-            # Statistical Alpha
-            signals["statistical"] = await self.strategy_engine.generate_statistical_signals(symbols)
-            
-            # Machine Learning Alpha
-            signals["ml_predictions"] = await self.model_manager.generate_ml_predictions(symbols)
-            
-            # Fundamental Alpha
-            signals["fundamental"] = await self.strategy_engine.generate_fundamental_signals(symbols)
-            
-            return signals
+            # Calculate returns
+            returns = pd.DataFrame(portfolio_data["data"])
+            returns = returns.pct_change().dropna()
+
+            # Optimize portfolio
+            optimization_result = await self.risk_management.optimize_portfolio(
+                returns=returns,
+                risk_aversion=constraints.get("risk_aversion", 1.0),
+                constraints=constraints
+            )
+
+            # Calculate risk metrics
+            risk_metrics = await self.risk_management.calculate_risk_metrics(
+                returns=returns,
+                weights=optimization_result["weights"]
+            )
+
+            return {
+                "status": "success",
+                "optimization": optimization_result,
+                "risk_metrics": risk_metrics
+            }
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
     async def get_portfolio_analytics(self, portfolio_id: str) -> Dict[str, Any]:
-        """Comprehensive portfolio analytics"""
+        """Get comprehensive portfolio analytics"""
         try:
-            analytics = {}
-            
-            # Risk Analysis
-            analytics["risk"] = await self._analyze_portfolio_risk(portfolio_id)
-            
-            # Performance Attribution
-            analytics["attribution"] = await self._analyze_performance_attribution(portfolio_id)
-            
-            # Factor Exposure
-            analytics["factor_exposure"] = await self._analyze_factor_exposure(portfolio_id)
-            
-            # Transaction Cost Analysis
-            analytics["transaction_costs"] = await self._analyze_transaction_costs(portfolio_id)
-            
-            return {
-                "status": "success",
-                "analytics": analytics
-            }
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
-
-    async def optimize_portfolio(self, 
-                              portfolio_id: str, 
-                              constraints: Dict[str, Any]) -> Dict[str, Any]:
-        """Advanced portfolio optimization"""
-        try:
-            # Multi-objective optimization
-            optimization = await self.portfolio_optimizer.optimize_portfolio(
-                portfolio_id=portfolio_id,
-                constraints=constraints,
-                objectives={
-                    "return": 0.4,
-                    "risk": 0.3,
-                    "cost": 0.2,
-                    "esg": 0.1
-                }
+            # Get portfolio data
+            portfolio_data = await self.data_manager.fetch_market_data(
+                instruments=["AAPL", "GOOGL", "MSFT"],  # Example instruments
+                start_time="1y",
+                end_time="now"
             )
-            
+
+            # Calculate returns
+            returns = pd.DataFrame(portfolio_data["data"])
+            returns = returns.pct_change().dropna()
+
+            # Calculate risk metrics
+            risk_metrics = await self.risk_management.calculate_risk_metrics(returns=returns)
+
+            # Perform stress testing
+            scenarios = [
+                {"name": "market_crash", "type": "shock", "magnitude": -0.2},
+                {"name": "high_volatility", "type": "volatility", "factor": 2},
+                {"name": "trend_reversal", "type": "trend", "drift": -0.01}
+            ]
+            stress_test = await self.risk_management.stress_test_portfolio(returns, scenarios)
+
             return {
                 "status": "success",
-                "optimization": optimization
+                "risk_metrics": risk_metrics,
+                "stress_test": stress_test
             }
         except Exception as e:
             return {"status": "error", "message": str(e)}
@@ -169,19 +138,19 @@ class QuantumTradingService:
         """Smart order execution"""
         try:
             execution_results = []
-            
+
             for trade in trades:
                 # Analyze market impact
                 impact = await self._estimate_market_impact(trade)
-                
+
                 # Optimize execution trajectory
                 trajectory = await self._optimize_execution_trajectory(trade, impact)
-                
+
                 # Execute with selected algorithm
                 result = await self._execute_with_algorithm(trade, trajectory, execution_style)
-                
+
                 execution_results.append(result)
-            
+
             return {
                 "status": "success",
                 "execution_results": execution_results
