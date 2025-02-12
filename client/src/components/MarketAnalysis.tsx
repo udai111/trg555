@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
-import { Card } from "@/components/ui/card";
+import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -12,12 +12,22 @@ import {
   ArrowDownCircle,
   TrendingUp,
   TrendingDown,
+  Brain,
+  Network,
+  Box,
+  Cpu,
+  LineChart,
+  PieChart,
+  Share2,
+  Zap,
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import IntradayPatternScanner from './IntradayPatternScanner';
 import IntradayTradingPanel from './IntradayTradingPanel';
 import { CandlestickChart } from './CandlestickChart';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+
 
 interface CandleData {
   time: number;
@@ -58,6 +68,34 @@ interface MarketBreadthData {
   vwap: number;
 }
 
+interface AlphaSignal {
+  symbol: string;
+  momentum: {
+    momentum_1m: number;
+    momentum_3m: number;
+    momentum_6m: number;
+    momentum_12m: number;
+  };
+  volatility: {
+    volatility_1m: number;
+    volatility_3m: number;
+    parkinson_volatility: number;
+  };
+  value: {
+    price_to_volume: number;
+    turnover_ratio: number;
+  };
+  quality: {
+    sharpe_ratio: number;
+    sortino_ratio: number;
+  };
+  market_sentiment: {
+    volume_trend: string;
+    price_trend: string;
+    volume_price_correlation: number;
+  };
+}
+
 const MarketAnalysis = () => {
   const { toast } = useToast();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -68,6 +106,16 @@ const MarketAnalysis = () => {
   const [selectedTimeframe, setSelectedTimeframe] = useState("1D");
   const [selectedIndicator, setSelectedIndicator] = useState("ALL");
   const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false);
+  const [activeAlgorithm, setActiveAlgorithm] = useState("deeplearning");
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+
+  const { data: alphaSignals } = useQuery({
+    queryKey: ['alphaSignals', selectedSymbol],
+    queryFn: async () => {
+      const response = await fetch(`/api/alpha-signals?symbol=${selectedSymbol}`);
+      return response.json();
+    }
+  });
 
   useEffect(() => {
     const generateCandlestickData = () => {
@@ -215,23 +263,173 @@ const MarketAnalysis = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex justify-between items-center mb-6"
+      >
         <div>
-          <h1 className="text-2xl font-bold">Market Analysis</h1>
-          <p className="text-muted-foreground">Live Trading View with Pattern Recognition</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Quantum Trading Interface
+          </h1>
+          <p className="text-muted-foreground">Advanced Quantitative Analysis & ML-Powered Trading</p>
         </div>
-      </div>
+      </motion.div>
 
-      <Tabs defaultValue="profit" className="space-y-4">
-        <TabsList className="grid grid-cols-6 w-full">
-          <TabsTrigger value="profit">Profit</TabsTrigger>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="institutional">Institutional</TabsTrigger>
-          <TabsTrigger value="technical">Technical</TabsTrigger>
-          <TabsTrigger value="patterns">Patterns</TabsTrigger>
-          <TabsTrigger value="intraday">Intraday Scanner</TabsTrigger>
+      <Tabs defaultValue="quantum" className="space-y-4">
+        <TabsList className="grid grid-cols-7 w-full">
+          <TabsTrigger value="quantum" className="flex items-center gap-2">
+            <Cpu className="w-4 h-4" />
+            Quantum
+          </TabsTrigger>
+          <TabsTrigger value="alpha" className="flex items-center gap-2">
+            <Brain className="w-4 h-4" />
+            Alpha
+          </TabsTrigger>
+          <TabsTrigger value="network" className="flex items-center gap-2">
+            <Network className="w-4 h-4" />
+            Network
+          </TabsTrigger>
+          <TabsTrigger value="portfolio" className="flex items-center gap-2">
+            <Box className="w-4 h-4" />
+            Portfolio
+          </TabsTrigger>
+          <TabsTrigger value="execution" className="flex items-center gap-2">
+            <Zap className="w-4 h-4" />
+            Execution
+          </TabsTrigger>
+          <TabsTrigger value="risk" className="flex items-center gap-2">
+            <Share2 className="w-4 h-4" />
+            Risk
+          </TabsTrigger>
+          <TabsTrigger value="ml" className="flex items-center gap-2">
+            <LineChart className="w-4 h-4" />
+            ML Models
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="quantum">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="col-span-2 p-6 backdrop-blur-lg bg-card/30">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                  <Brain className="w-6 h-6 text-primary" />
+                  Quantum Alpha Signals
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                  {alphaSignals && Object.entries(alphaSignals).map(([factor, value]) => (
+                    <motion.div
+                      key={factor}
+                      className="p-4 rounded-lg bg-card/50 backdrop-blur"
+                      whileHover={{ scale: 1.02 }}
+                    >
+                      <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                        {factor.toUpperCase()}
+                      </h4>
+                      <div className="text-2xl font-bold text-primary">
+                        {typeof value === 'number' ? value.toFixed(2) : JSON.stringify(value)}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            </Card>
+
+            <Card className="p-6 backdrop-blur-lg bg-card/30">
+              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <Activity className="w-5 h-5 text-primary" />
+                Market Regime Detection
+              </h3>
+              {/* Add Market Regime Visualization Here */}
+            </Card>
+
+            <Card className="p-6 backdrop-blur-lg bg-card/30">
+              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <Network className="w-5 h-5 text-primary" />
+                Factor Network Analysis
+              </h3>
+              {/* Add Factor Network Visualization Here */}
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="alpha">
+          <div className="space-y-6">
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Brain className="w-5 h-5" />
+                Alpha Factor Heatmap
+              </h3>
+              {/* Add Alpha Factor Heatmap Here */}
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="network">
+          <div className="space-y-6">
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Network className="w-5 h-5" />
+                Factor Correlation Matrix
+              </h3>
+              {/* Add Factor Correlation Matrix Here */}
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="portfolio">
+          <div className="space-y-6">
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Box className="w-5 h-5" />
+                Interactive 3D Portfolio Visualization
+              </h3>
+              {/* Add 3D Portfolio Visualization Here */}
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="execution">
+          <div className="space-y-6">
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Zap className="w-5 h-5" />
+                Advanced Order Flow Visualization
+              </h3>
+              {/* Add Advanced Order Flow Visualization Here */}
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="risk">
+          <div className="space-y-6">
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Share2 className="w-5 h-5" />
+                Risk Attribution Charts
+              </h3>
+              {/* Add Risk Attribution Charts Here */}
+            </Card>
+          </div>
+        </TabsContent>
+
+
+        <TabsContent value="ml">
+          <div className="space-y-6">
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <LineChart className="w-5 h-5" />
+                ML Model Overlays on Indicators
+              </h3>
+              {/* Add ML Model Overlays on Indicators Here */}
+            </Card>
+          </div>
+        </TabsContent>
 
         <TabsContent value="profit">
           <div className="space-y-6">
@@ -240,8 +438,8 @@ const MarketAnalysis = () => {
                 <BarChart2 className="w-5 h-5" />
                 Live Trading View
               </h3>
-              <canvas 
-                ref={canvasRef} 
+              <canvas
+                ref={canvasRef}
                 className="w-full h-[600px] bg-background"
                 style={{ width: '100%', height: '600px' }}
               />
@@ -542,6 +740,48 @@ const MarketAnalysis = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6"
+      >
+        <Card className="p-6 backdrop-blur-lg bg-card/30">
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <Cpu className="w-5 h-5 text-primary" />
+            Model Performance
+          </h3>
+          <div className="space-y-4">
+            <Select value={activeAlgorithm} onValueChange={setActiveAlgorithm}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Algorithm" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="deeplearning">Deep Learning</SelectItem>
+                <SelectItem value="ensemble">Ensemble</SelectItem>
+                <SelectItem value="reinforcement">Reinforcement Learning</SelectItem>
+              </SelectContent>
+            </Select>
+            {/* Add Model Performance Metrics Here */}
+          </div>
+        </Card>
+
+        <Card className="p-6 backdrop-blur-lg bg-card/30">
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <Share2 className="w-5 h-5 text-primary" />
+            Risk Attribution
+          </h3>
+          {/* Add Risk Attribution Chart Here */}
+        </Card>
+
+        <Card className="p-6 backdrop-blur-lg bg-card/30">
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <PieChart className="w-5 h-5 text-primary" />
+            Portfolio Allocation
+          </h3>
+          {/* Add Portfolio Allocation Chart Here */}
+        </Card>
+      </motion.div>
     </div>
   );
 };
