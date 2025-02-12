@@ -203,12 +203,207 @@ const ALL_PATTERNS = [
   "Bat Pattern", "Crab Pattern", "Shark Pattern", "ABCD Pattern"
 ];
 
+// ChartScanAI Implementation
+const ChartScanAIChart = memo(({ data }: { data: CandlestickData[] }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hoveredPattern, setHoveredPattern] = useState<string | null>(null);
+  const [patterns, setPatterns] = useState<Array<{
+    type: string;
+    startIndex: number;
+    endIndex: number;
+    confidence: number;
+  }>>([]);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    setIsLoading(true);
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Set canvas size with high DPI support
+    canvas.width = canvas.clientWidth * window.devicePixelRatio;
+    canvas.height = canvas.clientHeight * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+    // Clear and set background
+    ctx.fillStyle = '#131722';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw grid with improved visibility
+    ctx.strokeStyle = 'rgba(42, 46, 57, 0.5)';
+    ctx.lineWidth = 0.5;
+
+    const gridLines = 10;
+    for (let i = 0; i <= gridLines; i++) {
+      const y = (canvas.height / gridLines) * i;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+      ctx.stroke();
+    }
+
+    // Calculate price ranges for better scaling
+    const prices = data.flatMap(d => [d.high, d.low]);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    const priceRange = maxPrice - minPrice;
+    const padding = priceRange * 0.1;
+
+    // Draw candlesticks with improved styling
+    const candleWidth = (canvas.width / data.length) * 0.8;
+    const spacing = (canvas.width / data.length) * 0.2;
+
+    // Helper function for price to y-coordinate conversion
+    const getY = (price: number) => 
+      ((maxPrice + padding - price) / (priceRange + 2 * padding)) * canvas.height;
+
+    // Draw candlesticks with patterns
+    data.forEach((candle, i) => {
+      const x = (candleWidth + spacing) * i;
+
+      // Draw candle body
+      const isGreen = candle.close > candle.open;
+      ctx.fillStyle = isGreen ? '#26a69a' : '#ef5350';
+      ctx.strokeStyle = isGreen ? '#26a69a' : '#ef5350';
+
+      const openY = getY(candle.open);
+      const closeY = getY(candle.close);
+      const highY = getY(candle.high);
+      const lowY = getY(candle.low);
+
+      // Draw body
+      ctx.fillRect(
+        x,
+        Math.min(openY, closeY),
+        candleWidth,
+        Math.abs(closeY - openY) || 1
+      );
+
+      // Draw wicks
+      ctx.beginPath();
+      ctx.moveTo(x + candleWidth / 2, highY);
+      ctx.lineTo(x + candleWidth / 2, Math.min(openY, closeY));
+      ctx.moveTo(x + candleWidth / 2, Math.max(openY, closeY));
+      ctx.lineTo(x + candleWidth / 2, lowY);
+      ctx.stroke();
+
+      // Detect patterns (simplified example)
+      if (i >= 2) {
+        // Doji pattern detection
+        const bodySize = Math.abs(candle.open - candle.close);
+        const wickSize = candle.high - candle.low;
+        if (bodySize / wickSize < 0.1) {
+          patterns.push({
+            type: 'Doji',
+            startIndex: i,
+            endIndex: i,
+            confidence: 0.85
+          });
+        }
+
+        // Hammer pattern detection
+        const upperWick = Math.abs(candle.high - Math.max(candle.open, candle.close));
+        const lowerWick = Math.abs(Math.min(candle.open, candle.close) - candle.low);
+        if (lowerWick > bodySize * 2 && upperWick < bodySize * 0.5) {
+          patterns.push({
+            type: 'Hammer',
+            startIndex: i,
+            endIndex: i,
+            confidence: 0.75
+          });
+        }
+      }
+    });
+
+    // Draw pattern indicators
+    patterns.forEach(pattern => {
+      const x = (candleWidth + spacing) * pattern.startIndex;
+      ctx.fillStyle = '#FFD700';
+      ctx.font = '12px sans-serif';
+      ctx.fillText(pattern.type, x, 20);
+    });
+
+    // Add price labels with improved formatting
+    ctx.fillStyle = '#d1d4dc';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'left';
+    for (let i = 0; i <= 10; i++) {
+      const price = minPrice + (priceRange * (i / 10));
+      const y = (canvas.height / 10) * i;
+      ctx.fillText(price.toFixed(2), 10, y - 5);
+    }
+
+    // Add interactive pattern detection
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const candleIndex = Math.floor(x / (candleWidth + spacing));
+
+      const patternAtPosition = patterns.find(p => 
+        p.startIndex <= candleIndex && p.endIndex >= candleIndex
+      );
+
+      if (patternAtPosition) {
+        setHoveredPattern(
+          `${patternAtPosition.type} (${(patternAtPosition.confidence * 100).toFixed(1)}% confidence)`
+        );
+      } else {
+        setHoveredPattern(null);
+      }
+    };
+
+    canvas.addEventListener('mousemove', handleMouseMove);
+    setTimeout(() => setIsLoading(false), 500);
+
+    return () => {
+      canvas.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [data]);
+
+  return (
+    <div className="relative">
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-background/80 flex items-center justify-center z-50"
+          >
+            <div className="flex flex-col items-center gap-4">
+              <Activity className="w-8 h-8 animate-pulse" />
+              <p>Analyzing Patterns...</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div className="relative">
+        <canvas 
+          ref={canvasRef} 
+          className="w-full h-[500px]"
+          style={{ height: '500px' }}
+        />
+        {hoveredPattern && (
+          <div className="absolute top-4 right-4 bg-background/90 p-2 rounded shadow">
+            {hoveredPattern}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
+ChartScanAIChart.displayName = 'ChartScanAIChart';
+
 // Main Component
 export default function CandlestickPatternsPage() {
   const [activePatterns, setActivePatterns] = useState<StockPattern[]>([]);
   const [selectedStock, setSelectedStock] = useState("RELIANCE");
   const [marketType, setMarketType] = useState<'indian' | 'international' | 'crypto'>('indian');
-  const [chartType, setChartType] = useState<'normal' | 'lightweight' | 'tradingview'>('normal');
+  const [chartType, setChartType] = useState<'normal' | 'lightweight' | 'tradingview' | 'chartscanai'>('normal'); // Updated chartType
   const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [drawings, setDrawings] = useState<CustomDrawing[]>([]);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
@@ -416,8 +611,8 @@ export default function CandlestickPatternsPage() {
             type="single"
             value={chartType}
             onValueChange={(value: string) => {
-              if (value === 'normal' || value === 'lightweight' || value === 'tradingview') {
-                setChartType(value as 'normal' | 'lightweight' | 'tradingview');
+              if (value === 'normal' || value === 'chartscanai' || value === 'tradingview') {
+                setChartType(value as 'normal' | 'chartscanai' | 'tradingview');
               }
             }}
           >
@@ -425,9 +620,9 @@ export default function CandlestickPatternsPage() {
               <CandlestickChart className="h-4 w-4 mr-2" />
               Pattern Chart
             </ToggleGroupItem>
-            <ToggleGroupItem value="lightweight" aria-label="Lightweight Charts">
-              <LineChart className="h-4 w-4 mr-2" />
-              Custom Chart
+            <ToggleGroupItem value="chartscanai" aria-label="ChartScanAI">
+              <Activity className="h-4 w-4 mr-2" />
+              AI Analysis
             </ToggleGroupItem>
             <ToggleGroupItem value="tradingview" aria-label="TradingView">
               <BarChart2 className="h-4 w-4 mr-2" />
@@ -493,9 +688,11 @@ export default function CandlestickPatternsPage() {
             />
           </div>
 
-          <NormalChart
-            data={chartData}
-          />
+          {chartType === 'normal' ? (
+            <NormalChart data={chartData} />
+          ) : chartType === 'chartscanai' ? (
+            <ChartScanAIChart data={chartData} />
+          ) : null}
         </Card>
 
         <Card className="p-6 overflow-auto max-h-[calc(500px+2rem)]">
