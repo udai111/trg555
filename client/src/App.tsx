@@ -5,7 +5,6 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import theme from "./theme";
 import Sidebar from "./components/Sidebar";
-import QuantumDashboard from "./components/QuantumDashboard";
 import MLPrediction from "./components/MLPrediction";
 import BacktestPanel from "./components/BacktestPanel";
 import TradingViewSection from "./components/TradingViewSection";
@@ -24,12 +23,33 @@ import { performanceManager } from "@/lib/performance-manager";
 import { Component, Suspense, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import NotFound from "@/pages/not-found";
-import { RouteComponentProps } from "wouter";
+
+// Temporary simple dashboard component
+const SimpleDashboard = () => {
+  return (
+    <div className="p-6">
+      <h1 className="text-4xl font-bold text-primary mb-6">Trading Dashboard</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="p-6 bg-card rounded-lg shadow">
+          <h2 className="text-2xl font-semibold mb-4">Market Overview</h2>
+          <p>Quick access to market data and analysis</p>
+        </div>
+        <div className="p-6 bg-card rounded-lg shadow">
+          <h2 className="text-2xl font-semibold mb-4">Portfolio</h2>
+          <p>View your current positions and performance</p>
+        </div>
+        <div className="p-6 bg-card rounded-lg shadow">
+          <h2 className="text-2xl font-semibold mb-4">Trading Tools</h2>
+          <p>Access advanced trading features</p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const MagicForecastPanelRoute = () => {
   return <MagicForecastPanel stock="" onClose={() => {}} />;
 };
-
 
 interface ErrorState {
   hasError: boolean;
@@ -38,7 +58,6 @@ interface ErrorState {
   retryCount: number;
 }
 
-// Enhanced error boundary with retry mechanism
 class ErrorBoundary extends Component<{ children: React.ReactNode }, ErrorState> {
   state: ErrorState = {
     hasError: false,
@@ -100,7 +119,6 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, ErrorState>
   }
 }
 
-// Enhanced loading spinner with timeout
 const LoadingSpinner = ({ timeout = 10000 }: { timeout?: number }) => {
   const [showTimeout, setShowTimeout] = useState(false);
   const { toast } = useToast();
@@ -174,7 +192,7 @@ function App(): JSX.Element {
                 <main className="flex-1 overflow-y-auto min-h-screen p-2 md:p-4 bg-background">
                   <Suspense fallback={<LoadingSpinner timeout={10000} />}>
                     <Switch>
-                      <Route path="/" component={QuantumDashboard} />
+                      <Route path="/" component={SimpleDashboard} />
                       <Route path="/market-overview" component={MarketOverview} />
                       <Route path="/pro-trading" component={ProTrading} />
                       <Route path="/algo-bot" component={TRAlgoBot} />
