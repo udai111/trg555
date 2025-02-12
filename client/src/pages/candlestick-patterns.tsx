@@ -1,12 +1,13 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createChart, IChartApi, CandlestickData, Time } from "lightweight-charts";
+import { createChart, IChartApi, CandlestickData, Time, ColorType } from "lightweight-charts";
 import { motion } from "framer-motion";
-import { Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle } from "lucide-react";
+import { Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle, Bitcoin, LineChart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface PatternData {
   name: string;
@@ -25,9 +26,60 @@ interface StockPattern {
   patterns: PatternData[];
 }
 
+const TradingViewChart = memo(({ symbol }: { symbol: string }) => {
+  const container = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!container.current) return;
+
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+    script.type = "text/javascript";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      "autosize": true,
+      "symbol": symbol.includes('/') ? `BINANCE:${symbol.replace('/', '')}` : `NSE:${symbol}`,
+      "timezone": "Asia/Kolkata",
+      "theme": "dark",
+      "style": "1",
+      "locale": "en",
+      "enable_publishing": false,
+      "withdateranges": true,
+      "range": "YTD",
+      "hide_side_toolbar": false,
+      "allow_symbol_change": true,
+      "details": true,
+      "hotlist": true,
+      "calendar": false,
+      "support_host": "https://www.tradingview.com"
+    });
+
+    container.current.appendChild(script);
+
+    return () => {
+      if (container.current) {
+        const script = container.current.querySelector('script');
+        if (script) {
+          script.remove();
+        }
+      }
+    };
+  }, [symbol]);
+
+  return (
+    <div ref={container} className="tradingview-widget-container h-[500px] w-full">
+      <div className="tradingview-widget-container__widget h-full" />
+    </div>
+  );
+});
+
+TradingViewChart.displayName = 'TradingViewChart';
+
 export default function CandlestickPatternsPage() {
   const [activePatterns, setActivePatterns] = useState<StockPattern[]>([]);
   const [selectedStock, setSelectedStock] = useState("RELIANCE");
+  const [marketType, setMarketType] = useState<'stocks' | 'crypto'>('stocks');
+  const [chartType, setChartType] = useState<'lightweight' | 'tradingview'>('lightweight');
   const chartRef = useRef<IChartApi | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const candlestickSeriesRef = useRef<any>(null);
@@ -39,34 +91,76 @@ export default function CandlestickPatternsPage() {
     "Falling Three Methods", "Three Inside Up", "Three Inside Down"
   ];
 
-  const mockStockData = [
+  const stockData = [
     "RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK", "WIPRO",
     "BAJFINANCE", "BHARTIARTL", "ASIANPAINT", "MARUTI"
   ];
 
+  const cryptoData = [
+    "BTC/USDT", "ETH/USDT", "BNB/USDT", "XRP/USDT", "ADA/USDT",
+    "SOL/USDT", "DOT/USDT", "DOGE/USDT", "MATIC/USDT", "LINK/USDT"
+  ];
+
+  const getStockBasePrice = (symbol: string): number => {
+    const prices: { [key: string]: number } = {
+      'RELIANCE': 2432.50,
+      'TCS': 3890.75,
+      'INFY': 1567.25,
+      'HDFCBANK': 1678.90,
+      'ICICIBANK': 987.45,
+      'WIPRO': 456.78,
+      'BAJFINANCE': 6789.30,
+      'BHARTIARTL': 876.54,
+      'ASIANPAINT': 3456.78,
+      'MARUTI': 9876.54,
+    };
+    return prices[symbol] || 1000;
+  };
+
+  const getCryptoBasePrice = (symbol: string): number => {
+    const prices: { [key: string]: number } = {
+      'BTC/USDT': 48000,
+      'ETH/USDT': 2800,
+      'BNB/USDT': 320,
+      'XRP/USDT': 0.55,
+      'ADA/USDT': 0.50,
+      'SOL/USDT': 95,
+      'DOT/USDT': 15,
+      'DOGE/USDT': 0.08,
+      'MATIC/USDT': 0.85,
+      'LINK/USDT': 18
+    };
+    return prices[symbol] || 100;
+  };
+
+  const getBasePrice = (symbol: string) => {
+    return marketType === 'crypto' ? getCryptoBasePrice(symbol) : getStockBasePrice(symbol);
+  };
+
   const initializeChart = () => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || chartType === 'tradingview') return;
 
     try {
-      // Clear existing chart
       if (chartRef.current) {
         chartRef.current.remove();
       }
 
       const chart = createChart(containerRef.current, {
         layout: {
-          background: { 
-            color: 'transparent' 
-          },
-          textColor: 'rgba(255, 255, 255, 0.9)',
+          background: { type: 'solid' as ColorType, color: '#131722' },
+          textColor: '#D9D9D9',
         },
         grid: {
-          vertLines: { color: 'rgba(197, 203, 206, 0.1)' },
-          horzLines: { color: 'rgba(197, 203, 206, 0.1)' },
+          vertLines: { color: 'rgba(42, 46, 57, 0.5)' },
+          horzLines: { color: 'rgba(42, 46, 57, 0.5)' },
         },
         timeScale: {
           timeVisible: true,
           secondsVisible: false,
+          borderColor: '#2B2B43',
+        },
+        rightPriceScale: {
+          borderColor: '#2B2B43',
         },
         width: containerRef.current.clientWidth,
         height: 500,
@@ -74,7 +168,7 @@ export default function CandlestickPatternsPage() {
 
       chartRef.current = chart;
 
-      const candlestickSeries = chart.addSeriesCustom('Candlestick', {
+      const candlestickSeries = chart.addCandlestickSeries({
         upColor: '#26a69a',
         downColor: '#ef5350',
         borderVisible: false,
@@ -84,21 +178,22 @@ export default function CandlestickPatternsPage() {
 
       candlestickSeriesRef.current = candlestickSeries;
 
-      // Generate mock data for the selected stock
       const currentDate = new Date();
+      const basePrice = getBasePrice(selectedStock);
+      const volatility = marketType === 'crypto' ? 0.02 : 0.01;
+
       const data: CandlestickData[] = Array.from({ length: 50 }).map((_, i) => {
         const date = new Date(currentDate);
         date.setMinutes(date.getMinutes() - (50 - i) * 15);
 
-        const basePrice = selectedStock === "RELIANCE" ? 2500 : 1000;
-        const variance = Math.random() * (basePrice * 0.02) - (basePrice * 0.01);
+        const variance = Math.random() * (basePrice * volatility) - (basePrice * volatility / 2);
         const open = basePrice + variance;
-        const high = open + Math.random() * (basePrice * 0.01);
-        const low = open - Math.random() * (basePrice * 0.01);
-        const close = (open + high + low) / 3 + (Math.random() - 0.5) * (basePrice * 0.005);
+        const high = open + Math.random() * (basePrice * volatility);
+        const low = open - Math.random() * (basePrice * volatility);
+        const close = (open + high + low) / 3 + (Math.random() - 0.5) * (basePrice * volatility / 2);
 
         return {
-          time: date.getTime() / 1000 as Time,
+          time: (date.getTime() / 1000) as Time,
           open,
           high,
           low,
@@ -108,7 +203,6 @@ export default function CandlestickPatternsPage() {
 
       candlestickSeries.setData(data);
 
-      // Handle resize
       const handleResize = () => {
         if (containerRef.current && chartRef.current) {
           chartRef.current.applyOptions({
@@ -125,12 +219,21 @@ export default function CandlestickPatternsPage() {
   };
 
   useEffect(() => {
-    initializeChart();
-  }, [selectedStock]); // Reinitialize chart when selected stock changes
+    if (chartType === 'lightweight') {
+      initializeChart();
+    }
+  }, [selectedStock, marketType, chartType]);
+
+  const handleMarketTypeChange = (type: string) => {
+    if (type === 'crypto' || type === 'stocks') {
+      setMarketType(type);
+      setSelectedStock(type === 'crypto' ? 'BTC/USDT' : 'RELIANCE');
+    }
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const newPatterns = mockStockData.map(symbol => ({
+      const newPatterns = (marketType === 'crypto' ? cryptoData : stockData).map(symbol => ({
         symbol,
         patterns: patterns
           .filter(() => Math.random() > 0.7)
@@ -139,9 +242,9 @@ export default function CandlestickPatternsPage() {
             probability: Math.round(Math.random() * 100),
             strength: Math.round(Math.random() * 100),
             example: {
-              entry: selectedStock === "RELIANCE" ? 2500 : 1000,
-              target: selectedStock === "RELIANCE" ? 2550 : 1050,
-              stopLoss: selectedStock === "RELIANCE" ? 2450 : 950,
+              entry: getBasePrice(symbol),
+              target: getBasePrice(symbol) * 1.02,
+              stopLoss: getBasePrice(symbol) * 0.98,
             },
             description: `A ${name} pattern indicates a potential ${Math.random() > 0.5 ? 'reversal' : 'continuation'} in the current trend.`,
           })),
@@ -150,25 +253,48 @@ export default function CandlestickPatternsPage() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [selectedStock]);
+  }, [selectedStock, marketType]);
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Live Pattern Recognition</h1>
         <div className="flex items-center gap-4">
+          <ToggleGroup type="single" value={marketType} onValueChange={handleMarketTypeChange}>
+            <ToggleGroupItem value="stocks" aria-label="Stocks">
+              <BarChart2 className="h-4 w-4 mr-2" />
+              Stocks
+            </ToggleGroupItem>
+            <ToggleGroupItem value="crypto" aria-label="Crypto">
+              <Bitcoin className="h-4 w-4 mr-2" />
+              Crypto
+            </ToggleGroupItem>
+          </ToggleGroup>
+
+          <ToggleGroup type="single" value={chartType} onValueChange={setChartType}>
+            <ToggleGroupItem value="lightweight" aria-label="Lightweight Charts">
+              <LineChart className="h-4 w-4 mr-2" />
+              Custom Chart
+            </ToggleGroupItem>
+            <ToggleGroupItem value="tradingview" aria-label="TradingView">
+              <BarChart2 className="h-4 w-4 mr-2" />
+              TradingView
+            </ToggleGroupItem>
+          </ToggleGroup>
+
           <Select value={selectedStock} onValueChange={setSelectedStock}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select stock" />
+              <SelectValue placeholder="Select asset" />
             </SelectTrigger>
             <SelectContent>
-              {mockStockData.map((stock) => (
-                <SelectItem key={stock} value={stock}>
-                  {stock}
+              {(marketType === 'crypto' ? cryptoData : stockData).map((asset) => (
+                <SelectItem key={asset} value={asset}>
+                  {asset}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 animate-pulse text-green-500" />
             <span>Live Scanning</span>
@@ -184,7 +310,11 @@ export default function CandlestickPatternsPage() {
               {selectedStock} Live Chart
             </div>
           </div>
-          <div ref={containerRef} className="h-[500px] w-full" />
+          {chartType === 'lightweight' ? (
+            <div ref={containerRef} className="h-[500px] w-full" />
+          ) : (
+            <TradingViewChart symbol={selectedStock} />
+          )}
         </Card>
 
         <Card className="p-6 overflow-auto max-h-[calc(500px+2rem)]">
@@ -225,15 +355,15 @@ export default function CandlestickPatternsPage() {
                       <div className="space-y-1 text-sm">
                         <div className="flex justify-between">
                           <span>Entry</span>
-                          <span>₹{pattern.example.entry}</span>
+                          <span>{marketType === 'crypto' ? '$' : '₹'}{pattern.example.entry.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-green-500">
                           <span>Target</span>
-                          <span>₹{pattern.example.target}</span>
+                          <span>{marketType === 'crypto' ? '$' : '₹'}{pattern.example.target.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-red-500">
                           <span>Stop Loss</span>
-                          <span>₹{pattern.example.stopLoss}</span>
+                          <span>{marketType === 'crypto' ? '$' : '₹'}{pattern.example.stopLoss.toFixed(2)}</span>
                         </div>
                       </div>
                       <div className="h-2 bg-accent/20 rounded-full overflow-hidden">
