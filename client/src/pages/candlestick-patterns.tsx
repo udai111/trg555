@@ -1,13 +1,5 @@
 import { useEffect, useState, useRef, memo } from "react";
 import { Card } from "@/components/ui/card";
-import { 
-  createChart, 
-  ColorType,
-  UTCTimestamp,
-  IChartApi,
-  SeriesOptionsCommon,
-  CandlestickData
-} from "lightweight-charts";
 import { motion, AnimatePresence } from "framer-motion";
 import { Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle, Bitcoin, LineChart, Globe, CandlestickChart, Bell, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,82 +11,117 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 
+interface CandlestickData {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
 // Chart Components
-const NormalChart = memo(({ data }: { data: CandlestickData<UTCTimestamp>[] }) => {
-  const chartContainerRef = useRef<HTMLDivElement>(null);
+const NormalChart = memo(({ data }: { data: CandlestickData[] }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const chartRef = useRef<IChartApi | null>(null);
+  const [hoveredPrice, setHoveredPrice] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!chartContainerRef.current) return;
-
+    if (!canvasRef.current) return;
     setIsLoading(true);
 
-    const chart = createChart(chartContainerRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: '#131722' },
-        textColor: '#d1d4dc',
-      },
-      grid: {
-        vertLines: { color: 'rgba(42, 46, 57, 0.5)' },
-        horzLines: { color: 'rgba(42, 46, 57, 0.5)' },
-      },
-      timeScale: {
-        timeVisible: true,
-        secondsVisible: false,
-        borderColor: '#2B2B43',
-      },
-      rightPriceScale: {
-        borderColor: '#2B2B43',
-      },
-      width: chartContainerRef.current.clientWidth,
-      height: 500,
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Set canvas size
+    canvas.width = canvas.clientWidth * window.devicePixelRatio;
+    canvas.height = canvas.clientHeight * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+    // Clear canvas
+    ctx.fillStyle = '#131722';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw grid
+    ctx.strokeStyle = 'rgba(42, 46, 57, 0.5)';
+    ctx.lineWidth = 0.5;
+
+    for (let i = 0; i < 10; i++) {
+      const y = (canvas.height / 10) * i;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+      ctx.stroke();
+    }
+
+    // Calculate price range
+    const prices = data.flatMap(d => [d.high, d.low]);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    const priceRange = maxPrice - minPrice;
+
+    // Draw candlesticks
+    const candleWidth = (canvas.width / data.length) * 0.8;
+    const spacing = (canvas.width / data.length) * 0.2;
+
+    data.forEach((candle, i) => {
+      const x = (candleWidth + spacing) * i;
+
+      // Calculate y coordinates
+      const getY = (price: number) => 
+        ((maxPrice - price) / priceRange) * (canvas.height * 0.8) + (canvas.height * 0.1);
+
+      // Draw candle body
+      ctx.fillStyle = candle.close > candle.open ? '#26a69a' : '#ef5350';
+      const openY = getY(candle.open);
+      const closeY = getY(candle.close);
+      ctx.fillRect(
+        x,
+        Math.min(openY, closeY),
+        candleWidth,
+        Math.abs(closeY - openY)
+      );
+
+      // Draw wicks
+      ctx.strokeStyle = candle.close > candle.open ? '#26a69a' : '#ef5350';
+      ctx.beginPath();
+      ctx.moveTo(x + candleWidth / 2, getY(candle.high));
+      ctx.lineTo(x + candleWidth / 2, Math.min(openY, closeY));
+      ctx.moveTo(x + candleWidth / 2, Math.max(openY, closeY));
+      ctx.lineTo(x + candleWidth / 2, getY(candle.low));
+      ctx.stroke();
     });
 
-    chartRef.current = chart;
+    // Add price labels
+    ctx.fillStyle = '#d1d4dc';
+    ctx.font = '12px sans-serif';
+    for (let i = 0; i <= 10; i++) {
+      const price = minPrice + (priceRange * (i / 10));
+      const y = (canvas.height / 10) * i;
+      ctx.fillText(price.toFixed(2), 10, y - 5);
+    }
 
-    const candlestickSeries = chart.addCandlestickSeries({
-      upColor: '#26a69a',
-      downColor: '#ef5350',
-      borderVisible: false,
-      wickUpColor: '#26a69a',
-      wickDownColor: '#ef5350',
-    });
+    // Add interactivity
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const candleIndex = Math.floor(x / (candleWidth + spacing));
 
-    // Limit to last 15 candles
-    const limitedData = data.slice(-15);
-    candlestickSeries.setData(limitedData);
-
-    // Add volume histogram
-    const volumeSeries = chart.addHistogramSeries({
-      color: '#26a69a',
-      priceFormat: {
-        type: 'volume',
-      },
-      priceScaleId: '', // Set as an overlay
-    });
-
-    // Create volume data
-    const volumeData = limitedData.map(candle => ({
-      time: candle.time,
-      value: Math.random() * 100000,
-      color: candle.close >= candle.open ? '#26a69a' : '#ef5350',
-    }));
-
-    volumeSeries.setData(volumeData);
-
-    const handleResize = () => {
-      chart.applyOptions({
-        width: chartContainerRef.current?.clientWidth || 800,
-      });
+      if (candleIndex >= 0 && candleIndex < data.length) {
+        const candle = data[candleIndex];
+        setHoveredPrice(
+          `O: ${candle.open.toFixed(2)} H: ${candle.high.toFixed(2)} L: ${candle.low.toFixed(2)} C: ${candle.close.toFixed(2)}`
+        );
+      } else {
+        setHoveredPrice(null);
+      }
     };
 
-    window.addEventListener('resize', handleResize);
+    canvas.addEventListener('mousemove', handleMouseMove);
     setTimeout(() => setIsLoading(false), 500);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
-      chart.remove();
+      canvas.removeEventListener('mousemove', handleMouseMove);
     };
   }, [data]);
 
@@ -115,7 +142,18 @@ const NormalChart = memo(({ data }: { data: CandlestickData<UTCTimestamp>[] }) =
           </motion.div>
         )}
       </AnimatePresence>
-      <div ref={chartContainerRef} className="h-[500px] w-full" />
+      <div className="relative">
+        <canvas 
+          ref={canvasRef} 
+          className="w-full h-[500px]"
+          style={{ height: '500px' }}
+        />
+        {hoveredPrice && (
+          <div className="absolute top-4 right-4 bg-background/90 p-2 rounded shadow">
+            {hoveredPrice}
+          </div>
+        )}
+      </div>
     </div>
   );
 });
@@ -171,7 +209,7 @@ export default function CandlestickPatternsPage() {
   const [selectedStock, setSelectedStock] = useState("RELIANCE");
   const [marketType, setMarketType] = useState<'indian' | 'international' | 'crypto'>('indian');
   const [chartType, setChartType] = useState<'normal' | 'lightweight' | 'tradingview'>('normal');
-  const [chartData, setChartData] = useState<CandlestickData<UTCTimestamp>[]>([]);
+  const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [drawings, setDrawings] = useState<CustomDrawing[]>([]);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [showTutorial, setShowTutorial] = useState(true);
@@ -234,7 +272,7 @@ export default function CandlestickPatternsPage() {
     const basePrice = getBasePrice(selectedStock);
     const volatility = marketType === 'crypto' ? 0.02 : 0.01;
 
-    const data: CandlestickData<UTCTimestamp>[] = Array.from({ length: 50 }).map((_, i) => {
+    const data: CandlestickData[] = Array.from({ length: 50 }).map((_, i) => {
       const date = new Date(currentDate);
       date.setMinutes(date.getMinutes() - (50 - i) * 15);
 
@@ -245,7 +283,7 @@ export default function CandlestickPatternsPage() {
       const close = (open + high + low) / 3 + (Math.random() - 0.5) * (basePrice * volatility / 2);
 
       return {
-        time: (date.getTime() / 1000) as UTCTimestamp,
+        time: date.getTime() / 1000,
         open,
         high,
         low,
