@@ -94,16 +94,16 @@ class PerformanceManager {
     memoryLimit: number
   ): number {
     let score = 0;
-    
+
     // WebGL support is critical
     if (webglSupport) score += 30;
-    
+
     // CPU cores (up to 8 cores considered)
     score += Math.min(cpuCores, 8) * 5;
-    
+
     // GPU capability
     if (hasHighEndGPU) score += 30;
-    
+
     // Memory (up to 16GB considered)
     score += Math.min(memoryLimit / 1024, 16) * 2;
 
@@ -117,15 +117,27 @@ class PerformanceManager {
 
   private applySettings() {
     if (this.settings.useHighPerformanceMode) {
-      // Enable high-performance mode optimizations
-      tf.ENV.set('WEBGL_FORCE_F16_TEXTURES', true);
-      tf.ENV.set('WEBGL_PACK', true);
+      // Enable high-performance mode optimizations for WebGL
+      try {
+        tf.ENV.set('WEBGL_FORCE_F16_TEXTURES', true);
+        tf.ENV.set('WEBGL_PACK', true);
+      } catch (e) {
+        console.warn('Failed to set WebGL optimizations:', e);
+      }
     }
 
-    // Adjust TensorFlow.js thread settings based on CPU cores
+    // If we have the capabilities, configure based on them
     if (this.capabilities) {
-      const threads = Math.min(this.capabilities.cpuCores - 1, 4);
-      tf.ENV.set('THREADPOOL_SIZE', threads);
+      try {
+        // Configure TensorFlow.js backend
+        if (this.capabilities.webglSupport) {
+          tf.setBackend('webgl');
+        } else {
+          tf.setBackend('cpu');
+        }
+      } catch (e) {
+        console.warn('Failed to configure TensorFlow.js backend:', e);
+      }
     }
   }
 
