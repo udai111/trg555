@@ -15,6 +15,10 @@ import {
   TrendingDown,
 } from "lucide-react";
 import IntradayPatternScanner from './IntradayPatternScanner';
+import IntradayTradingPanel from './IntradayTradingPanel';
+import { CandlestickChart } from './CandlestickChart';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast"; // Added import for useToast
 
 interface PatternMarker {
   time: Time;
@@ -24,7 +28,6 @@ interface PatternMarker {
   text: string;
 }
 
-// Rest of the interfaces remain the same
 interface InstitutionalData {
   fii: {
     netBuy: number;
@@ -57,10 +60,18 @@ interface MarketBreadthData {
 }
 
 const MarketAnalysis = () => {
+  const { toast } = useToast(); // Using the custom toast hook
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [patterns, setPatterns] = useState<PatternMarker[]>([]);
   const chartRef = useRef<IChartApi | null>(null);
+  const [watchlistItems, setWatchlistItems] = useState<string[]>(["RELIANCE", "TCS", "INFY"]); // Corrected state declaration
+  const [newSymbol, setNewSymbol] = useState("");
+  const [selectedSymbol, setSelectedSymbol] = useState("");
+  const [selectedTimeframe, setSelectedTimeframe] = useState("1D");
+  const [selectedIndicator, setSelectedIndicator] = useState("ALL");
+  const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false);
+
 
   // Generate mock data
   useEffect(() => {
@@ -198,14 +209,6 @@ const MarketAnalysis = () => {
     };
   }, [chartData, patterns]);
 
-  const watchlist = useState<string[]>(["RELIANCE", "TCS", "INFY"]);
-  const [newSymbol, setNewSymbol] = useState("");
-  const [selectedSymbol, setSelectedSymbol] = useState("");
-  const [selectedTimeframe, setSelectedTimeframe] = useState("1D");
-  const [selectedIndicator, setSelectedIndicator] = useState("ALL");
-  const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false);
-
-
   // Mock data
   const institutionalData: InstitutionalData = {
     fii: {
@@ -240,14 +243,14 @@ const MarketAnalysis = () => {
 
   // Functions
   const addToWatchlist = (symbol: string) => {
-    if (symbol && !watchlist[0].includes(symbol)) {
-      setWatchlist([...watchlist[0], symbol]);
+    if (symbol && !watchlistItems.includes(symbol)) {
+      setWatchlistItems([...watchlistItems, symbol]);
       setNewSymbol("");
     }
   };
 
   const removeFromWatchlist = (symbol: string) => {
-    setWatchlist(watchlist[0].filter(item => item !== symbol));
+    setWatchlistItems(watchlistItems.filter(item => item !== symbol));
   };
 
   return (
@@ -542,12 +545,45 @@ const MarketAnalysis = () => {
 
         {/* Patterns Tab */}
         <TabsContent value="patterns">
-          <p>Patterns Tab Content</p>
+          <div className="space-y-6">
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Advanced Pattern Analysis</h3>
+              <div className="mb-4">
+                <Select value={selectedSymbol} onValueChange={setSelectedSymbol}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select symbol" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="RELIANCE">RELIANCE</SelectItem>
+                    <SelectItem value="TCS">TCS</SelectItem>
+                    <SelectItem value="INFY">INFY</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <CandlestickChart
+                data={chartData}
+                onPatternDetected={(pattern) => {
+                  toast({
+                    title: "Pattern Detected",
+                    description: `Found ${pattern} pattern`,
+                    variant: "default",
+                  });
+                }}
+              />
+            </Card>
+          </div>
         </TabsContent>
 
-        {/* Add new Intraday Scanner tab */}
+        {/* Add new Intraday Scanner tab with side panel */}
         <TabsContent value="intraday">
-          <IntradayPatternScanner />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="lg:col-span-1">
+              <IntradayPatternScanner />
+            </div>
+            <div className="lg:col-span-1">
+              <IntradayTradingPanel />
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
