@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createChart, IChartApi, CandlestickData, Time, SeriesOptionsCommon } from 'lightweight-charts';
 import { cn } from "@/lib/utils";
 import {
   BarChart2,
@@ -18,14 +17,14 @@ import IntradayPatternScanner from './IntradayPatternScanner';
 import IntradayTradingPanel from './IntradayTradingPanel';
 import { CandlestickChart } from './CandlestickChart';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast"; 
+import { useToast } from "@/hooks/use-toast";
 
-interface PatternMarker {
-  time: Time;
-  position: 'aboveBar' | 'belowBar';
-  color: string;
-  shape: 'arrowUp' | 'arrowDown';
-  text: string;
+interface CandleData {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
 }
 
 interface InstitutionalData {
@@ -61,10 +60,8 @@ interface MarketBreadthData {
 
 const MarketAnalysis = () => {
   const { toast } = useToast();
-  const chartContainerRef = useRef<HTMLDivElement>(null);
-  const [chartData, setChartData] = useState<CandlestickData[]>([]);
-  const [patterns, setPatterns] = useState<PatternMarker[]>([]);
-  const chartRef = useRef<IChartApi | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [chartData, setChartData] = useState<CandleData[]>([]);
   const [watchlistItems, setWatchlistItems] = useState<string[]>(["RELIANCE", "TCS", "INFY"]);
   const [newSymbol, setNewSymbol] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState("");
@@ -72,10 +69,9 @@ const MarketAnalysis = () => {
   const [selectedIndicator, setSelectedIndicator] = useState("ALL");
   const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false);
 
-
   useEffect(() => {
     const generateCandlestickData = () => {
-      const data: CandlestickData[] = [];
+      const data: CandleData[] = [];
       let basePrice = 100;
       const now = new Date();
 
@@ -89,24 +85,12 @@ const MarketAnalysis = () => {
         basePrice = close;
 
         data.push({
-          time: time.getTime() / 1000 as Time,
+          time: time.getTime(),
           open,
           high,
           low,
           close,
         });
-
-        if (i > 0 && Math.random() > 0.9) {
-          const isUpPattern = Math.random() > 0.5;
-          const pattern: PatternMarker = {
-            time: time.getTime() / 1000 as Time,
-            position: isUpPattern ? 'belowBar' : 'aboveBar',
-            color: isUpPattern ? '#26a69a' : '#ef5350',
-            shape: isUpPattern ? 'arrowUp' : 'arrowDown',
-            text: isUpPattern ? 'Bullish Pattern' : 'Bearish Pattern'
-          };
-          setPatterns(prev => [...prev, pattern]);
-        }
       }
       return data;
     };
@@ -117,8 +101,8 @@ const MarketAnalysis = () => {
       setChartData(prevData => {
         const lastCandle = prevData[prevData.length - 1];
         const now = new Date();
-        const newCandle: CandlestickData = {
-          time: now.getTime() / 1000 as Time,
+        const newCandle: CandleData = {
+          time: now.getTime(),
           open: lastCandle.close,
           high: lastCandle.close + Math.random(),
           low: lastCandle.close - Math.random(),
@@ -132,74 +116,61 @@ const MarketAnalysis = () => {
   }, []);
 
   useEffect(() => {
-    if (!chartContainerRef.current) return;
+    const drawChart = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-    const chart = createChart(chartContainerRef.current, {
-      layout: {
-        background: { color: 'transparent' },
-        textColor: 'rgba(255, 255, 255, 0.9)',
-      },
-      grid: {
-        vertLines: { color: 'rgba(197, 203, 206, 0.1)' },
-        horzLines: { color: 'rgba(197, 203, 206, 0.1)' },
-      },
-      crosshair: {
-        mode: 1,
-      },
-      rightPriceScale: {
-        borderColor: 'rgba(197, 203, 206, 0.8)',
-      },
-      timeScale: {
-        borderColor: 'rgba(197, 203, 206, 0.8)',
-        timeVisible: true,
-        secondsVisible: false,
-      },
-    });
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-    chartRef.current = chart;
+      // Set canvas size
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
 
-    const mainSeries = chart.addCandlestickSeries();
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    mainSeries.applyOptions({
-      upColor: '#26a69a',
-      downColor: '#ef5350',
-      borderVisible: false,
-      wickUpColor: '#26a69a',
-      wickDownColor: '#ef5350',
-    });
+      // Calculate scaling factors
+      const maxPrice = Math.max(...chartData.map(d => d.high));
+      const minPrice = Math.min(...chartData.map(d => d.low));
+      const priceRange = maxPrice - minPrice;
+      const candleWidth = canvas.width / chartData.length;
+      const scaleY = canvas.height / priceRange;
 
-    mainSeries.setData(chartData);
+      // Draw candlesticks
+      chartData.forEach((candle, i) => {
+        const x = i * candleWidth;
+        const y = canvas.height - (candle.close - minPrice) * scaleY;
 
-    if (patterns.length > 0) {
-      mainSeries.setMarkers(
-        patterns.map(pattern => ({
-          time: pattern.time,
-          position: pattern.position,
-          color: pattern.color,
-          shape: pattern.shape,
-          text: pattern.text,
-        }))
-      );
-    }
+        // Draw candle body
+        ctx.fillStyle = candle.close > candle.open ? '#26a69a' : '#ef5350';
+        ctx.fillRect(
+          x + candleWidth * 0.2,
+          canvas.height - (Math.max(candle.open, candle.close) - minPrice) * scaleY,
+          candleWidth * 0.6,
+          Math.abs(candle.close - candle.open) * scaleY
+        );
+
+        // Draw wicks
+        ctx.beginPath();
+        ctx.strokeStyle = candle.close > candle.open ? '#26a69a' : '#ef5350';
+        ctx.moveTo(x + candleWidth / 2, canvas.height - (candle.high - minPrice) * scaleY);
+        ctx.lineTo(x + candleWidth / 2, canvas.height - (Math.max(candle.open, candle.close) - minPrice) * scaleY);
+        ctx.moveTo(x + candleWidth / 2, canvas.height - (Math.min(candle.open, candle.close) - minPrice) * scaleY);
+        ctx.lineTo(x + candleWidth / 2, canvas.height - (candle.low - minPrice) * scaleY);
+        ctx.stroke();
+      });
+    };
+
+    drawChart();
 
     const handleResize = () => {
-      if (chartContainerRef.current && chartRef.current) {
-        chartRef.current.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-          height: chartContainerRef.current.clientHeight,
-        });
-      }
+      drawChart();
     };
 
     window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      if (chartRef.current) {
-        chartRef.current.remove();
-      }
-    };
-  }, [chartData, patterns]);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [chartData]);
 
   const institutionalData: InstitutionalData = {
     fii: {
@@ -269,9 +240,12 @@ const MarketAnalysis = () => {
                 <BarChart2 className="w-5 h-5" />
                 Live Trading View
               </h3>
-              <div className="h-[600px]" ref={chartContainerRef} />
+              <canvas 
+                ref={canvasRef} 
+                className="w-full h-[600px] bg-background"
+                style={{ width: '100%', height: '600px' }}
+              />
             </Card>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -279,26 +253,26 @@ const MarketAnalysis = () => {
                   Pattern Recognition
                 </h3>
                 <div className="space-y-4">
-                  {patterns.slice(-3).map((pattern, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center justify-between"
-                    >
-                      <span className="flex items-center gap-2">
-                        {pattern.shape === 'arrowUp' ? (
-                          <ArrowUpCircle className="w-4 h-4 text-green-500" />
-                        ) : (
-                          <ArrowDownCircle className="w-4 h-4 text-red-500" />
-                        )}
-                        {pattern.text}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        {new Date((pattern.time as number) * 1000).toLocaleTimeString()}
-                      </span>
-                    </motion.div>
-                  ))}
+                  {/* {patterns.slice(-3).map((pattern, index) => ( */}
+                  {/*   <motion.div */}
+                  {/*     key={index} */}
+                  {/*     initial={{ opacity: 0, y: 20 }} */}
+                  {/*     animate={{ opacity: 1, y: 0 }} */}
+                  {/*     className="flex items-center justify-between" */}
+                  {/*   > */}
+                  {/*     <span className="flex items-center gap-2"> */}
+                  {/*       {pattern.shape === 'arrowUp' ? ( */}
+                  {/*         <ArrowUpCircle className="w-4 h-4 text-green-500" /> */}
+                  {/*       ) : ( */}
+                  {/*         <ArrowDownCircle className="w-4 h-4 text-red-500" /> */}
+                  {/*       )} */}
+                  {/*       {pattern.text} */}
+                  {/*     </span> */}
+                  {/*     <span className="text-sm text-muted-foreground"> */}
+                  {/*       {new Date((pattern.time as number) * 1000).toLocaleTimeString()} */}
+                  {/*     </span> */}
+                  {/*   </motion.div> */}
+                  {/* ))} */}
                 </div>
               </Card>
               <Card className="p-6">
