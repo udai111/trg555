@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { 
-  Activity, TrendingUp, TrendingDown, RefreshCw, PlayCircle, 
-  PauseCircle, Settings2, AlertTriangle, BarChart2, LineChart 
+import {
+  Activity, TrendingUp, TrendingDown, RefreshCw, PlayCircle,
+  PauseCircle, Settings2, AlertTriangle, BarChart2, LineChart, Workflow
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 interface Strategy {
   id: string;
@@ -223,7 +224,7 @@ const TRAlgoBot = () => {
     if (!strategy) return;
 
     // Advanced trading logic based on multiple signals
-    const shouldTrade = 
+    const shouldTrade =
       (signals.rsi === 'buy' && signals.macd === 'buy' && signals.volatility === 'normal') ||
       (signals.rsi === 'sell' && signals.macd === 'sell' && signals.volatility === 'normal');
 
@@ -242,12 +243,12 @@ const TRAlgoBot = () => {
         status: 'open',
         timestamp: new Date().toISOString(),
         risk: {
-          stopLoss: tradeType === 'buy' ? 
-            marketData.price * (1 - strategy.config.stopLoss/100) :
-            marketData.price * (1 + strategy.config.stopLoss/100),
+          stopLoss: tradeType === 'buy' ?
+            marketData.price * (1 - strategy.config.stopLoss / 100) :
+            marketData.price * (1 + strategy.config.stopLoss / 100),
           takeProfit: tradeType === 'buy' ?
-            marketData.price * (1 + strategy.config.takeProfit/100) :
-            marketData.price * (1 - strategy.config.takeProfit/100),
+            marketData.price * (1 + strategy.config.takeProfit / 100) :
+            marketData.price * (1 - strategy.config.takeProfit / 100),
           riskAmount: riskAmount
         }
       };
@@ -285,6 +286,9 @@ const TRAlgoBot = () => {
     });
   };
 
+  const strategiesCount = strategies.length;
+  const activeTradesCount = trades.filter(t => t.status === 'open').length;
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -310,7 +314,26 @@ const TRAlgoBot = () => {
           )}
         </Button>
       </div>
-
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Link href="/strategy-builder">
+          <Button variant="outline" className="w-full">
+            <Workflow className="w-4 h-4 mr-2" />
+            Strategy Builder
+          </Button>
+        </Link>
+        <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
+          <span>Active Strategies</span>
+          <span className="font-bold">{strategiesCount}</span>
+        </div>
+        <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
+          <span>Active Trades</span>
+          <span className="font-bold">{activeTradesCount}</span>
+        </div>
+        <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
+          <span>Global Rank</span>
+          <span className="font-bold text-primary">#42</span>
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {/* Strategy Configuration */}
         <Card>
@@ -401,9 +424,9 @@ const TRAlgoBot = () => {
               <div className="flex justify-between items-center">
                 <span>RSI</span>
                 <span className={
-                  marketData.rsi > 70 ? "text-red-500" : 
-                  marketData.rsi < 30 ? "text-green-500" : 
-                  "text-yellow-500"
+                  marketData.rsi > 70 ? "text-red-500" :
+                    marketData.rsi < 30 ? "text-green-500" :
+                      "text-yellow-500"
                 }>
                   {marketData.rsi.toFixed(1)}
                 </span>

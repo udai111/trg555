@@ -19,6 +19,7 @@ import NotFound from "@/pages/not-found";
 import { Component, Suspense, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import ProfitKingdom from "./pages/ProfitKingdom";
+import StrategyBuilder from "./components/StrategyBuilder";
 
 interface ErrorState {
   hasError: boolean;
@@ -165,6 +166,7 @@ function App(): JSX.Element {
                       <Route path="/intraday-probability" component={IntradayProbabilityPage} />
                       <Route path="/candlestick-patterns" component={CandlestickPatternsPage} />
                       <Route path="/profit-kingdom" component={ProfitKingdom} />
+                      <Route path="/strategy-builder" component={StrategyBuilder} />
                       <Route component={NotFound} />
                     </Switch>
                   </Suspense>
