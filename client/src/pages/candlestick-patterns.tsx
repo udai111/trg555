@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createChart, IChartApi, CandlestickData, Time } from "lightweight-charts";
+import { createChart, CandlestickData, Time } from "lightweight-charts";
 import { motion } from "framer-motion";
 import { Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle, Bitcoin, LineChart, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,7 +39,7 @@ const TradingViewChart = memo(({ symbol }: { symbol: string }) => {
     script.innerHTML = JSON.stringify({
       "autosize": true,
       "symbol": symbol.includes('/') ? `BINANCE:${symbol.replace('/', '')}` : `NSE:${symbol}`,
-      "timezone": "Asia/Kolkata",
+      "timezone": "Etc/UTC",
       "theme": "dark",
       "style": "1",
       "locale": "en",
@@ -80,8 +80,7 @@ export default function CandlestickPatternsPage() {
   const [selectedStock, setSelectedStock] = useState("RELIANCE");
   const [marketType, setMarketType] = useState<'indian' | 'international' | 'crypto'>('indian');
   const [chartType, setChartType] = useState<'lightweight' | 'tradingview'>('lightweight');
-  const chartRef = useRef<IChartApi | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
   const candlestickSeriesRef = useRef<any>(null);
 
   const patterns = [
@@ -154,7 +153,7 @@ export default function CandlestickPatternsPage() {
     return prices[symbol] || 100;
   };
 
-  const getBasePrice = (symbol: string) => {
+  const getBasePrice = (symbol: string): number => {
     return marketType === 'crypto' ? getCryptoBasePrice(symbol) : getStockBasePrice(symbol);
   };
 
@@ -171,21 +170,13 @@ export default function CandlestickPatternsPage() {
     }
   };
 
-  const initializeChart = () => {
-    if (!containerRef.current || chartType === 'tradingview') return;
+  useEffect(() => {
+    if (!chartContainerRef.current || chartType === 'tradingview') return;
 
     try {
-      if (chartRef.current) {
-        chartRef.current.remove();
-      }
-
-      // Make sure container has dimensions
-      containerRef.current.style.height = '500px';
-      containerRef.current.style.width = '100%';
-
-      const chart = createChart(containerRef.current, {
+      const chart = createChart(chartContainerRef.current, {
         layout: {
-          background: { color: '#131722' },
+          background: { type: 'solid', color: '#131722' },
           textColor: '#D9D9D9',
         },
         grid: {
@@ -206,20 +197,9 @@ export default function CandlestickPatternsPage() {
         },
         crosshair: {
           mode: 1,
-          vertLine: {
-            width: 1,
-            color: 'rgba(224, 227, 235, 0.1)',
-            style: 0,
-          },
-          horzLine: {
-            width: 1,
-            color: 'rgba(224, 227, 235, 0.1)',
-            style: 0,
-          },
         },
-        handleScroll: {
-          vertTouchDrag: false,
-        },
+        width: chartContainerRef.current.clientWidth,
+        height: 500,
       });
 
       const series = chart.addCandlestickSeries({
@@ -231,15 +211,12 @@ export default function CandlestickPatternsPage() {
         wickDownColor: '#ef5350',
       });
 
-      candlestickSeriesRef.current = series;
-      chartRef.current = chart;
-
       const currentDate = new Date();
       const basePrice = getBasePrice(selectedStock);
       const volatility = marketType === 'crypto' ? 0.02 : 0.01;
 
       const data: CandlestickData[] = Array.from({ length: 50 }).map((_, i) => {
-        const date = new Date(currentDate);
+        const date = new Date();
         date.setMinutes(date.getMinutes() - (50 - i) * 15);
 
         const variance = Math.random() * (basePrice * volatility) - (basePrice * volatility / 2);
@@ -258,40 +235,36 @@ export default function CandlestickPatternsPage() {
       });
 
       series.setData(data);
-
       chart.timeScale().fitContent();
 
       const handleResize = () => {
-        if (containerRef.current && chartRef.current) {
-          chartRef.current.applyOptions({
-            width: containerRef.current.clientWidth,
+        if (chartContainerRef.current) {
+          chart.applyOptions({
+            width: chartContainerRef.current.clientWidth,
           });
         }
       };
 
       window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
+
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        chart.remove();
+      };
     } catch (error) {
       console.error('Error initializing chart:', error);
-    }
-  };
-
-  useEffect(() => {
-    if (chartType === 'lightweight') {
-      initializeChart();
     }
   }, [selectedStock, marketType, chartType]);
 
   const handleMarketTypeChange = (type: string) => {
     if (type === 'indian' || type === 'international' || type === 'crypto') {
-      setMarketType(type);
-      // Set default stock for each market type
+      setMarketType(type as 'indian' | 'international' | 'crypto');
       const defaultSymbols = {
         indian: 'RELIANCE',
         international: 'AAPL',
         crypto: 'BTC/USDT'
       };
-      setSelectedStock(defaultSymbols[type]);
+      setSelectedStock(defaultSymbols[type as keyof typeof defaultSymbols]);
     }
   };
 
@@ -340,7 +313,11 @@ export default function CandlestickPatternsPage() {
             </ToggleGroupItem>
           </ToggleGroup>
 
-          <ToggleGroup type="single" value={chartType} onValueChange={setChartType}>
+          <ToggleGroup type="single" value={chartType} onValueChange={(value: string) => {
+            if (value === 'lightweight' || value === 'tradingview') {
+              setChartType(value);
+            }
+          }}>
             <ToggleGroupItem value="lightweight" aria-label="Lightweight Charts">
               <LineChart className="h-4 w-4 mr-2" />
               Custom Chart
@@ -380,7 +357,7 @@ export default function CandlestickPatternsPage() {
             </div>
           </div>
           {chartType === 'lightweight' ? (
-            <div ref={containerRef} className="h-[500px] w-full" />
+            <div ref={chartContainerRef} className="h-[500px] w-full" />
           ) : (
             <TradingViewChart symbol={selectedStock} />
           )}
@@ -451,23 +428,6 @@ export default function CandlestickPatternsPage() {
           </div>
         </Card>
       </div>
-
-      <Card className="p-6">
-        <h2 className="text-2xl font-semibold mb-4">Pattern Guide</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {patterns.map((pattern) => (
-            <div key={pattern} className="p-4 bg-accent/10 rounded-lg">
-              <h3 className="font-semibold flex items-center gap-2">
-                {pattern}
-                <HelpCircle className="w-4 h-4 text-muted-foreground" />
-              </h3>
-              <p className="text-sm text-muted-foreground mt-2">
-                Learn how to trade the {pattern} pattern with live examples and success rates.
-              </p>
-            </div>
-          ))}
-        </div>
-      </Card>
     </div>
   );
 }
