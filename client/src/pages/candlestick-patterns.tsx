@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createChart, ColorType, SeriesOptionsCommon } from "lightweight-charts";
+import { createChart, IChartApi } from "lightweight-charts";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle,
@@ -33,6 +33,7 @@ const NormalChart = memo(({
 }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const chartRef = useRef<IChartApi | null>(null);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -41,7 +42,7 @@ const NormalChart = memo(({
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { color: '#131722', type: 'solid' },
+        background: { color: '#131722' },
         textColor: '#D9D9D9',
       },
       grid: {
@@ -56,46 +57,45 @@ const NormalChart = memo(({
       height: 500,
     });
 
-    const candlestickSeries = chart.addSeries('candlestick', {
-      upColor: '#26a69a',
-      downColor: '#ef5350',
-      borderVisible: false,
-      wickUpColor: '#26a69a',
-      wickDownColor: '#ef5350',
-    } as SeriesOptionsCommon);
+    chartRef.current = chart;
+
+    const candlestickSeries = chart.addCandlestickSeries();
 
     candlestickSeries.setData(data);
 
-    // Add markers for patterns
-    const markers = patterns.map(pattern => ({
-      time: data[data.length - 1].time,
-      position: 'aboveBar',
-      color: pattern.successRate > 70 ? '#26a69a' : '#ef5350',
-      shape: pattern.signalType === 'buy' ? 'arrowUp' : 'arrowDown',
-      text: `${pattern.name} (${pattern.successRate}% success)`
-    }));
+    // Set the markers if available
+    if (patterns && patterns.length > 0) {
+      const markers = patterns.map(pattern => ({
+        time: data[data.length - 1].time,
+        position: 'aboveBar',
+        color: pattern.successRate > 70 ? '#26a69a' : '#ef5350',
+        shape: pattern.signalType === 'buy' ? 'arrowUp' : 'arrowDown',
+        text: `${pattern.name} (${pattern.successRate}% success)`
+      }));
+      candlestickSeries.setMarkers(markers);
+    }
 
-    candlestickSeries.setMarkers(markers);
-
-    // Handle drawings
-    drawings.forEach(drawing => {
-      if (drawing.type === 'trendline' && drawing.points.length === 2) {
-        const line = chart.addSeries('line', {
-          color: drawing.color,
-          lineWidth: 2,
-        });
-        line.setData([
-          { time: drawing.points[0].x, value: drawing.points[0].y },
-          { time: drawing.points[1].x, value: drawing.points[1].y }
-        ]);
-      }
-    });
+    // Handle drawings if available
+    if (drawings && drawings.length > 0) {
+      drawings.forEach(drawing => {
+        if (drawing.type === 'trendline' && drawing.points.length === 2) {
+          const lineSeries = chart.addLineSeries({
+            color: drawing.color,
+            lineWidth: 2,
+          });
+          lineSeries.setData([
+            { time: drawing.points[0].x, value: drawing.points[0].y },
+            { time: drawing.points[1].x, value: drawing.points[1].y }
+          ]);
+        }
+      });
+    }
 
     setTimeout(() => setIsLoading(false), 500);
 
     const handleResize = () => {
-      if (chartContainerRef.current) {
-        chart.applyOptions({
+      if (chartContainerRef.current && chartRef.current) {
+        chartRef.current.applyOptions({
           width: chartContainerRef.current.clientWidth,
         });
       }
@@ -105,7 +105,9 @@ const NormalChart = memo(({
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      chart.remove();
+      if (chartRef.current) {
+        chartRef.current.remove();
+      }
     };
   }, [data, patterns, drawings, isDrawingMode]);
 
