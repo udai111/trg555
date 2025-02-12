@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createChart, ColorType, IChartApi, CandlestickData, Time } from "lightweight-charts";
 import { motion } from "framer-motion";
-import { Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle, Bitcoin, LineChart, Globe } from "lucide-react";
+import { Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle, Bitcoin, LineChart, Globe, CandlestickChart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,6 +25,86 @@ interface StockPattern {
   symbol: string;
   patterns: PatternData[];
 }
+
+const NormalChart = memo(({ data, patterns }: { 
+  data: CandlestickData[];
+  patterns: PatternData[];
+}) => {
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+
+    const chart = createChart(chartContainerRef.current, {
+      layout: {
+        background: { type: 'solid' as ColorType, color: '#131722' },
+        textColor: '#D9D9D9',
+      },
+      grid: {
+        vertLines: { color: 'rgba(42, 46, 57, 0.5)' },
+        horzLines: { color: 'rgba(42, 46, 57, 0.5)' },
+      },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+        borderColor: '#2B2B43',
+      },
+      rightPriceScale: {
+        borderColor: '#2B2B43',
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.1,
+        },
+      },
+      crosshair: {
+        mode: 1,
+      },
+      width: chartContainerRef.current.clientWidth,
+      height: 500,
+    });
+
+    const mainSeries = chart.addCandlestickSeries({
+      upColor: '#26a69a',
+      downColor: '#ef5350',
+      borderUpColor: '#26a69a',
+      borderDownColor: '#ef5350',
+      wickUpColor: '#26a69a',
+      wickDownColor: '#ef5350',
+    });
+
+    // Add markers for patterns
+    const markers = patterns.map(pattern => ({
+      time: data[data.length - 1].time,
+      position: 'aboveBar' as const,
+      color: pattern.probability > 70 ? '#26a69a' : '#ef5350',
+      shape: 'arrowDown' as const,
+      text: pattern.name
+    }));
+
+    mainSeries.setData(data);
+    mainSeries.setMarkers(markers);
+
+    const handleResize = () => {
+      if (chartContainerRef.current) {
+        chart.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chart.remove();
+    };
+  }, [data, patterns]);
+
+  return <div ref={chartContainerRef} className="h-[500px] w-full" />;
+});
+
+NormalChart.displayName = 'NormalChart';
 
 const TradingViewChart = memo(({ symbol, marketType }: { symbol: string; marketType: string }) => {
   const container = useRef<HTMLDivElement>(null);
@@ -90,10 +170,11 @@ export default function CandlestickPatternsPage() {
   const [activePatterns, setActivePatterns] = useState<StockPattern[]>([]);
   const [selectedStock, setSelectedStock] = useState("RELIANCE");
   const [marketType, setMarketType] = useState<'indian' | 'international' | 'crypto'>('indian');
-  const [chartType, setChartType] = useState<'lightweight' | 'tradingview'>('lightweight');
+  const [chartType, setChartType] = useState<'normal' | 'lightweight' | 'tradingview'>('normal');
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<any>(null);
+  const [chartData, setChartData] = useState<CandlestickData[]>([]);
 
   const patterns = [
     "Doji", "Hammer", "Shooting Star", "Engulfing", "Morning Star",
@@ -182,109 +263,34 @@ export default function CandlestickPatternsPage() {
     }
   };
 
-  // Initialize and update chart
   useEffect(() => {
-    if (!chartContainerRef.current || chartType !== 'lightweight') return;
+    const currentDate = new Date();
+    const basePrice = getBasePrice(selectedStock);
+    const volatility = marketType === 'crypto' ? 0.02 : 0.01;
 
-    try {
-      // Cleanup previous chart instance
-      if (chartRef.current) {
-        chartRef.current.remove();
-        chartRef.current = null;
-      }
+    const data: CandlestickData[] = Array.from({ length: 50 }).map((_, i) => {
+      const date = new Date(currentDate);
+      date.setMinutes(date.getMinutes() - (50 - i) * 15);
 
-      const chart = createChart(chartContainerRef.current, {
-        layout: {
-          background: { type: 'solid' as ColorType, color: '#131722' },
-          textColor: '#D9D9D9',
-        },
-        grid: {
-          vertLines: { color: 'rgba(42, 46, 57, 0.5)' },
-          horzLines: { color: 'rgba(42, 46, 57, 0.5)' },
-        },
-        timeScale: {
-          timeVisible: true,
-          secondsVisible: false,
-          borderColor: '#2B2B43',
-        },
-        rightPriceScale: {
-          borderColor: '#2B2B43',
-          scaleMargins: {
-            top: 0.1,
-            bottom: 0.1,
-          },
-        },
-        crosshair: {
-          mode: 1,
-        },
-        width: chartContainerRef.current.clientWidth,
-        height: 500,
-      });
+      const variance = Math.random() * (basePrice * volatility) - (basePrice * volatility / 2);
+      const open = basePrice + variance;
+      const high = open + Math.random() * (basePrice * volatility);
+      const low = open - Math.random() * (basePrice * volatility);
+      const close = (open + high + low) / 3 + (Math.random() - 0.5) * (basePrice * volatility / 2);
 
-      chartRef.current = chart;
-
-      const candlestickSeries = chart.addCandlestickSeries({
-        upColor: '#26a69a',
-        downColor: '#ef5350',
-        borderUpColor: '#26a69a',
-        borderDownColor: '#ef5350',
-        wickUpColor: '#26a69a',
-        wickDownColor: '#ef5350',
-      });
-
-      candlestickSeriesRef.current = candlestickSeries;
-
-      // Generate and set data
-      const currentDate = new Date();
-      const basePrice = getBasePrice(selectedStock);
-      const volatility = marketType === 'crypto' ? 0.02 : 0.01;
-
-      const data: CandlestickData[] = Array.from({ length: 50 }).map((_, i) => {
-        const date = new Date(currentDate);
-        date.setMinutes(date.getMinutes() - (50 - i) * 15);
-
-        const variance = Math.random() * (basePrice * volatility) - (basePrice * volatility / 2);
-        const open = basePrice + variance;
-        const high = open + Math.random() * (basePrice * volatility);
-        const low = open - Math.random() * (basePrice * volatility);
-        const close = (open + high + low) / 3 + (Math.random() - 0.5) * (basePrice * volatility / 2);
-
-        return {
-          time: Math.floor(date.getTime() / 1000) as Time,
-          open,
-          high,
-          low,
-          close,
-        };
-      });
-
-      candlestickSeries.setData(data);
-      chart.timeScale().fitContent();
-
-      // Handle resize
-      const handleResize = () => {
-        if (chartContainerRef.current && chartRef.current) {
-          chartRef.current.applyOptions({
-            width: chartContainerRef.current.clientWidth,
-          });
-        }
+      return {
+        time: Math.floor(date.getTime() / 1000) as Time,
+        open,
+        high,
+        low,
+        close,
       };
+    });
 
-      window.addEventListener('resize', handleResize);
+    setChartData(data);
+  }, [selectedStock, marketType]);
 
-      return () => {
-        window.removeEventListener('resize', handleResize);
-        if (chartRef.current) {
-          chartRef.current.remove();
-          chartRef.current = null;
-        }
-      };
-    } catch (error) {
-      console.error('Error initializing chart:', error);
-    }
-  }, [selectedStock, marketType, chartType]);
 
-  // Handle market type change
   const handleMarketTypeChange = (type: string) => {
     if (type === 'indian' || type === 'international' || type === 'crypto') {
       setMarketType(type as 'indian' | 'international' | 'crypto');
@@ -297,7 +303,6 @@ export default function CandlestickPatternsPage() {
     }
   };
 
-  // Update patterns periodically
   useEffect(() => {
     const interval = setInterval(() => {
       const availableStocks = getAvailableSymbols();
@@ -347,11 +352,15 @@ export default function CandlestickPatternsPage() {
             type="single" 
             value={chartType} 
             onValueChange={(value: string) => {
-              if (value === 'lightweight' || value === 'tradingview') {
-                setChartType(value);
+              if (value === 'normal' || value === 'lightweight' || value === 'tradingview') {
+                setChartType(value as 'normal' | 'lightweight' | 'tradingview');
               }
             }}
           >
+            <ToggleGroupItem value="normal" aria-label="Normal Chart">
+              <CandlestickChart className="h-4 w-4 mr-2" />
+              Pattern Chart
+            </ToggleGroupItem>
             <ToggleGroupItem value="lightweight" aria-label="Lightweight Charts">
               <LineChart className="h-4 w-4 mr-2" />
               Custom Chart
@@ -390,7 +399,12 @@ export default function CandlestickPatternsPage() {
               {selectedStock} Live Chart
             </div>
           </div>
-          {chartType === 'lightweight' ? (
+          {chartType === 'normal' ? (
+            <NormalChart 
+              data={chartData} 
+              patterns={activePatterns.find(p => p.symbol === selectedStock)?.patterns || []} 
+            />
+          ) : chartType === 'lightweight' ? (
             <div ref={chartContainerRef} className="h-[500px] w-full" />
           ) : (
             <TradingViewChart symbol={selectedStock} marketType={marketType} />
