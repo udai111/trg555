@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { LineChart, Activity, BarChart2, Wallet, TrendingUp, TrendingDown } from "lucide-react";
+import { LineChart, Activity, BarChart2, Wallet, TrendingUp, TrendingDown, Search, Filter } from "lucide-react";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import StockSelector from "@/components/StockSelector";
 import FXWidget from "@/components/FXWidget";
 import TechnicalSummaryWidget from "@/components/TechnicalSummaryWidget";
@@ -12,77 +14,105 @@ import InterestRatesWidget from "@/components/InterestRatesWidget";
 import ForexCrossRatesWidget from "@/components/ForexCrossRatesWidget";
 import PortfolioManagement from "@/components/PortfolioManagement";
 
-const MarketHeatMap = ({ data, title }: { data: any[]; title: string }) => (
-  <Card className="p-6">
-    <h3 className="text-xl font-semibold mb-4">{title}</h3>
-    <div className="grid grid-cols-5 gap-2">
-      {data.map((item, index) => (
-        <motion.div
-          key={index}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className={cn(
-            "p-3 rounded-lg cursor-pointer transition-all",
-            item.change > 2 ? "bg-green-500/20" :
-            item.change > 0 ? "bg-green-400/20" :
-            item.change > -2 ? "bg-red-400/20" :
-            "bg-red-500/20"
-          )}
-        >
-          <div className="text-sm font-medium">{item.symbol}</div>
-          <div className={cn(
-            "text-xs",
-            item.change > 0 ? "text-green-500" : "text-red-500"
-          )}>
-            {item.change > 0 ? "+" : ""}{item.change}%
+const MarketHeatMap = ({ data, title, onFilter }: { data: any[]; title: string; onFilter?: (filter: string) => void }) => {
+  const getColorIntensity = (change: number) => {
+    const absChange = Math.abs(change);
+    if (change > 0) {
+      return `bg-green-${Math.min(Math.floor(absChange * 100), 500)}/${Math.min(Math.floor(absChange * 30), 90)}`;
+    }
+    return `bg-red-${Math.min(Math.floor(absChange * 100), 500)}/${Math.min(Math.floor(absChange * 30), 90)}`;
+  };
+
+  return (
+    <Card className="p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-semibold">{title}</h3>
+        {onFilter && (
+          <div className="flex gap-2">
+            <Input 
+              placeholder="Filter stocks..." 
+              className="w-48"
+              onChange={(e) => onFilter(e.target.value)}
+            />
+            <Button variant="outline" size="icon">
+              <Filter className="h-4 w-4" />
+            </Button>
           </div>
-        </motion.div>
-      ))}
-    </div>
-  </Card>
-);
+        )}
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+        {data.map((item, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2, delay: index * 0.02 }}
+            className={cn(
+              "p-3 rounded-lg cursor-pointer transition-all hover:scale-105",
+              getColorIntensity(item.change)
+            )}
+          >
+            <div className="text-sm font-medium">{item.symbol}</div>
+            <div className="text-xs opacity-80">{item.name}</div>
+            <div className={cn(
+              "text-xs font-mono mt-1",
+              item.change > 0 ? "text-green-700" : "text-red-700"
+            )}>
+              {item.change > 0 ? "+" : ""}{item.change.toFixed(2)}%
+            </div>
+            <div className="text-xs opacity-70">₹{item.price.toFixed(2)}</div>
+          </motion.div>
+        ))}
+      </div>
+    </Card>
+  );
+};
 
 const Dashboard = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('RELIANCE');
+  const [filter, setFilter] = useState('');
 
-  // Sample data - replace with real data from your API
+  // Enhanced sample data with more details
   const indianStocksData = [
-    { symbol: 'RELIANCE', change: 2.5 },
-    { symbol: 'TCS', change: -1.2 },
-    { symbol: 'INFY', change: 0.8 },
-    { symbol: 'HDFC', change: 3.1 },
-    { symbol: 'ICICI', change: -0.5 },
-    { symbol: 'WIPRO', change: 1.7 },
-    { symbol: 'AIRTEL', change: -2.1 },
-    { symbol: 'AXIS', change: 0.9 },
-    { symbol: 'SBI', change: 1.4 },
-    { symbol: 'LT', change: -1.8 },
+    { symbol: 'RELIANCE', name: 'Reliance Industries', price: 2467.85, change: 2.5, volume: '2.1M' },
+    { symbol: 'TCS', name: 'Tata Consultancy', price: 3890.45, change: -1.2, volume: '1.8M' },
+    { symbol: 'INFY', name: 'Infosys Limited', price: 1567.90, change: 0.8, volume: '1.5M' },
+    { symbol: 'HDFC', name: 'HDFC Bank', price: 1678.30, change: 3.1, volume: '2.3M' },
+    { symbol: 'ICICI', name: 'ICICI Bank', price: 987.65, change: -0.5, volume: '1.2M' },
+    { symbol: 'WIPRO', name: 'Wipro Limited', price: 456.70, change: 1.7, volume: '900K' },
+    { symbol: 'AIRTEL', name: 'Bharti Airtel', price: 876.50, change: -2.1, volume: '1.1M' },
+    { symbol: 'AXIS', name: 'Axis Bank', price: 987.60, change: 0.9, volume: '800K' },
+    { symbol: 'SBI', name: 'State Bank of India', price: 567.80, change: 1.4, volume: '1.9M' },
+    { symbol: 'LT', name: 'Larsen & Toubro', price: 2789.30, change: -1.8, volume: '700K' },
+    // Add more stocks here...
   ];
 
   const internationalStocksData = [
-    { symbol: 'AAPL', change: 1.8 },
-    { symbol: 'MSFT', change: 2.3 },
-    { symbol: 'GOOGL', change: -0.7 },
-    { symbol: 'AMZN', change: 1.5 },
-    { symbol: 'TSLA', change: -2.4 },
-    { symbol: 'META', change: 3.2 },
-    { symbol: 'NVDA', change: 4.1 },
-    { symbol: 'JPM', change: -1.1 },
-    { symbol: 'V', change: 0.6 },
-    { symbol: 'WMT', change: -0.3 },
+    { symbol: 'AAPL', name: 'Apple Inc.', price: 189.30, change: 1.8, volume: '5.2M' },
+    { symbol: 'MSFT', name: 'Microsoft', price: 420.45, change: 2.3, volume: '4.8M' },
+    { symbol: 'GOOGL', name: 'Alphabet', price: 145.70, change: -0.7, volume: '3.1M' },
+    { symbol: 'AMZN', name: 'Amazon', price: 178.90, change: 1.5, volume: '4.5M' },
+    { symbol: 'TSLA', name: 'Tesla', price: 189.30, change: -2.4, volume: '6.7M' },
+    { symbol: 'META', name: 'Meta Platforms', price: 478.90, change: 3.2, volume: '3.8M' },
+    { symbol: 'NVDA', name: 'NVIDIA', price: 789.30, change: 4.1, volume: '5.6M' },
+    { symbol: 'JPM', name: 'JPMorgan Chase', price: 189.30, change: -1.1, volume: '2.9M' },
+    { symbol: 'V', name: 'Visa Inc.', price: 278.90, change: 0.6, volume: '2.1M' },
+    { symbol: 'WMT', name: 'Walmart', price: 167.80, change: -0.3, volume: '1.8M' },
+    // Add more stocks here...
   ];
 
   const cryptoData = [
-    { symbol: 'BTC', change: 5.2 },
-    { symbol: 'ETH', change: 3.8 },
-    { symbol: 'BNB', change: -2.1 },
-    { symbol: 'XRP', change: 1.9 },
-    { symbol: 'ADA', change: -3.4 },
-    { symbol: 'SOL', change: 7.5 },
-    { symbol: 'DOT', change: -1.7 },
-    { symbol: 'DOGE', change: 4.3 },
-    { symbol: 'MATIC', change: 2.8 },
-    { symbol: 'LINK', change: -0.9 },
+    { symbol: 'BTC', name: 'Bitcoin', price: 48234.56, change: 5.2, volume: '12.5B' },
+    { symbol: 'ETH', name: 'Ethereum', price: 2456.78, change: 3.8, volume: '8.9B' },
+    { symbol: 'BNB', name: 'Binance Coin', price: 312.45, change: -2.1, volume: '3.4B' },
+    { symbol: 'XRP', name: 'Ripple', price: 0.56, change: 1.9, volume: '2.1B' },
+    { symbol: 'ADA', name: 'Cardano', price: 0.45, change: -3.4, volume: '1.8B' },
+    { symbol: 'SOL', name: 'Solana', price: 98.76, change: 7.5, volume: '4.5B' },
+    { symbol: 'DOT', name: 'Polkadot', price: 6.78, change: -1.7, volume: '890M' },
+    { symbol: 'DOGE', name: 'Dogecoin', price: 0.089, change: 4.3, volume: '1.2B' },
+    { symbol: 'MATIC', name: 'Polygon', price: 0.89, change: 2.8, volume: '780M' },
+    { symbol: 'LINK', name: 'Chainlink', price: 15.67, change: -0.9, volume: '560M' },
+    // Add more cryptocurrencies here...
   ];
 
   return (
@@ -136,15 +166,36 @@ const Dashboard = () => {
         </TabsList>
 
         <TabsContent value="indian" className="space-y-6">
-          <MarketHeatMap data={indianStocksData} title="Indian Stock Market Heat Map" />
+          <MarketHeatMap 
+            data={indianStocksData.filter(item => 
+              item.symbol.toLowerCase().includes(filter.toLowerCase()) ||
+              item.name.toLowerCase().includes(filter.toLowerCase())
+            )} 
+            title="Indian Stock Market Heat Map"
+            onFilter={setFilter}
+          />
         </TabsContent>
 
         <TabsContent value="international" className="space-y-6">
-          <MarketHeatMap data={internationalStocksData} title="International Markets Heat Map" />
+          <MarketHeatMap 
+            data={internationalStocksData.filter(item =>
+              item.symbol.toLowerCase().includes(filter.toLowerCase()) ||
+              item.name.toLowerCase().includes(filter.toLowerCase())
+            )} 
+            title="International Markets Heat Map"
+            onFilter={setFilter}
+          />
         </TabsContent>
 
         <TabsContent value="crypto" className="space-y-6">
-          <MarketHeatMap data={cryptoData} title="Cryptocurrency Market Heat Map" />
+          <MarketHeatMap 
+            data={cryptoData.filter(item =>
+              item.symbol.toLowerCase().includes(filter.toLowerCase()) ||
+              item.name.toLowerCase().includes(filter.toLowerCase())
+            )} 
+            title="Cryptocurrency Market Heat Map"
+            onFilter={setFilter}
+          />
         </TabsContent>
       </Tabs>
 

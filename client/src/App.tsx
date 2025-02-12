@@ -5,7 +5,7 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import theme from "./theme";
 import Sidebar from "./components/Sidebar";
-import QuantumDashboard from "./components/QuantumDashboard";
+import Dashboard from "./pages/Dashboard";
 import MLPrediction from "./components/MLPrediction";
 import BacktestPanel from "./components/BacktestPanel";
 import TradingViewSection from "./components/TradingViewSection";
@@ -16,41 +16,16 @@ import StrategyBuilder from "./components/StrategyBuilder";
 import PortfolioManagement from "./components/PortfolioManagement";
 import MarketOverview from "./components/MarketOverview";
 import MagicForecastPanel from "./components/MagicForecastPanel";
-import IntradayPatternScanner from "./components/IntradayPatternScanner";
-import OrderFlowAnalysis from "./components/OrderFlowAnalysis";
-import RiskAnalytics from "./components/RiskAnalytics";
-import AlertsManager from "./components/AlertsManager";
 import { performanceManager } from "@/lib/performance-manager";
 import { Component, Suspense, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import NotFound from "@/pages/not-found";
 
-// Temporary simple dashboard component
-const SimpleDashboard = () => {
-  return (
-    <div className="p-6">
-      <h1 className="text-4xl font-bold text-primary mb-6">Trading Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="p-6 bg-card rounded-lg shadow">
-          <h2 className="text-2xl font-semibold mb-4">Market Overview</h2>
-          <p>Quick access to market data and analysis</p>
-        </div>
-        <div className="p-6 bg-card rounded-lg shadow">
-          <h2 className="text-2xl font-semibold mb-4">Portfolio</h2>
-          <p>View your current positions and performance</p>
-        </div>
-        <div className="p-6 bg-card rounded-lg shadow">
-          <h2 className="text-2xl font-semibold mb-4">Trading Tools</h2>
-          <p>Access advanced trading features</p>
-        </div>
-      </div>
-    </div>
-  );
+const MagicForecastPanelRoute = () => {
+  return <MagicForecastPanel stock={{ name: "Default", price: 0 }} onClose={() => {}} />;
 };
 
-const MagicForecastPanelRoute = () => {
-  return <MagicForecastPanel stock="" onClose={() => {}} />;
-};
+// Temporary simple dashboard component
 
 interface ErrorState {
   hasError: boolean;
@@ -193,7 +168,7 @@ function App(): JSX.Element {
                 <main className="flex-1 overflow-y-auto min-h-screen p-2 md:p-4 bg-background">
                   <Suspense fallback={<LoadingSpinner timeout={10000} />}>
                     <Switch>
-                      <Route path="/" component={QuantumDashboard} />
+                      <Route path="/" component={Dashboard} />
                       <Route path="/market-overview" component={MarketOverview} />
                       <Route path="/pro-trading" component={ProTrading} />
                       <Route path="/algo-bot" component={TRAlgoBot} />
@@ -204,10 +179,6 @@ function App(): JSX.Element {
                       <Route path="/strategy-builder" component={StrategyBuilder} />
                       <Route path="/portfolio" component={PortfolioManagement} />
                       <Route path="/magic-forecast" component={MagicForecastPanelRoute} />
-                      <Route path="/pattern-scanner" component={IntradayPatternScanner} />
-                      <Route path="/order-flow" component={OrderFlowAnalysis} />
-                      <Route path="/risk-analytics" component={RiskAnalytics} />
-                      <Route path="/alerts" component={AlertsManager} />
                       <Route component={NotFound} />
                     </Switch>
                   </Suspense>
@@ -217,7 +188,7 @@ function App(): JSX.Element {
                 <div className="container flex flex-col items-center gap-4 py-4 md:h-24 md:flex-row md:py-0">
                   <div className="flex flex-col items-center gap-4 px-4 md:flex-row md:gap-8 md:px-0">
                     <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-                      Built by <span className="font-semibold">Tanuj Raj Gangwar</span>
+                      Built with ❤️ by Your Trading Platform
                     </p>
                   </div>
                 </div>
