@@ -1,58 +1,45 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import {
-  LineChart,
-  BarChart,
-  Activity,
-  TrendingUp,
-  Brain,
-  Zap,
-  Shield,
-  Network,
-  BarChart2,
-  ArrowUpRight,
-  ArrowDownRight,
-  RefreshCcw,
-  AlertCircle
-} from 'lucide-react';
+import { Activity, TrendingUp, Brain, Zap, Shield, Network, BarChart2, ArrowUpRight, ArrowDownRight, RefreshCcw, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { performanceManager } from '@/lib/performance-manager';
 import { cn } from '@/lib/utils';
-import { Switch } from '@/components/ui/switch';  // Updated import
-import { Label } from '@/components/ui/label';   // Separate Label import
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
-
-// Performance optimization features
+// Even faster refresh intervals for high performance
 const REFRESH_INTERVALS = {
-  HIGH_PERFORMANCE: 1000,
-  MEDIUM_PERFORMANCE: 2000,
-  LOW_PERFORMANCE: 5000
+  HIGH_PERFORMANCE: 250,
+  MEDIUM_PERFORMANCE: 500,
+  LOW_PERFORMANCE: 1000
 };
 
 const BATCH_SIZES = {
-  HIGH_PERFORMANCE: 50,
-  MEDIUM_PERFORMANCE: 25,
-  LOW_PERFORMANCE: 10
+  HIGH_PERFORMANCE: 256,
+  MEDIUM_PERFORMANCE: 128,
+  LOW_PERFORMANCE: 64
 };
+
+interface MarketAnalysisIndicators {
+  rsi: number;
+  macd: {
+    signal: number;
+    macd: number;
+    histogram: number;
+  };
+  volatility: number;
+}
 
 interface MarketAnalysis {
   symbol: string;
   price: number;
   change: number;
   volume: number;
-  indicators: {
-    rsi: number;
-    macd: {
-      histogram: number;
-      signal: number;
-      macd: number;
-    };
-    volatility: number;
-  };
+  indicators: MarketAnalysisIndicators;
   sentiment: {
     overall: 'bullish' | 'bearish' | 'neutral';
     score: number;
@@ -87,68 +74,89 @@ interface PortfolioMetrics {
   }>;
 }
 
-const QuantumDashboard = () => {
+const QuantumDashboard: React.FC = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('AAPL');
   const [timeframe, setTimeframe] = useState('1d');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [mlFeaturesAvailable, setMlFeaturesAvailable] = useState(false);
   const [initializationError, setInitializationError] = useState<string | null>(null);
-  const [performanceMode, setPerformanceMode] = useState<'high' | 'medium' | 'low'>('medium');
-  const [dataUpdateInterval, setDataUpdateInterval] = useState(REFRESH_INTERVALS.MEDIUM_PERFORMANCE);
-  const [batchSize, setBatchSize] = useState(BATCH_SIZES.MEDIUM_PERFORMANCE);
-  // Add the GPU mode toggle state and handler
-  const [useGPUMode, setUseGPUMode] = useState(false);
+  const [performanceMode, setPerformanceMode] = useState<'high' | 'medium' | 'low'>('high');
+  const [dataUpdateInterval, setDataUpdateInterval] = useState(REFRESH_INTERVALS.HIGH_PERFORMANCE);
+  const [batchSize, setBatchSize] = useState(BATCH_SIZES.HIGH_PERFORMANCE);
+  const [useGPUMode, setUseGPUMode] = useState(true);
+
+  const formatNumber = (value: number | undefined, decimals = 2): string => {
+    if (value === undefined || isNaN(value)) return 'N/A';
+    return value.toFixed(decimals);
+  };
+
+  const handleRenderMacdData = (macd: MarketAnalysisIndicators['macd'] | undefined) => {
+    if (!macd) return { signal: 'N/A', macd: 'N/A', histogram: 'N/A' };
+    return {
+      signal: formatNumber(macd.signal, 3),
+      macd: formatNumber(macd.macd, 3),
+      histogram: formatNumber(macd.histogram, 3)
+    };
+  };
+
+  const handleRenderRsiData = (rsi?: number) => {
+    if (typeof rsi !== 'number') return { value: 'N/A', className: '' };
+    return {
+      value: formatNumber(rsi),
+      className: rsi > 70 ? 'text-red-500' : rsi < 30 ? 'text-green-500' : ''
+    };
+  };
+
+  const handleGPUModeChange = useCallback(async (enabled: boolean) => {
+    setUseGPUMode(enabled);
+    try {
+      await performanceManager.updateSettings({
+        useHighPerformanceMode: enabled,
+        enableBackgroundProcessing: enabled,
+        renderQuality: enabled ? 'high' : 'medium',
+        maxParallelOperations: enabled ? 8 : 4,
+        batchSize: enabled ? BATCH_SIZES.HIGH_PERFORMANCE : BATCH_SIZES.MEDIUM_PERFORMANCE
+      });
+    } catch (error) {
+      console.error('Failed to switch GPU mode:', error);
+      setUseGPUMode(!enabled);
+    }
+  }, []);
 
   useEffect(() => {
     const initPerformance = async () => {
       try {
-        await performanceManager.detectCapabilities();
-        const settings = performanceManager.getRecommendedSettings();
-        await performanceManager.updateSettings(settings);
+        const initPromise = performanceManager.updateSettings({
+          useHighPerformanceMode: useGPUMode,
+          enableBackgroundProcessing: true,
+          renderQuality: 'high',
+          updateInterval: REFRESH_INTERVALS.HIGH_PERFORMANCE,
+          maxParallelOperations: 8,
+          batchSize: BATCH_SIZES.HIGH_PERFORMANCE
+        });
+
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('ML initialization timeout')), 5000)
+        );
+
+        await Promise.race([initPromise, timeoutPromise]);
         setMlFeaturesAvailable(true);
+        setInitializationError(null);
       } catch (error) {
         console.error('Failed to initialize ML features:', error);
-        setInitializationError('ML features are temporarily unavailable. Basic trading features remain accessible.');
+        setInitializationError('ML features temporarily unavailable. Basic trading features remain accessible.');
         setMlFeaturesAvailable(false);
       }
     };
+
     initPerformance();
-  }, []);
-
-  useEffect(() => {
-    const updatePerformanceSettings = async () => {
-      const capabilities = await performanceManager.detectCapabilities();
-      const settings = performanceManager.getRecommendedSettings();
-
-      // Adjust refresh rates based on performance capabilities
-      if (settings.renderQuality === 'high') {
-        setPerformanceMode('high');
-        setDataUpdateInterval(REFRESH_INTERVALS.HIGH_PERFORMANCE);
-        setBatchSize(BATCH_SIZES.HIGH_PERFORMANCE);
-      } else if (settings.renderQuality === 'low') {
-        setPerformanceMode('low');
-        setDataUpdateInterval(REFRESH_INTERVALS.LOW_PERFORMANCE);
-        setBatchSize(BATCH_SIZES.LOW_PERFORMANCE);
-      } else {
-        setPerformanceMode('medium');
-        setDataUpdateInterval(REFRESH_INTERVALS.MEDIUM_PERFORMANCE);
-        setBatchSize(BATCH_SIZES.MEDIUM_PERFORMANCE);
-      }
-
-      // Update autoRefresh interval based on performance mode
-      if (autoRefresh) {
-        setAutoRefresh(false); // Temporarily disable to change interval
-        setTimeout(() => setAutoRefresh(true), 100); // Re-enable with new interval
-      }
-    };
-
-    updatePerformanceSettings();
-  }, []);
+  }, [useGPUMode]);
 
   const { data: marketAnalysis, isLoading: isLoadingAnalysis } = useQuery<MarketAnalysis>({
     queryKey: ['marketAnalysis', selectedSymbol, timeframe],
     queryFn: async () => {
       const response = await fetch(`/api/market-analysis?symbol=${selectedSymbol}&timeframe=${timeframe}`);
+      if (!response.ok) throw new Error('Failed to fetch market analysis');
       return response.json();
     },
     refetchInterval: autoRefresh ? dataUpdateInterval : false,
@@ -159,26 +167,12 @@ const QuantumDashboard = () => {
     queryKey: ['portfolioMetrics'],
     queryFn: async () => {
       const response = await fetch('/api/portfolio-metrics');
+      if (!response.ok) throw new Error('Failed to fetch portfolio metrics');
       return response.json();
     },
-    refetchInterval: autoRefresh ? dataUpdateInterval * 2 : false,
-    staleTime: dataUpdateInterval
+    refetchInterval: autoRefresh ? dataUpdateInterval : false,
+    staleTime: dataUpdateInterval / 2
   });
-
-  const formatNumber = (value: number | undefined, decimals = 2) => {
-    if (value === undefined || isNaN(value)) return 'N/A';
-    return value.toFixed(decimals);
-  };
-
-  const handleGPUModeChange = async (enabled: boolean) => {
-    setUseGPUMode(enabled);
-    await performanceManager.updateSettings({
-      useHighPerformanceMode: enabled,
-      enableBackgroundProcessing: enabled,
-      renderQuality: enabled ? 'high' : 'low',
-      maxParallelOperations: enabled ? 4 : 1
-    });
-  };
 
   if (isLoadingAnalysis && isLoadingPortfolio) {
     return (
@@ -329,11 +323,8 @@ const QuantumDashboard = () => {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <p className="text-sm text-muted-foreground">RSI</p>
-                          <p className={`font-semibold ${
-                            marketAnalysis?.indicators.rsi > 70 ? 'text-red-500' :
-                              marketAnalysis?.indicators.rsi < 30 ? 'text-green-500' : ''
-                          }`}>
-                            {marketAnalysis?.indicators.rsi ? formatNumber(marketAnalysis.indicators.rsi) : 'N/A'}
+                          <p className={`font-semibold ${handleRenderRsiData(marketAnalysis?.indicators.rsi)?.className}`}>
+                            {handleRenderRsiData(marketAnalysis?.indicators.rsi)?.value}
                           </p>
                         </div>
                         <div>
@@ -349,16 +340,16 @@ const QuantumDashboard = () => {
                         <div className="space-y-1">
                           <div className="flex justify-between">
                             <span>Signal</span>
-                            <span>{marketAnalysis?.indicators.macd.signal ? formatNumber(marketAnalysis.indicators.macd.signal, 3) : 'N/A'}</span>
+                            <span>{handleRenderMacdData(marketAnalysis?.indicators.macd)?.signal}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>MACD</span>
-                            <span>{marketAnalysis?.indicators.macd.macd ? formatNumber(marketAnalysis.indicators.macd.macd, 3) : 'N/A'}</span>
+                            <span>{handleRenderMacdData(marketAnalysis?.indicators.macd)?.macd}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Histogram</span>
-                            <span className={marketAnalysis?.indicators.macd.histogram > 0 ? 'text-green-500' : 'text-red-500'}>
-                              {marketAnalysis?.indicators.macd.histogram ? formatNumber(marketAnalysis.indicators.macd.histogram, 3) : 'N/A'}
+                            <span className={marketAnalysis?.indicators.macd?.histogram > 0 ? 'text-green-500' : 'text-red-500'}>
+                              {handleRenderMacdData(marketAnalysis?.indicators.macd)?.histogram}
                             </span>
                           </div>
                         </div>
@@ -572,7 +563,6 @@ const QuantumDashboard = () => {
                 {performanceMode.charAt(0).toUpperCase() + performanceMode.slice(1)}
               </span>
             </div>
-            {/* Add this next to the other controls in the UI */}
             <div className="flex items-center gap-2">
               <Switch
                 checked={useGPUMode}
@@ -584,7 +574,6 @@ const QuantumDashboard = () => {
           </div>
         </div>
       </motion.div>
-
       <Tabs defaultValue="market" className="space-y-4">
         <TabsList className="grid grid-cols-5 gap-4">
           <TabsTrigger value="market" className="flex items-center gap-2">
@@ -645,11 +634,8 @@ const QuantumDashboard = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">RSI</p>
-                      <p className={`font-semibold ${
-                        marketAnalysis?.indicators.rsi > 70 ? 'text-red-500' :
-                          marketAnalysis?.indicators.rsi < 30 ? 'text-green-500' : ''
-                      }`}>
-                        {marketAnalysis?.indicators.rsi ? formatNumber(marketAnalysis.indicators.rsi) : 'N/A'}
+                      <p className={`font-semibold ${handleRenderRsiData(marketAnalysis?.indicators.rsi)?.className}`}>
+                        {handleRenderRsiData(marketAnalysis?.indicators.rsi)?.value}
                       </p>
                     </div>
                     <div>
@@ -665,16 +651,16 @@ const QuantumDashboard = () => {
                     <div className="space-y-1">
                       <div className="flex justify-between">
                         <span>Signal</span>
-                        <span>{marketAnalysis?.indicators.macd.signal ? formatNumber(marketAnalysis.indicators.macd.signal, 3) : 'N/A'}</span>
+                        <span>{handleRenderMacdData(marketAnalysis?.indicators.macd)?.signal}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>MACD</span>
-                        <span>{marketAnalysis?.indicators.macd.macd ? formatNumber(marketAnalysis.indicators.macd.macd, 3) : 'N/A'}</span>
+                        <span>{handleRenderMacdData(marketAnalysis?.indicators.macd)?.macd}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Histogram</span>
-                        <span className={marketAnalysis?.indicators.macd.histogram > 0 ? 'text-green-500' : 'text-red-500'}>
-                          {marketAnalysis?.indicators.macd.histogram ? formatNumber(marketAnalysis.indicators.macd.histogram, 3) : 'N/A'}
+                        <span className={marketAnalysis?.indicators.macd?.histogram > 0 ? 'text-green-500' : 'text-red-500'}>
+                          {handleRenderMacdData(marketAnalysis?.indicators.macd)?.histogram}
                         </span>
                       </div>
                     </div>
@@ -767,7 +753,7 @@ const QuantumDashboard = () => {
                     </p>
                   </div>
                   <div className="p-4 bg-secondary rounded-lg">
-                    <p className="text-sm text-muted-foreground">Beta</p>
+                    <p className="text-sm text-muted-foreground">Beta</</p>
                     <p className="text-2xl font-bold">
                       {portfolioMetrics?.riskMetrics.beta ? formatNumber(portfolioMetrics.riskMetrics.beta) : 'N/A'}
                     </p>

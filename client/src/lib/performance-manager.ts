@@ -14,15 +14,16 @@ export interface PerformanceSettings {
 class PerformanceManager {
   private static instance: PerformanceManager;
   private settings: PerformanceSettings = {
-    useHighPerformanceMode: false,
-    enableBackgroundProcessing: false,
-    renderQuality: 'medium',
-    updateInterval: 1000,
-    maxParallelOperations: 2,
-    batchSize: 32,
+    useHighPerformanceMode: true,
+    enableBackgroundProcessing: true,
+    renderQuality: 'high',
+    updateInterval: 100, // Even faster updates
+    maxParallelOperations: 8, // More parallel ops
+    batchSize: 128, // Larger batch size
     useWebWorkers: true,
     enableMemoryOptimization: true
   };
+  private initialized = false;
 
   private constructor() {}
 
@@ -39,27 +40,33 @@ class PerformanceManager {
   }
 
   private async applySettings() {
-    try {
-      if (this.settings.useHighPerformanceMode) {
-        try {
-          await tf.setBackend('webgl');
-          console.log('GPU mode enabled successfully');
-        } catch (e) {
-          console.warn('Failed to enable GPU mode, falling back to CPU:', e);
-          await tf.setBackend('cpu');
-        }
-      } else {
-        await tf.setBackend('cpu');
-        console.log('CPU mode enabled');
-      }
-      await tf.ready();
+    if (this.initialized) {
+      await this.updateBackend();
+      return;
+    }
 
-      // Configure tensor operations
-      tf.enableProdMode();
+    try {
+      await this.updateBackend();
+
       if (this.settings.enableMemoryOptimization) {
-        tf.setAutoGC(true);
+        tf.engine().startScope();
         tf.tidy(() => {});
+        tf.engine().reset(); // Clear any leftover memory
       }
+
+      await tf.ready();
+      tf.enableProdMode();
+
+      // Configure WebGL for better performance
+      const gl = (tf.backend() as any).getGLContext?.();
+      if (gl) {
+        gl.disable(gl.DEPTH_TEST);
+        gl.disable(gl.STENCIL_TEST);
+        gl.disable(gl.BLEND);
+        gl.getExtension('WEBGL_lose_context');
+      }
+
+      this.initialized = true;
     } catch (e) {
       console.warn('Failed to configure TensorFlow.js backend:', e);
       await tf.setBackend('cpu');
@@ -67,6 +74,38 @@ class PerformanceManager {
     }
   }
 
+  private async updateBackend() {
+    if (this.settings.useHighPerformanceMode) {
+      try {
+        await tf.setBackend('webgl');
+        const gl = (tf.backend() as any).getGLContext?.();
+        if (gl) {
+          gl.powerPreference = 'high-performance';
+        }
+        console.log('GPU mode enabled successfully');
+      } catch (e) {
+        console.warn('Failed to enable GPU mode, using CPU:', e);
+        await tf.setBackend('cpu');
+      }
+    } else {
+      await tf.setBackend('cpu');
+      console.log('CPU mode enabled');
+    }
+  }
+
+  detectCapabilities(): { webgl: boolean } {
+    const webgl = tf.findBackend('webgl') !== undefined;
+    return { webgl };
+  }
+
+  getRecommendedSettings(): PerformanceSettings {
+    const capabilities = this.detectCapabilities();
+    return {
+      ...this.settings,
+      useHighPerformanceMode: capabilities.webgl,
+      renderQuality: capabilities.webgl ? 'high' : 'medium'
+    };
+  }
 
   getCurrentSettings(): PerformanceSettings {
     return { ...this.settings };
