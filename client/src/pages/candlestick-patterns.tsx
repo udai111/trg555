@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createChart, IChartApi, CandlestickData, Time, ColorType } from "lightweight-charts";
+import { createChart, IChartApi, CandlestickData, Time } from "lightweight-charts";
 import { motion } from "framer-motion";
 import { Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle, Bitcoin, LineChart } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -147,7 +147,7 @@ export default function CandlestickPatternsPage() {
 
       const chart = createChart(containerRef.current, {
         layout: {
-          background: { type: 'solid' as ColorType, color: '#131722' },
+          background: { color: '#131722' },
           textColor: '#D9D9D9',
         },
         grid: {
@@ -166,17 +166,8 @@ export default function CandlestickPatternsPage() {
         height: 500,
       });
 
-      chartRef.current = chart;
-
-      const candlestickSeries = chart.addCandlestickSeries({
-        upColor: '#26a69a',
-        downColor: '#ef5350',
-        borderVisible: false,
-        wickUpColor: '#26a69a',
-        wickDownColor: '#ef5350',
-      });
-
-      candlestickSeriesRef.current = candlestickSeries;
+      const candleSeries = chart.addCandlestickSeries();
+      candlestickSeriesRef.current = candleSeries;
 
       const currentDate = new Date();
       const basePrice = getBasePrice(selectedStock);
@@ -193,7 +184,7 @@ export default function CandlestickPatternsPage() {
         const close = (open + high + low) / 3 + (Math.random() - 0.5) * (basePrice * volatility / 2);
 
         return {
-          time: (date.getTime() / 1000) as Time,
+          time: Math.floor(date.getTime() / 1000) as Time,
           open,
           high,
           low,
@@ -201,7 +192,8 @@ export default function CandlestickPatternsPage() {
         };
       });
 
-      candlestickSeries.setData(data);
+      candleSeries.setData(data);
+      chartRef.current = chart;
 
       const handleResize = () => {
         if (containerRef.current && chartRef.current) {
