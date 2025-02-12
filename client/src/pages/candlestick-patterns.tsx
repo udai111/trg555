@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import * as LightweightCharts from "lightweight-charts";
+import { createChart, ISeriesApi, SeriesType } from "lightweight-charts";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle,
@@ -33,13 +33,14 @@ const NormalChart = memo(({
 }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const seriesRef = useRef<ISeriesApi<SeriesType>>();
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
     setIsLoading(true);
 
-    const chart = LightweightCharts.createChart(chartContainerRef.current, {
+    const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { color: '#131722' },
         textColor: '#D9D9D9',
@@ -56,14 +57,22 @@ const NormalChart = memo(({
       height: 500,
     });
 
-    const candleSeries = chart.addHistogramSeries({
-      color: '#26a69a',
-      priceFormat: {
-        type: 'price',
-      },
+    // Create area series for the chart
+    const areaSeries = chart.addAreaSeries({
+      lineColor: '#26a69a',
+      topColor: '#26a69a',
+      bottomColor: 'rgba(38, 166, 154, 0.1)',
     });
 
-    candleSeries.setData(data);
+    // Transform candlestick data to area series data
+    const areaData = data.map(candle => ({
+      time: candle.time,
+      value: candle.close,
+    }));
+
+    // Set the data
+    areaSeries.setData(areaData);
+    seriesRef.current = areaSeries;
 
     const handleResize = () => {
       chart.applyOptions({
