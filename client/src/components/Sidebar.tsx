@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Home, LineChart, Activity, BarChart2, TrendingUp, Gem, GamepadIcon, Sigma, CandlestickChart, Menu, X } from "lucide-react";
+import { Home, LineChart, Activity, BarChart2, TrendingUp, Gem, GamepadIcon, Sigma, CandlestickChart, Menu, X, Cpu } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -86,6 +86,11 @@ const Sidebar = () => {
             <NavLink href="/pro-trading" isActive={location === "/pro-trading"} onClick={handleLinkClick}>
               <Gem className="w-5 h-5 mr-3" />
               Pro Trading
+            </NavLink>
+
+            <NavLink href="/tr-algo-bot" isActive={location === "/tr-algo-bot"} onClick={handleLinkClick}>
+              <Cpu className="w-5 h-5 mr-3" />
+              TR Algo Bot
             </NavLink>
 
             <NavLink href="/intraday-probability" isActive={location === "/intraday-probability"} onClick={handleLinkClick}>
