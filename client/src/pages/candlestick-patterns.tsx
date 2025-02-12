@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createChart, IChartApi } from "lightweight-charts";
+import { createChart } from "lightweight-charts";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle,
@@ -33,7 +33,6 @@ const NormalChart = memo(({
 }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const chartRef = useRef<IChartApi | null>(null);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -42,7 +41,7 @@ const NormalChart = memo(({
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { color: '#131722' },
+        background: { type: 'solid', color: '#131722' },
         textColor: '#D9D9D9',
       },
       grid: {
@@ -52,16 +51,20 @@ const NormalChart = memo(({
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
+        borderColor: '#2B2B43',
+      },
+      rightPriceScale: {
+        borderColor: '#2B2B43',
+      },
+      crosshair: {
+        mode: 0,
       },
       width: chartContainerRef.current.clientWidth,
       height: 500,
     });
 
-    chartRef.current = chart;
-
-    const candlestickSeries = chart.addCandlestickSeries();
-
-    candlestickSeries.setData(data);
+    const series = chart.addCandlestickSeries();
+    series.setData(data);
 
     // Set the markers if available
     if (patterns && patterns.length > 0) {
@@ -72,42 +75,64 @@ const NormalChart = memo(({
         shape: pattern.signalType === 'buy' ? 'arrowUp' : 'arrowDown',
         text: `${pattern.name} (${pattern.successRate}% success)`
       }));
-      candlestickSeries.setMarkers(markers);
+      series.setMarkers(markers);
     }
 
-    // Handle drawings if available
-    if (drawings && drawings.length > 0) {
-      drawings.forEach(drawing => {
-        if (drawing.type === 'trendline' && drawing.points.length === 2) {
-          const lineSeries = chart.addLineSeries({
-            color: drawing.color,
-            lineWidth: 2,
+    // Handle drawings
+    drawings.forEach(drawing => {
+      if (drawing.type === 'trendline' && drawing.points.length === 2) {
+        const lineSeries = chart.addLineSeries({
+          color: drawing.color,
+          lineWidth: 2,
+        });
+        lineSeries.setData([
+          { time: drawing.points[0].x, value: drawing.points[0].y },
+          { time: drawing.points[1].x, value: drawing.points[1].y }
+        ]);
+      }
+    });
+
+    // Drawing mode setup
+    if (isDrawingMode && chartContainerRef.current) {
+      const points: any[] = [];
+      const clickHandler = (e: MouseEvent) => {
+        const rect = chartContainerRef.current!.getBoundingClientRect();
+        points.push({
+          x: chart.timeScale().coordinateToTime(e.clientX - rect.left),
+          y: chart.priceScale('right').coordinateToPrice(e.clientY - rect.top)!
+        });
+
+        if (points.length === 2) {
+          onDrawingComplete({
+            type: 'trendline',
+            points: points.slice(),
+            color: '#ffffff'
           });
-          lineSeries.setData([
-            { time: drawing.points[0].x, value: drawing.points[0].y },
-            { time: drawing.points[1].x, value: drawing.points[1].y }
-          ]);
+          points.length = 0;
         }
-      });
-    }
+      };
 
-    setTimeout(() => setIsLoading(false), 500);
+      chartContainerRef.current.addEventListener('click', clickHandler);
+      return () => {
+        chartContainerRef.current?.removeEventListener('click', clickHandler);
+        chart.remove();
+      };
+    }
 
     const handleResize = () => {
-      if (chartContainerRef.current && chartRef.current) {
-        chartRef.current.applyOptions({
+      if (chartContainerRef.current) {
+        chart.applyOptions({
           width: chartContainerRef.current.clientWidth,
         });
       }
     };
 
     window.addEventListener('resize', handleResize);
+    setTimeout(() => setIsLoading(false), 500);
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      if (chartRef.current) {
-        chartRef.current.remove();
-      }
+      chart.remove();
     };
   }, [data, patterns, drawings, isDrawingMode]);
 
