@@ -1,13 +1,16 @@
 import { useEffect, useState, useRef, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createChart, ISeriesApi, SeriesType } from "lightweight-charts";
+import { 
+  createChart, 
+  ColorType, 
+  IChartApi,
+  CandlestickData,
+  HistogramData,
+  Time
+} from "lightweight-charts";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle,
-  Bitcoin, LineChart, Globe, CandlestickChart, Bell,
-  Pencil, Settings, Info
-} from "lucide-react";
+import { Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle, Bitcoin, LineChart, Globe, CandlestickChart, Bell, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,35 +18,24 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 // Chart Components
-const NormalChart = memo(({
-  data,
-  patterns,
-  drawings,
-  onDrawingComplete,
-  isDrawingMode
-}: {
-  data: any[];
-  patterns: any[];
-  drawings: any[];
-  onDrawingComplete: (drawing: any) => void;
-  isDrawingMode: boolean;
-}) => {
+const NormalChart = memo(({ data }: { data: CandlestickData[] }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const seriesRef = useRef<ISeriesApi<SeriesType>>();
+  const chartRef = useRef<IChartApi | null>(null);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
     setIsLoading(true);
 
+    // Create chart with aggr-templates inspired configuration
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { color: '#131722' },
-        textColor: '#D9D9D9',
+        background: { type: 'solid', color: '#131722' as ColorType },
+        textColor: '#d1d4dc',
       },
       grid: {
         vertLines: { color: 'rgba(42, 46, 57, 0.5)' },
@@ -52,27 +44,65 @@ const NormalChart = memo(({
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
+        borderColor: '#2B2B43',
+      },
+      rightPriceScale: {
+        borderColor: '#2B2B43',
+        scaleMargins: {
+          top: 0.3,
+          bottom: 0.25,
+        },
+      },
+      crosshair: {
+        vertLine: {
+          color: '#758696',
+          width: 1,
+          style: 3,
+          labelBackgroundColor: '#131722',
+        },
+        horzLine: {
+          color: '#758696',
+          width: 1,
+          style: 3,
+          labelBackgroundColor: '#131722',
+        },
       },
       width: chartContainerRef.current.clientWidth,
       height: 500,
     });
 
-    // Create area series for the chart
-    const areaSeries = chart.addAreaSeries({
-      lineColor: '#26a69a',
-      topColor: '#26a69a',
-      bottomColor: 'rgba(38, 166, 154, 0.1)',
+    chartRef.current = chart;
+
+    // Create and style the candlestick series
+    const candlestickSeries = chart.addCandlestickSeries({
+      upColor: '#26a69a',
+      downColor: '#ef5350',
+      borderVisible: false,
+      wickUpColor: '#26a69a',
+      wickDownColor: '#ef5350',
     });
 
-    // Transform candlestick data to area series data
-    const areaData = data.map(candle => ({
+    // Limit to last 15 candles
+    const limitedData = data.slice(-15);
+    candlestickSeries.setData(limitedData);
+
+    // Add volume histogram
+    const volumeSeries = chart.addHistogramSeries({
+      color: '#26a69a',
+      priceFormat: {
+        type: 'volume',
+      },
+      priceScaleId: '', // Set as an overlay
+    });
+
+    // Create volume data
+    const volumeData: HistogramData[] = limitedData.map(candle => ({
       time: candle.time,
-      value: candle.close,
+      value: Math.random() * 100000,
+      color: candle.close >= candle.open ? '#26a69a' : '#ef5350',
     }));
 
-    // Set the data
-    areaSeries.setData(areaData);
-    seriesRef.current = areaSeries;
+    volumeSeries.setData(volumeData);
 
     const handleResize = () => {
       chart.applyOptions({
@@ -87,7 +117,7 @@ const NormalChart = memo(({
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [data, patterns, drawings, isDrawingMode]);
+  }, [data]);
 
   return (
     <div className="relative">
@@ -162,7 +192,7 @@ export default function CandlestickPatternsPage() {
   const [selectedStock, setSelectedStock] = useState("RELIANCE");
   const [marketType, setMarketType] = useState<'indian' | 'international' | 'crypto'>('indian');
   const [chartType, setChartType] = useState<'normal' | 'lightweight' | 'tradingview'>('normal');
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [drawings, setDrawings] = useState<CustomDrawing[]>([]);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [showTutorial, setShowTutorial] = useState(true);
@@ -224,7 +254,7 @@ export default function CandlestickPatternsPage() {
     const basePrice = getBasePrice(selectedStock);
     const volatility = marketType === 'crypto' ? 0.02 : 0.01;
 
-    const data: any[] = Array.from({ length: 50 }).map((_, i) => {
+    const data: CandlestickData[] = Array.from({ length: 50 }).map((_, i) => {
       const date = new Date(currentDate);
       date.setMinutes(date.getMinutes() - (50 - i) * 15);
 
@@ -235,7 +265,7 @@ export default function CandlestickPatternsPage() {
       const close = (open + high + low) / 3 + (Math.random() - 0.5) * (basePrice * volatility / 2);
 
       return {
-        time: Math.floor(date.getTime() / 1000),
+        time: date.getTime() /1000,
         open,
         high,
         low,
@@ -447,10 +477,6 @@ export default function CandlestickPatternsPage() {
 
           <NormalChart
             data={chartData}
-            patterns={activePatterns.find(p => p.symbol === selectedStock)?.patterns || []}
-            drawings={drawings}
-            onDrawingComplete={handleDrawingComplete}
-            isDrawingMode={isDrawingMode}
           />
         </Card>
 
