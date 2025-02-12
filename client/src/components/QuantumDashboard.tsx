@@ -545,25 +545,41 @@ const QuantumDashboard: React.FC = () => {
 
             <TabsContent value="risk">
               <Card className="p-4">
-                {/* Risk Management content will be implemented */}
+                <h3 className="text-lg font-semibold">Risk Analytics</h3>
+                <div className="mt-4">
+                  {/* Risk Management will be implemented */}
+                  <p>Risk management features coming soon</p>
+                </div>
               </Card>
             </TabsContent>
 
             <TabsContent value="ai">
               <Card className="p-4">
-                {/* AI Predictions content will be implemented */}
+                <h3 className="text-lg font-semibold">AI Predictions</h3>
+                <div className="mt-4">
+                  {/* AI Predictions will be implemented */}
+                  <p>AI prediction features coming soon</p>
+                </div>
               </Card>
             </TabsContent>
 
             <TabsContent value="flow">
               <Card className="p-4">
-                {/* Flow Analysis content will be implemented */}
+                <h3 className="text-lg font-semibold">Flow Analysis</h3>
+                <div className="mt-4">
+                  {/* Flow Analysis will be implemented */}
+                  <p>Flow analysis features coming soon</p>
+                </div>
               </Card>
             </TabsContent>
 
             <TabsContent value="execution">
               <Card className="p-4">
-                {/* Smart Execution content will be implemented */}
+                <h3 className="text-lg font-semibold">Smart Execution</h3>
+                <div className="mt-4">
+                  {/* Smart Execution will be implemented */}
+                  <p>Smart execution features coming soon</p>
+                </div>
               </Card>
             </TabsContent>
           </Tabs>
@@ -758,26 +774,27 @@ const QuantumDashboard: React.FC = () => {
                           <p className="text-sm text-muted-foreground">Confidence</p>
                           <p className="font-semibold">
                             {marketAnalysis?.aiPredictions.confidence ? formatNumber(marketAnalysis.aiPredictions.confidence * 100, 1) + "%" : 'N/A'}
-                          </p>
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
 
-                    <div>
-                      <h4 className="font-semibold mb-2">Market Sentiment</h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span>Overall</span>
-                          <span className={`font-semibold ${
-                            marketAnalysis?.sentiment.overall === 'bullish' ? 'text-green-500' :
-                              marketAnalysis?.sentiment.overall === 'bearish' ? 'text-red-500' :
-                                'text-yellow-500'
-                          }`}>
-                            {marketAnalysis?.sentiment.overall ? marketAnalysis.sentiment.overall.toUpperCase() : 'N/A'}
-                          </span>
-                        </div>
-                        {marketAnalysis?.sentiment.signals.map((signal, index) => (
-                          <div key={index} className="flex justify-between items-center text-sm<span>{signal.name}</span>
+                        <div>
+                          <h4 className="font-semibold mb-2">Market Sentiment</h4>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span>Overall</span>
+                              <span className={`font-semibold ${
+                                marketAnalysis?.sentiment.overall === 'bullish' ? 'text-green-500' :
+                                  marketAnalysis?.sentiment.overall === 'bearish' ? 'text-red-500' :
+                                    'text-yellow-500'
+                              }`}>
+                                {marketAnalysis?.sentiment.overall ? marketAnalysis.sentiment.overall.toUpperCase() : 'N/A'}
+                              </span>
+                            </div>
+                            {marketAnalysis?.sentiment.signals.map((signal, index) => (
+                              <div key={index} className="flex justify-between items-center text-sm">
+                                <span>{signal.name}</span>
                                 <span>{formatNumber(signal.value)}</span>
                               </div>
                             ))}
@@ -855,25 +872,41 @@ const QuantumDashboard: React.FC = () => {
 
             <TabsContent value="risk">
               <Card className="p-4">
-                {/* Risk Management content will be implemented */}
+                <h3 className="text-lg font-semibold">Risk Analytics</h3>
+                <div className="mt-4">
+                  {/* Risk Management will be implemented */}
+                  <p>Risk management features coming soon</p>
+                </div>
               </Card>
             </TabsContent>
 
             <TabsContent value="ai">
               <Card className="p-4">
-                {/* AI Predictions content will be implemented */}
+                <h3 className="text-lg font-semibold">AI Predictions</h3>
+                <div className="mt-4">
+                  {/* AI Predictions will be implemented */}
+                  <p>AI prediction features coming soon</p>
+                </div>
               </Card>
             </TabsContent>
 
             <TabsContent value="flow">
               <Card className="p-4">
-                {/* Flow Analysis content will be implemented */}
+                <h3 className="text-lg font-semibold">Flow Analysis</h3>
+                <div className="mt-4">
+                  {/* Flow Analysis will be implemented */}
+                  <p>Flow analysis features coming soon</p>
+                </div>
               </Card>
             </TabsContent>
 
             <TabsContent value="execution">
               <Card className="p-4">
-                {/* Smart Execution content will be implemented */}
+                <h3 className="text-lg font-semibold">Smart Execution</h3>
+                <div className="mt-4">
+                  {/* Smart Execution will be implemented */}
+                  <p>Smart execution features coming soon</p>
+                </div>
               </Card>
             </TabsContent>
           </Tabs>
@@ -1166,30 +1199,47 @@ const QuantumDashboard: React.FC = () => {
 
         <TabsContent value="risk">
           <Card className="p-4">
-            {/* Risk Management content will be implemented */}
+            <h3 className="text-lg font-semibold">Risk Analytics</h3>
+            <div className="mt-4">
+              {/* Risk Management will be implemented */}
+              <p>Risk management features coming soon</p>
+            </div>
           </Card>
         </TabsContent>
 
         <TabsContent value="ai">
           <Card className="p-4">
-            {/* AI Predictions content will be implemented */}
+            <h3 className="text-lg font-semibold">AI Predictions</h3>
+            <div className="mt-4">
+              {/* AI Predictions will be implemented */}
+              <p>AI prediction features coming soon</p>
+            </div>
           </Card>
         </TabsContent>
 
         <TabsContent value="flow">
           <Card className="p-4">
-            {/* Flow Analysis content will be implemented */}
+            <h3 className="text-lg font-semibold">Flow Analysis</h3>
+            <div className="mt-4">
+              {/* Flow Analysis will be implemented */}
+              <p>Flow analysis features coming soon</p>
+            </div>
           </Card>
         </TabsContent>
 
         <TabsContent value="execution">
           <Card className="p-4">
-            {/* Smart Execution content will be implemented */}
+            <h3 className="text-lg font-semibold">Smart Execution</h3>
+            <div className="mt-4">
+              {/* Smart Execution will be implemented */}
+              <p>Smart execution features coming soon</p>
+            </div>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
-  );
+  </div>
+);
 };
 
 export default QuantumDashboard;

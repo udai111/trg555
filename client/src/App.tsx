@@ -5,6 +5,7 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import theme from "./theme";
 import Sidebar from "./components/Sidebar";
+import QuantumDashboard from "./components/QuantumDashboard";
 import MLPrediction from "./components/MLPrediction";
 import BacktestPanel from "./components/BacktestPanel";
 import TradingViewSection from "./components/TradingViewSection";
@@ -192,7 +193,7 @@ function App(): JSX.Element {
                 <main className="flex-1 overflow-y-auto min-h-screen p-2 md:p-4 bg-background">
                   <Suspense fallback={<LoadingSpinner timeout={10000} />}>
                     <Switch>
-                      <Route path="/" component={SimpleDashboard} />
+                      <Route path="/" component={QuantumDashboard} />
                       <Route path="/market-overview" component={MarketOverview} />
                       <Route path="/pro-trading" component={ProTrading} />
                       <Route path="/algo-bot" component={TRAlgoBot} />
