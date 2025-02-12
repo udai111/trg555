@@ -67,39 +67,6 @@ const popularSymbols = [
   { value: "ITC", label: "ITC Limited" }
 ];
 
-// Mock equity curve data with projection
-const generateEquityData = (initialAmount: number): EquityDataPoint[] => {
-  let amount = initialAmount;
-  const data: EquityDataPoint[] = [];
-  for (let month = 0; month <= 12; month++) {
-    const isProjected = month > 6;
-    amount *= (1 + (Math.random() * 0.08 - 0.02));
-    data.push({
-      month: `Month ${month}`,
-      value: Math.round(amount),
-      isProjected
-    });
-  }
-  return data;
-};
-
-const LoadingStep = ({ step, currentStep, text }: LoadingStepProps) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className={`flex items-center space-x-2 ${currentStep >= step ? 'text-primary' : 'text-muted-foreground'}`}
-  >
-    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-      currentStep > step ? 'bg-primary text-white' :
-        currentStep === step ? 'border-2 border-primary' :
-          'border-2 border-muted'
-    }`}>
-      {currentStep > step ? '✓' : step + 1}
-    </div>
-    <span>{text}</span>
-  </motion.div>
-);
-
 // Adding new interfaces and mock data
 interface StrategyComparison {
   name: string;
@@ -132,6 +99,39 @@ const strategyComparisons: StrategyComparison[] = [
     sharpeRatio: 2.1
   }
 ];
+
+// Mock equity curve data with projection
+const generateEquityData = (initialAmount: number): EquityDataPoint[] => {
+  let amount = initialAmount;
+  const data: EquityDataPoint[] = [];
+  for (let month = 0; month <= 12; month++) {
+    const isProjected = month > 6;
+    amount *= (1 + (Math.random() * 0.08 - 0.02));
+    data.push({
+      month: `Month ${month}`,
+      value: Math.round(amount),
+      isProjected
+    });
+  }
+  return data;
+};
+
+const LoadingStep = ({ step, currentStep, text }: LoadingStepProps) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className={`flex items-center space-x-2 ${currentStep >= step ? 'text-primary' : 'text-muted-foreground'}`}
+  >
+    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+      currentStep > step ? 'bg-primary text-white' :
+        currentStep === step ? 'border-2 border-primary' :
+          'border-2 border-muted'
+    }`}>
+      {currentStep > step ? '✓' : step + 1}
+    </div>
+    <span>{text}</span>
+  </motion.div>
+);
 
 const BacktestPanel = () => {
   const [selectedSymbol, setSelectedSymbol] = useState("");
