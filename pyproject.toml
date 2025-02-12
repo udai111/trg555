@@ -12,10 +12,13 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "pytz>=2025.1",
     "qlib>=0.0.2.dev20",
+    "requests>=2.32.3",
     "requests-cache>=1.2.1",
     "scikit-learn>=1.6.1",
+    "tensorflow>=2.14.0",
     "torch>=2.6.0",
     "uvicorn>=0.34.0",
+    "yfinance>=0.2.52",
 ]
 
 [[tool.uv.index]]

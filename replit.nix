@@ -1,5 +1,10 @@
 {pkgs}: {
   deps = [
+    pkgs.zlib
+    pkgs.libffi
+    pkgs.libpng
+    pkgs.libjpeg
+    pkgs.openssl
     pkgs.suitesparse
     pkgs.openblas
     pkgs.gsl
