@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { ArrowUpCircle, ArrowDownCircle, TrendingUp, TrendingDown, Brain, Settings, Play, BarChart2, Loader2 } from "lucide-react";
+import { ArrowUpCircle, ArrowDownCircle, TrendingUp, TrendingDown, Brain, Settings, Play, BarChart2, Loader2, AlertCircle } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
 import { Progress } from "@/components/ui/progress";
+import { technicalAnalysis } from "@/lib/technical-analysis";
 
 interface PredictionResult {
   shortTerm: {
@@ -67,8 +68,6 @@ const MLPrediction = () => {
   const [isTraining, setIsTraining] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [downloadStatus, setDownloadStatus] = useState("");
-
-
   const [hyperparameters, setHyperparameters] = useState({
     lstmUnits: 50,
     denseUnits: 32,
@@ -76,17 +75,7 @@ const MLPrediction = () => {
     epochs: 20,
     batchSize: 16
   });
-
-  const modelOptions = [
-    { value: "lstm", label: "LSTM Network" },
-    { value: "cnn", label: "CNN" },
-    { value: "ensemble", label: "LSTM + CNN Ensemble" },
-    { value: "xgboost", label: "XGBoost" },
-    { value: "arima", label: "ARIMA" }
-  ];
-
   const [selectedModels, setSelectedModels] = useState<string[]>(["lstm"]);
-
   const [metrics, setMetrics] = useState({
     accuracy: 0,
     mse: 0,
@@ -94,6 +83,11 @@ const MLPrediction = () => {
     sharpeRatio: 0,
     profitFactor: 0
   });
+  const [backendType, setBackendType] = useState<string>('initializing');
+
+  useEffect(() => {
+    setBackendType(technicalAnalysis.getBackendType());
+  }, []);
 
   const handleTraining = async () => {
     if (!selectedStock || selectedModels.length === 0) return;
@@ -172,6 +166,14 @@ const MLPrediction = () => {
     });
   };
 
+  const modelOptions = [
+    { value: "lstm", label: "LSTM Network" },
+    { value: "cnn", label: "CNN" },
+    { value: "ensemble", label: "LSTM + CNN Ensemble" },
+    { value: "xgboost", label: "XGBoost" },
+    { value: "arima", label: "ARIMA" }
+  ];
+
   const stocks = [
     { value: "RELIANCE", label: "Reliance Industries" },
     { value: "TCS", label: "Tata Consultancy Services" },
@@ -240,6 +242,15 @@ const MLPrediction = () => {
 
   return (
     <div className="p-6 relative">
+      {backendType === 'cpu' && (
+        <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+          <div className="flex items-center gap-2 text-yellow-500">
+            <AlertCircle className="h-5 w-5" />
+            <p>Running in CPU mode - performance may be reduced</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold">Advanced ML Market Predictions</h1>
@@ -285,8 +296,8 @@ const MLPrediction = () => {
 
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">Select Stock</h2>
-            <Select 
-              value={selectedStock} 
+            <Select
+              value={selectedStock}
               onValueChange={(value) => {
                 setSelectedStock(value);
                 fetchPredictions(value);
