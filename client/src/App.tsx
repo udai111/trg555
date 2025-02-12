@@ -11,25 +11,32 @@ import BacktestPanel from "./components/BacktestPanel";
 import TradingViewSection from "./components/TradingViewSection";
 import MarketAnalysis from "./components/MarketAnalysis";
 import ProTrading from "./components/ProTrading";
+import TRAlgoBot from "./components/TRAlgoBot";
 import StockMarketGamePage from "./pages/StockMarketGamePage";
 import IntradayProbabilityPage from "./pages/intraday-probability";
 import CandlestickPatternsPage from "./pages/candlestick-patterns";
 import NotFound from "@/pages/not-found";
-import { Component, Suspense, useState, useEffect, ReactNode } from "react";
+import { Component, Suspense, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import ProfitKingdom from "./pages/ProfitKingdom";
-import TRBot from "./components/TRBot";
+
+interface ErrorState {
+  hasError: boolean;
+  error: Error | null;
+  errorInfo: { componentStack: string } | null;
+  retryCount: number;
+}
 
 // Enhanced error boundary with retry mechanism
-class ErrorBoundary extends Component<any, any> {
-  state = {
+class ErrorBoundary extends Component<{ children: React.ReactNode }, ErrorState> {
+  state: ErrorState = {
     hasError: false,
     error: null,
     errorInfo: null,
     retryCount: 0
   };
 
-  static getDerivedStateFromError(error: Error) {
+  static getDerivedStateFromError(error: Error): Partial<ErrorState> {
     return { hasError: true, error };
   }
 
@@ -41,11 +48,11 @@ class ErrorBoundary extends Component<any, any> {
   handleRetry = () => {
     const maxRetries = 3;
     if (this.state.retryCount < maxRetries) {
-      this.setState(state => ({
+      this.setState((prevState: ErrorState) => ({
         hasError: false,
         error: null,
         errorInfo: null,
-        retryCount: state.retryCount + 1
+        retryCount: prevState.retryCount + 1
       }));
     }
   };
@@ -137,7 +144,7 @@ function App(): JSX.Element {
   }
 
   return (
-    <ErrorBoundary maxRetries={3}>
+    <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider theme={theme}>
           <Router base={base}>
@@ -150,6 +157,7 @@ function App(): JSX.Element {
                       <Route path="/" component={Dashboard} />
                       <Route path="/stock-market-game" component={StockMarketGamePage} />
                       <Route path="/pro-trading" component={ProTrading} />
+                      <Route path="/tr-algo-bot" component={TRAlgoBot} />
                       <Route path="/ml-predictions" component={MLPrediction} />
                       <Route path="/backtest" component={BacktestPanel} />
                       <Route path="/charts" component={TradingViewSection} />
@@ -157,7 +165,6 @@ function App(): JSX.Element {
                       <Route path="/intraday-probability" component={IntradayProbabilityPage} />
                       <Route path="/candlestick-patterns" component={CandlestickPatternsPage} />
                       <Route path="/profit-kingdom" component={ProfitKingdom} />
-                      <Route path="/tr-bot" component={TRBot} />
                       <Route component={NotFound} />
                     </Switch>
                   </Suspense>
