@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface CandlestickData {
   time: number;
@@ -19,7 +20,6 @@ interface CandlestickData {
   close: number;
 }
 
-// Chart Components
 const NormalChart = memo(({ data }: { data: CandlestickData[] }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,16 +33,13 @@ const NormalChart = memo(({ data }: { data: CandlestickData[] }) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size
     canvas.width = canvas.clientWidth * window.devicePixelRatio;
     canvas.height = canvas.clientHeight * window.devicePixelRatio;
     ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
-    // Clear canvas
     ctx.fillStyle = '#131722';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw grid
     ctx.strokeStyle = 'rgba(42, 46, 57, 0.5)';
     ctx.lineWidth = 0.5;
 
@@ -54,24 +51,20 @@ const NormalChart = memo(({ data }: { data: CandlestickData[] }) => {
       ctx.stroke();
     }
 
-    // Calculate price range
     const prices = data.flatMap(d => [d.high, d.low]);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
     const priceRange = maxPrice - minPrice;
 
-    // Draw candlesticks
     const candleWidth = (canvas.width / data.length) * 0.8;
     const spacing = (canvas.width / data.length) * 0.2;
 
     data.forEach((candle, i) => {
       const x = (candleWidth + spacing) * i;
 
-      // Calculate y coordinates
       const getY = (price: number) =>
         ((maxPrice - price) / priceRange) * (canvas.height * 0.8) + (canvas.height * 0.1);
 
-      // Draw candle body
       ctx.fillStyle = candle.close > candle.open ? '#26a69a' : '#ef5350';
       const openY = getY(candle.open);
       const closeY = getY(candle.close);
@@ -82,7 +75,6 @@ const NormalChart = memo(({ data }: { data: CandlestickData[] }) => {
         Math.abs(closeY - openY)
       );
 
-      // Draw wicks
       ctx.strokeStyle = candle.close > candle.open ? '#26a69a' : '#ef5350';
       ctx.beginPath();
       ctx.moveTo(x + candleWidth / 2, getY(candle.high));
@@ -92,7 +84,6 @@ const NormalChart = memo(({ data }: { data: CandlestickData[] }) => {
       ctx.stroke();
     });
 
-    // Add price labels
     ctx.fillStyle = '#d1d4dc';
     ctx.font = '12px sans-serif';
     for (let i = 0; i <= 10; i++) {
@@ -101,7 +92,6 @@ const NormalChart = memo(({ data }: { data: CandlestickData[] }) => {
       ctx.fillText(price.toFixed(2), 10, y - 5);
     }
 
-    // Add interactivity
     const handleMouseMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -160,7 +150,6 @@ const NormalChart = memo(({ data }: { data: CandlestickData[] }) => {
 
 NormalChart.displayName = 'NormalChart';
 
-// Extended pattern types
 interface PatternData {
   name: string;
   probability: number;
@@ -188,14 +177,11 @@ interface CustomDrawing {
   color: string;
 }
 
-// Extended pattern list
 const ALL_PATTERNS = [
-  // Basic Patterns
   "Doji", "Hammer", "Shooting Star", "Engulfing", "Morning Star",
   "Evening Star", "Harami", "Three White Soldiers", "Three Black Crows",
   "Piercing Line", "Dark Cloud Cover", "Rising Three Methods",
   "Falling Three Methods", "Three Inside Up", "Three Inside Down",
-  // Advanced Patterns
   "Head and Shoulders", "Inverse Head and Shoulders", "Double Top",
   "Double Bottom", "Triple Top", "Triple Bottom", "Rounding Bottom",
   "Cup and Handle", "Flag", "Pennant", "Wedge", "Triangle",
@@ -203,7 +189,6 @@ const ALL_PATTERNS = [
   "Bat Pattern", "Crab Pattern", "Shark Pattern", "ABCD Pattern"
 ];
 
-// ChartScanAI Implementation
 const ChartScanAIChart = memo(({ data }: { data: CandlestickData[] }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -223,16 +208,13 @@ const ChartScanAIChart = memo(({ data }: { data: CandlestickData[] }) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size with high DPI support
     canvas.width = canvas.clientWidth * window.devicePixelRatio;
     canvas.height = canvas.clientHeight * window.devicePixelRatio;
     ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
-    // Clear and set background
     ctx.fillStyle = '#131722';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw grid with improved visibility
     ctx.strokeStyle = 'rgba(42, 46, 57, 0.5)';
     ctx.lineWidth = 0.5;
 
@@ -245,26 +227,21 @@ const ChartScanAIChart = memo(({ data }: { data: CandlestickData[] }) => {
       ctx.stroke();
     }
 
-    // Calculate price ranges for better scaling
     const prices = data.flatMap(d => [d.high, d.low]);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
     const priceRange = maxPrice - minPrice;
     const padding = priceRange * 0.1;
 
-    // Draw candlesticks with improved styling
     const candleWidth = (canvas.width / data.length) * 0.8;
     const spacing = (canvas.width / data.length) * 0.2;
 
-    // Helper function for price to y-coordinate conversion
     const getY = (price: number) =>
       ((maxPrice + padding - price) / (priceRange + 2 * padding)) * canvas.height;
 
-    // Draw candlesticks with patterns
     data.forEach((candle, i) => {
       const x = (candleWidth + spacing) * i;
 
-      // Draw candle body
       const isGreen = candle.close > candle.open;
       ctx.fillStyle = isGreen ? '#26a69a' : '#ef5350';
       ctx.strokeStyle = isGreen ? '#26a69a' : '#ef5350';
@@ -274,7 +251,6 @@ const ChartScanAIChart = memo(({ data }: { data: CandlestickData[] }) => {
       const highY = getY(candle.high);
       const lowY = getY(candle.low);
 
-      // Draw body
       ctx.fillRect(
         x,
         Math.min(openY, closeY),
@@ -282,7 +258,6 @@ const ChartScanAIChart = memo(({ data }: { data: CandlestickData[] }) => {
         Math.abs(closeY - openY) || 1
       );
 
-      // Draw wicks
       ctx.beginPath();
       ctx.moveTo(x + candleWidth / 2, highY);
       ctx.lineTo(x + candleWidth / 2, Math.min(openY, closeY));
@@ -290,9 +265,7 @@ const ChartScanAIChart = memo(({ data }: { data: CandlestickData[] }) => {
       ctx.lineTo(x + candleWidth / 2, lowY);
       ctx.stroke();
 
-      // Detect patterns (simplified example)
       if (i >= 2) {
-        // Doji pattern detection
         const bodySize = Math.abs(candle.open - candle.close);
         const wickSize = candle.high - candle.low;
         if (bodySize / wickSize < 0.1) {
@@ -304,7 +277,6 @@ const ChartScanAIChart = memo(({ data }: { data: CandlestickData[] }) => {
           });
         }
 
-        // Hammer pattern detection
         const upperWick = Math.abs(candle.high - Math.max(candle.open, candle.close));
         const lowerWick = Math.abs(Math.min(candle.open, candle.close) - candle.low);
         if (lowerWick > bodySize * 2 && upperWick < bodySize * 0.5) {
@@ -318,7 +290,6 @@ const ChartScanAIChart = memo(({ data }: { data: CandlestickData[] }) => {
       }
     });
 
-    // Draw pattern indicators
     patterns.forEach(pattern => {
       const x = (candleWidth + spacing) * pattern.startIndex;
       ctx.fillStyle = '#FFD700';
@@ -326,7 +297,6 @@ const ChartScanAIChart = memo(({ data }: { data: CandlestickData[] }) => {
       ctx.fillText(pattern.type, x, 20);
     });
 
-    // Add price labels with improved formatting
     ctx.fillStyle = '#d1d4dc';
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'left';
@@ -336,7 +306,6 @@ const ChartScanAIChart = memo(({ data }: { data: CandlestickData[] }) => {
       ctx.fillText(price.toFixed(2), 10, y - 5);
     }
 
-    // Add interactive pattern detection
     const handleMouseMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -398,7 +367,6 @@ const ChartScanAIChart = memo(({ data }: { data: CandlestickData[] }) => {
 
 ChartScanAIChart.displayName = 'ChartScanAIChart';
 
-// Main Component
 type MarketType = 'indian' | 'international' | 'crypto';
 
 interface PriceData {
@@ -411,11 +379,30 @@ interface MarketPrices {
   crypto: PriceData;
 }
 
+const fetchActivePatterns = async (symbol: string) => {
+  const response = await fetch(`/api/patterns/active/${symbol}`);
+  if (!response.ok) throw new Error('Failed to fetch active patterns');
+  return response.json();
+};
+
+const fetchTechnicalIndicators = async (symbol: string) => {
+  const response = await fetch(`/api/indicators/latest/${symbol}`);
+  if (!response.ok) throw new Error('Failed to fetch technical indicators');
+  return response.json();
+};
+
+const fetchScreenerResults = async (symbol: string) => {
+  const response = await fetch(`/api/screener/latest/${symbol}`);
+  if (!response.ok) throw new Error('Failed to fetch screener results');
+  return response.json();
+};
+
+
 export default function CandlestickPatternsPage() {
   const [activePatterns, setActivePatterns] = useState<StockPattern[]>([]);
   const [selectedStock, setSelectedStock] = useState("RELIANCE");
   const [marketType, setMarketType] = useState<MarketType>('indian');
-  const [chartType, setChartType] = useState<'normal' | 'lightweight' | 'tradingview' | 'chartscanai'>('normal'); // Updated chartType
+  const [chartType, setChartType] = useState<'normal' | 'lightweight' | 'tradingview' | 'chartscanai'>('normal');
   const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [drawings, setDrawings] = useState<CustomDrawing[]>([]);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
@@ -424,7 +411,6 @@ export default function CandlestickPatternsPage() {
   const [successRateThreshold, setSuccessRateThreshold] = useState(70);
   const { toast } = useToast();
 
-  // Market Data
   const indianStocks = [
     "RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK", "WIPRO",
     "BAJFINANCE", "BHARTIARTL", "ASIANPAINT", "MARUTI"
@@ -440,7 +426,6 @@ export default function CandlestickPatternsPage() {
     "SOL/USDT", "DOT/USDT", "DOGE/USDT", "MATIC/USDT", "LINK/USDT"
   ];
 
-  // Price calculation functions
   const getBasePrice = (symbol: string): number => {
     const prices: MarketPrices = {
       indian: {
@@ -473,7 +458,6 @@ export default function CandlestickPatternsPage() {
     return symbolMap[marketType] || indianStocks;
   };
 
-  // Effects
   useEffect(() => {
     const currentDate = new Date();
     const basePrice = getBasePrice(selectedStock);
@@ -501,51 +485,24 @@ export default function CandlestickPatternsPage() {
     setChartData(data);
   }, [selectedStock, marketType]);
 
-  // Pattern generation and alerts
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const availableStocks = getAvailableSymbols();
-      const newPatterns = availableStocks.map(symbol => ({
-        symbol,
-        patterns: ALL_PATTERNS
-          .filter(() => Math.random() > 0.7)
-          .map(name => {
-            const successRate = Math.round(Math.random() * 100);
-            const pattern: PatternData = {
-              name,
-              probability: Math.round(Math.random() * 100),
-              strength: Math.round(Math.random() * 100),
-              successRate,
-              recentSignals: Math.round(Math.random() * 10),
-              signalType: Math.random() > 0.5 ? 'buy' : 'sell',
-              timeframe: ['1H', '4H', '1D'][Math.floor(Math.random() * 3)],
-              example: {
-                entry: getBasePrice(symbol),
-                target: getBasePrice(symbol) * 1.02,
-                stopLoss: getBasePrice(symbol) * 0.98,
-              },
-              description: `A ${name} pattern indicates a potential ${Math.random() > 0.5 ? 'reversal' : 'continuation'} in the current trend.`,
-            };
+  const { data: activePatternsData = [], isLoading: patternsLoading } = useQuery({
+    queryKey: ['/api/patterns/active', selectedStock],
+    queryFn: () => fetchActivePatterns(selectedStock),
+    refetchInterval: 5000, 
+  });
 
-            // Show alerts for high probability patterns
-            if (alertsEnabled && successRate >= successRateThreshold) {
-              toast({
-                title: "Pattern Alert",
-                description: `${name} detected on ${symbol} with ${successRate}% success rate`,
-                variant: "default"
-              });
-            }
+  const { data: technicalIndicatorsData = [], isLoading: indicatorsLoading } = useQuery({
+    queryKey: ['/api/indicators/latest', selectedStock],
+    queryFn: () => fetchTechnicalIndicators(selectedStock),
+    refetchInterval: 5000,
+  });
 
-            return pattern;
-          }),
-      }));
-      setActivePatterns(newPatterns);
-    }, 5000);
+  const { data: screenerResultsData = [], isLoading: screenerLoading } = useQuery({
+    queryKey: ['/api/screener/latest', selectedStock],
+    queryFn: () => fetchScreenerResults(selectedStock),
+    refetchInterval: 5000,
+  });
 
-    return () => clearInterval(interval);
-  }, [selectedStock, marketType, alertsEnabled, successRateThreshold, toast]);
-
-  // Event Handlers
   const handleMarketTypeChange = (type: string) => {
     if (type === 'indian' || type === 'international' || type === 'crypto') {
       setMarketType(type as MarketType);
@@ -567,7 +524,6 @@ export default function CandlestickPatternsPage() {
     });
   };
 
-  // Tutorial Component
   const Tutorial = () => (
     <AnimatePresence>
       {showTutorial && (
@@ -709,84 +665,95 @@ export default function CandlestickPatternsPage() {
 
         <Card className="p-6 overflow-auto max-h-[calc(500px+2rem)]">
           <h2 className="text-2xl font-semibold mb-4">Active Patterns</h2>
-          <div className="space-y-4">
-            {activePatterns
-              .filter(stock => stock.symbol === selectedStock)
-              .map((stock) => (
-                <div key={stock.symbol} className="space-y-2">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    {stock.symbol}
-                    {stock.patterns.length > 0 && (
-                      <span className="text-sm text-green-500">
-                        {stock.patterns.length} active patterns
-                      </span>
-                    )}
-                  </h3>
-                  {stock.patterns.map((pattern) => (
-                    <motion.div
-                      key={`${stock.symbol}-${pattern.name}`}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-accent/10 p-3 rounded-lg space-y-2"
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium flex items-center gap-2">
-                          {pattern.name}
-                          {pattern.successRate >= successRateThreshold && (
-                            <Bell className="w-4 h-4 text-primary animate-pulse" />
-                          )}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className={cn(
-                            "px-2 py-1 rounded text-xs",
-                            pattern.signalType === 'buy' ? "bg-green-500/20 text-green-500" :
-                              pattern.signalType === 'sell' ? "bg-red-500/20 text-red-500" :
-                                "bg-yellow-500/20 text-yellow-500"
-                          )}>
-                            {pattern.signalType.toUpperCase()}
-                          </span>
-                          <span className={cn(
-                            "px-2 py-1 rounded text-xs",
-                            pattern.successRate > 70 ? "bg-green-500/20 text-green-500" :
-                              pattern.successRate > 40 ? "bg-yellow-500/20 text-yellow-500" :
-                                "bg-red-500/20 text-red-500"
-                          )}>
-                            {pattern.successRate}% Success
-                          </span>
-                        </div>
-                      </div>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span>Entry</span>
-                          <span>{marketType === 'crypto' ? '$' : '₹'}{pattern.example.entry.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-green-500">
-                          <span>Target</span>
-                          <span>{marketType === 'crypto' ? '$' : '₹'}{pattern.example.target.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-red-500">
-                          <span>Stop Loss</span>
-                          <span>{marketType === 'crypto' ? '$' : '₹'}{pattern.example.stopLoss.toFixed(2)}</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Recent Signals: {pattern.recentSignals}</span>
-                        <span>Timeframe: {pattern.timeframe}</span>
-                      </div>
-                      <div className="h-2 bg-accent/20 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary transition-all duration-500"
-                          style={{ width: `${pattern.strength}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {pattern.description}
-                      </p>
-                    </motion.div>
+
+          {(patternsLoading || indicatorsLoading || screenerLoading) ? (
+            <div className="flex items-center justify-center p-8">
+              <Activity className="w-6 h-6 animate-spin" />
+              <span className="ml-2">Loading data...</span>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">Technical Indicators</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {technicalIndicatorsData.map((indicator: any) => (
+                    <div key={indicator.id} className="bg-accent/10 p-2 rounded">
+                      <div className="text-sm font-medium">{indicator.indicator_type}</div>
+                      <div className="text-lg">{parseFloat(indicator.value).toFixed(2)}</div>
+                    </div>
                   ))}
                 </div>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">Probability Signals</h3>
+                {screenerResultsData.map((result: any) => (
+                  <motion.div
+                    key={result.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-accent/10 p-3 rounded-lg mb-2"
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">{result.screening_type}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "px-2 py-1 rounded text-xs",
+                          parseFloat(result.probability_score) > 70 ? "bg-green-500/20 text-green-500" :
+                            parseFloat(result.probability_score) > 40 ? "bg-yellow-500/20 text-yellow-500" :
+                              "bg-red-500/20 text-red-500"
+                        )}>
+                          {parseFloat(result.probability_score).toFixed(1)}% Probability
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-2 grid grid-cols-3 gap-2 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Entry:</span>
+                        <div>${parseFloat(result.trigger_price).toFixed(2)}</div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Target:</span>
+                        <div className="text-green-500">${parseFloat(result.target_price).toFixed(2)}</div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Stop:</span>
+                        <div className="text-red-500">${parseFloat(result.stop_loss).toFixed(2)}</div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {activePatternsData.map((pattern: any) => (
+                <motion.div
+                  key={pattern.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-accent/10 p-3 rounded-lg"
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">{pattern.pattern_type}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        "px-2 py-1 rounded text-xs",
+                        parseFloat(pattern.probability) > 70 ? "bg-green-500/20 text-green-500" :
+                          parseFloat(pattern.probability) > 40 ? "bg-yellow-500/20 text-yellow-500" :
+                            "bg-red-500/20 text-red-500"
+                      )}>
+                        {parseFloat(pattern.probability).toFixed(1)}% Confidence
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    <span>Timeframe: {pattern.timeframe}</span>
+                    <span className="ml-2">•</span>
+                    <span className="ml-2">Signal Time: {new Date(pattern.signal_time).toLocaleTimeString()}</span>
+                  </div>
+                </motion.div>
               ))}
-          </div>
+            </div>
+          )}
         </Card>
       </div>
     </div>

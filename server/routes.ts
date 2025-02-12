@@ -40,5 +40,41 @@ export function registerRoutes(app: Express): Server {
     res.json(user);
   });
 
+  // Intraday Pattern Routes
+  app.get("/api/patterns/active/:symbol", async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      const patterns = await storage.getActivePatterns(symbol);
+      res.json(patterns);
+    } catch (error) {
+      console.error('Error fetching active patterns:', error);
+      res.status(500).json({ error: "Failed to fetch active patterns" });
+    }
+  });
+
+  // Technical Indicators Routes
+  app.get("/api/indicators/latest/:symbol", async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      const indicators = await storage.getLatestIndicators(symbol);
+      res.json(indicators);
+    } catch (error) {
+      console.error('Error fetching technical indicators:', error);
+      res.status(500).json({ error: "Failed to fetch technical indicators" });
+    }
+  });
+
+  // Screener Results Routes
+  app.get("/api/screener/latest/:symbol", async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      const results = await storage.getLatestScreenerResults(symbol);
+      res.json(results);
+    } catch (error) {
+      console.error('Error fetching screener results:', error);
+      res.status(500).json({ error: "Failed to fetch screener results" });
+    }
+  });
+
   return createServer(app);
 }

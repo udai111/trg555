@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, decimal, foreignKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, decimal, foreignKey, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -54,7 +54,42 @@ export const social_interactions = pgTable("social_interactions", {
   created_at: timestamp("created_at").defaultNow(),
 });
 
-// Insert schemas
+export const intraday_patterns = pgTable("intraday_patterns", {
+  id: serial("id").primaryKey(),
+  symbol: text("symbol").notNull(),
+  pattern_type: text("pattern_type").notNull(),
+  timeframe: text("timeframe").notNull(),
+  probability: decimal("probability").notNull(),
+  signal_time: timestamp("signal_time").defaultNow(),
+  is_active: boolean("is_active").default(true),
+  metadata: jsonb("metadata"),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+export const technical_indicators = pgTable("technical_indicators", {
+  id: serial("id").primaryKey(),
+  symbol: text("symbol").notNull(),
+  indicator_type: text("indicator_type").notNull(),
+  value: decimal("value").notNull(),
+  timeframe: text("timeframe").notNull(),
+  calculation_time: timestamp("calculation_time").defaultNow(),
+  metadata: jsonb("metadata"),
+});
+
+export const screener_results = pgTable("screener_results", {
+  id: serial("id").primaryKey(),
+  symbol: text("symbol").notNull(),
+  screening_type: text("screening_type").notNull(),
+  probability_score: decimal("probability_score").notNull(),
+  signal_strength: decimal("signal_strength").notNull(),
+  trigger_price: decimal("trigger_price").notNull(),
+  target_price: decimal("target_price"),
+  stop_loss: decimal("stop_loss"),
+  timeframe: text("timeframe").notNull(),
+  scan_time: timestamp("scan_time").defaultNow(),
+  metadata: jsonb("metadata"),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ 
   id: true,
   created_at: true 
@@ -85,7 +120,19 @@ export const insertSocialInteractionSchema = createInsertSchema(social_interacti
   created_at: true
 });
 
-// Types
+export const insertIntradayPatternSchema = createInsertSchema(intraday_patterns).omit({
+  id: true,
+  created_at: true,
+});
+
+export const insertTechnicalIndicatorSchema = createInsertSchema(technical_indicators).omit({
+  id: true,
+});
+
+export const insertScreenerResultSchema = createInsertSchema(screener_results).omit({
+  id: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -103,3 +150,12 @@ export type EducationalResource = typeof educational_resources.$inferSelect;
 
 export type InsertSocialInteraction = z.infer<typeof insertSocialInteractionSchema>;
 export type SocialInteraction = typeof social_interactions.$inferSelect;
+
+export type InsertIntradayPattern = z.infer<typeof insertIntradayPatternSchema>;
+export type IntradayPattern = typeof intraday_patterns.$inferSelect;
+
+export type InsertTechnicalIndicator = z.infer<typeof insertTechnicalIndicatorSchema>;
+export type TechnicalIndicator = typeof technical_indicators.$inferSelect;
+
+export type InsertScreenerResult = z.infer<typeof insertScreenerResultSchema>;
+export type ScreenerResult = typeof screener_results.$inferSelect;
