@@ -80,10 +80,10 @@ const QuantumDashboard: React.FC = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [mlFeaturesAvailable, setMlFeaturesAvailable] = useState(false);
   const [initializationError, setInitializationError] = useState<string | null>(null);
-  const [performanceMode, setPerformanceMode] = useState<'high' | 'medium' | 'low'>('high');
-  const [dataUpdateInterval, setDataUpdateInterval] = useState(REFRESH_INTERVALS.HIGH_PERFORMANCE);
-  const [batchSize, setBatchSize] = useState(BATCH_SIZES.HIGH_PERFORMANCE);
-  const [useGPUMode, setUseGPUMode] = useState(true);
+  const [performanceMode, setPerformanceMode] = useState<'high' | 'medium' | 'low'>('medium');
+  const [dataUpdateInterval, setDataUpdateInterval] = useState(REFRESH_INTERVALS.MEDIUM_PERFORMANCE);
+  const [batchSize, setBatchSize] = useState(BATCH_SIZES.MEDIUM_PERFORMANCE);
+  const [useGPUMode, setUseGPUMode] = useState(false); // Default to false
 
   const formatNumber = (value: number | undefined, decimals = 2): string => {
     if (value === undefined || isNaN(value)) return 'N/A';
@@ -753,7 +753,7 @@ const QuantumDashboard: React.FC = () => {
                     </p>
                   </div>
                   <div className="p-4 bg-secondary rounded-lg">
-                    <p className="text-sm text-muted-foreground">Beta</</p>
+                    <p className="text-sm text-muted-foreground">Beta</p>
                     <p className="text-2xl font-bold">
                       {portfolioMetrics?.riskMetrics.beta ? formatNumber(portfolioMetrics.riskMetrics.beta) : 'N/A'}
                     </p>
@@ -814,6 +814,6 @@ const QuantumDashboard: React.FC = () => {
       </Tabs>
     </div>
   );
-};
+}
 
 export default QuantumDashboard;
