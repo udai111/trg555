@@ -5,21 +5,26 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import theme from "./theme";
 import Sidebar from "./components/Sidebar";
-import Dashboard from "./pages/Dashboard";
+import QuantumDashboard from "./components/QuantumDashboard";
 import MLPrediction from "./components/MLPrediction";
 import BacktestPanel from "./components/BacktestPanel";
 import TradingViewSection from "./components/TradingViewSection";
 import MarketAnalysis from "./components/MarketAnalysis";
 import ProTrading from "./components/ProTrading";
 import TRAlgoBot from "./components/TRAlgoBot";
-import StockMarketGamePage from "./pages/StockMarketGamePage";
-import IntradayProbabilityPage from "./pages/intraday-probability";
-import CandlestickPatternsPage from "./pages/candlestick-patterns";
-import NotFound from "@/pages/not-found";
+import StrategyBuilder from "./components/StrategyBuilder";
+import PortfolioManagement from "./components/PortfolioManagement";
+import MarketOverview from "./components/MarketOverview";
+import MagicForecastPanel from "./components/MagicForecastPanel";
+import IntradayPatternScanner from "./components/IntradayPatternScanner";
+import OrderFlowAnalysis from "./components/OrderFlowAnalysis";
+import RiskAnalytics from "./components/RiskAnalytics";
+import AlertsManager from "./components/AlertsManager";
+import { performanceManager } from "@/lib/performance-manager";
 import { Component, Suspense, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import ProfitKingdom from "./pages/ProfitKingdom";
-import StrategyBuilder from "./components/StrategyBuilder";
+import NotFound from "@/pages/not-found";
+
 
 interface ErrorState {
   hasError: boolean;
@@ -137,6 +142,15 @@ function App(): JSX.Element {
     }
   }, []);
 
+  useEffect(() => {
+    const initPerformance = async () => {
+      await performanceManager.detectCapabilities();
+      const settings = performanceManager.getRecommendedSettings();
+      performanceManager.updateSettings(settings);
+    };
+    initPerformance();
+  }, []);
+
   const base = import.meta.env.PROD ? '/trgfin' : '';
   console.log('Using base path:', base);
 
@@ -155,18 +169,21 @@ function App(): JSX.Element {
                 <main className="flex-1 overflow-y-auto min-h-screen p-2 md:p-4 bg-background">
                   <Suspense fallback={<LoadingSpinner timeout={10000} />}>
                     <Switch>
-                      <Route path="/" component={Dashboard} />
-                      <Route path="/stock-market-game" component={StockMarketGamePage} />
+                      <Route path="/" component={QuantumDashboard} />
+                      <Route path="/market-overview" component={MarketOverview} />
                       <Route path="/pro-trading" component={ProTrading} />
-                      <Route path="/tr-algo-bot" component={TRAlgoBot} />
+                      <Route path="/algo-bot" component={TRAlgoBot} />
                       <Route path="/ml-predictions" component={MLPrediction} />
                       <Route path="/backtest" component={BacktestPanel} />
                       <Route path="/charts" component={TradingViewSection} />
                       <Route path="/market-analysis" component={MarketAnalysis} />
-                      <Route path="/intraday-probability" component={IntradayProbabilityPage} />
-                      <Route path="/candlestick-patterns" component={CandlestickPatternsPage} />
-                      <Route path="/profit-kingdom" component={ProfitKingdom} />
                       <Route path="/strategy-builder" component={StrategyBuilder} />
+                      <Route path="/portfolio" component={PortfolioManagement} />
+                      <Route path="/magic-forecast" component={MagicForecastPanel} />
+                      <Route path="/pattern-scanner" component={IntradayPatternScanner} />
+                      <Route path="/order-flow" component={OrderFlowAnalysis} />
+                      <Route path="/risk-analytics" component={RiskAnalytics} />
+                      <Route path="/alerts" component={AlertsManager} />
                       <Route component={NotFound} />
                     </Switch>
                   </Suspense>
