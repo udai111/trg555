@@ -36,8 +36,7 @@ const RiskAnalytics = () => {
     queryFn: async () => {
       const response = await fetch(`/api/risk-metrics?portfolio=${selectedPortfolio}`);
       return response.json();
-    },
-    refetchInterval: 5000,
+    }
   });
 
   return (
@@ -73,24 +72,24 @@ const RiskAnalytics = () => {
                 <div className="mt-4 space-y-2">
                   <div className="flex justify-between items-center">
                     <span>Sharpe Ratio</span>
-                    <span className={riskMetrics?.sharpeRatio > 1 ? 'text-green-500' : 'text-red-500'}>
-                      {riskMetrics?.sharpeRatio.toFixed(2)}
+                    <span className={riskMetrics?.sharpeRatio ? (riskMetrics.sharpeRatio > 1 ? 'text-green-500' : 'text-red-500') : ''}>
+                      {riskMetrics?.sharpeRatio?.toFixed(2) || 'N/A'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Sortino Ratio</span>
-                    <span className={riskMetrics?.sortinoRatio > 1 ? 'text-green-500' : 'text-red-500'}>
-                      {riskMetrics?.sortinoRatio.toFixed(2)}
+                    <span className={riskMetrics?.sortinoRatio ? (riskMetrics.sortinoRatio > 1 ? 'text-green-500' : 'text-red-500') : ''}>
+                      {riskMetrics?.sortinoRatio?.toFixed(2) || 'N/A'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Beta</span>
-                    <span>{riskMetrics?.beta.toFixed(2)}</span>
+                    <span>{riskMetrics?.beta?.toFixed(2) || 'N/A'}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Alpha</span>
-                    <span className={riskMetrics?.alpha > 0 ? 'text-green-500' : 'text-red-500'}>
-                      {(riskMetrics?.alpha * 100).toFixed(2)}%
+                    <span className={riskMetrics?.alpha ? (riskMetrics.alpha > 0 ? 'text-green-500' : 'text-red-500') : ''}>
+                      {riskMetrics?.alpha ? `${(riskMetrics.alpha * 100).toFixed(2)}%` : 'N/A'}
                     </span>
                   </div>
                 </div>
@@ -108,21 +107,21 @@ const RiskAnalytics = () => {
                 <div className="mt-4 space-y-2">
                   <div className="flex justify-between items-center">
                     <span>Volatility</span>
-                    <span>{(riskMetrics?.volatility * 100).toFixed(2)}%</span>
+                    <span>{riskMetrics?.volatility ? `${(riskMetrics.volatility * 100).toFixed(2)}%` : 'N/A'}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Max Drawdown</span>
                     <span className="text-red-500">
-                      {(riskMetrics?.maxDrawdown * 100).toFixed(2)}%
+                      {riskMetrics?.maxDrawdown ? `${(riskMetrics.maxDrawdown * 100).toFixed(2)}%` : 'N/A'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Value at Risk</span>
-                    <span>{(riskMetrics?.var * 100).toFixed(2)}%</span>
+                    <span>{riskMetrics?.var ? `${(riskMetrics.var * 100).toFixed(2)}%` : 'N/A'}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Conditional VaR</span>
-                    <span>{(riskMetrics?.cvar * 100).toFixed(2)}%</span>
+                    <span>{riskMetrics?.cvar ? `${(riskMetrics.cvar * 100).toFixed(2)}%` : 'N/A'}</span>
                   </div>
                 </div>
               )}
@@ -140,19 +139,19 @@ const RiskAnalytics = () => {
                   <div className="flex justify-between items-center">
                     <span>Market Crash</span>
                     <span className="text-red-500">
-                      {(riskMetrics?.stressTest.marketCrash * 100).toFixed(2)}%
+                      {riskMetrics?.stressTest?.marketCrash ? `${(riskMetrics.stressTest.marketCrash * 100).toFixed(2)}%` : 'N/A'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>High Volatility</span>
                     <span className="text-yellow-500">
-                      {(riskMetrics?.stressTest.highVolatility * 100).toFixed(2)}%
+                      {riskMetrics?.stressTest?.highVolatility ? `${(riskMetrics.stressTest.highVolatility * 100).toFixed(2)}%` : 'N/A'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Interest Rate Shock</span>
                     <span className="text-orange-500">
-                      {(riskMetrics?.stressTest.interestRateShock * 100).toFixed(2)}%
+                      {riskMetrics?.stressTest?.interestRateShock ? `${(riskMetrics.stressTest.interestRateShock * 100).toFixed(2)}%` : 'N/A'}
                     </span>
                   </div>
                 </div>
@@ -164,8 +163,11 @@ const RiskAnalytics = () => {
         <TabsContent value="stress">
           <Card className="p-4">
             <h3 className="text-lg font-semibold">Advanced Stress Testing</h3>
+            <p className="text-muted-foreground mt-2">
+              Visualization of portfolio performance under different stress scenarios
+            </p>
             <div className="mt-4 h-96">
-              {/* Add Stress Testing Chart Component Here */}
+              {/* Add Stress Testing visualization here */}
             </div>
           </Card>
         </TabsContent>
@@ -173,8 +175,11 @@ const RiskAnalytics = () => {
         <TabsContent value="exposure">
           <Card className="p-4">
             <h3 className="text-lg font-semibold">Risk Exposure Analysis</h3>
+            <p className="text-muted-foreground mt-2">
+              Detailed breakdown of risk exposure across different assets and factors
+            </p>
             <div className="mt-4">
-              {/* Add Risk Exposure Analysis Component Here */}
+              {/* Add Risk Exposure Analysis visualization here */}
             </div>
           </Card>
         </TabsContent>

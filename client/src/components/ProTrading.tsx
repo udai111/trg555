@@ -39,7 +39,7 @@ interface TradeLog {
 }
 
 export default function ProTrading() {
-  const [symbol, setSymbol] = useState("RELIANCE");
+  const [symbol, setSymbol] = useState("TESLA");
   const [orderType, setOrderType] = useState<"Market" | "Limit" | "Stop-Loss">("Market");
   const [side, setSide] = useState<"Buy" | "Sell">("Buy");
   const [quantity, setQuantity] = useState("");
@@ -49,7 +49,7 @@ export default function ProTrading() {
   const [leverage, setLeverage] = useState<number>(1);
   const [positions, setPositions] = useState<Position[]>([]);
   const [tradeLogs, setTradeLogs] = useState<TradeLog[]>([]);
-  const [realTimePrice, setRealTimePrice] = useState(2300);
+  const [realTimePrice, setRealTimePrice] = useState(235.50); // TESLA's sample price
   const [mockInterval, setMockInterval] = useState<NodeJS.Timeout | null>(null);
   const [demoMode, setDemoMode] = useState(true);
   const [trailingStop, setTrailingStop] = useState("");
@@ -81,7 +81,7 @@ export default function ProTrading() {
     if (mockInterval) clearInterval(mockInterval);
     const interval = setInterval(() => {
       setRealTimePrice((prev) => {
-        const change = (Math.random() - 0.5) * 5;
+        const change = (Math.random() - 0.5) * 2;
         return parseFloat((prev + change).toFixed(2));
       });
     }, 3000);
@@ -191,10 +191,10 @@ export default function ProTrading() {
   };
 
   return (
-    <div className="p-2 md:p-6">
-      <h1 className="text-xl md:text-3xl font-bold mb-4 md:mb-6">Ultra-Pro Trading Technology</h1>
+    <div className="p-6">
+      <h1 className="text-3xl font-bold mb-6">Ultra-Pro Trading Technology</h1>
 
-      <div className="flex flex-col md:flex-row gap-2 md:gap-4 mb-4 md:mb-6">
+      <div className="flex items-center gap-4 mb-6">
         <div className="flex items-center gap-2">
           <Switch
             checked={demoMode}
@@ -208,9 +208,9 @@ export default function ProTrading() {
         </Button>
       </div>
 
-      <Card className="mb-4 md:mb-8">
-        <CardContent className="p-3 md:p-6">
-          <h2 className="text-xl md:text-2xl font-semibold mb-4">Advanced Chart</h2>
+      <Card>
+        <CardContent className="p-6">
+          <h2 className="text-2xl font-semibold mb-4">Advanced Chart</h2>
           <div className="flex flex-col md:flex-row gap-2 md:gap-4 mb-4">
             <Select value={chartInterval} onValueChange={setChartInterval}>
               <SelectTrigger className="w-full md:w-auto">
@@ -247,9 +247,9 @@ export default function ProTrading() {
           </div>
 
           <div className="w-full bg-white rounded-lg shadow mb-6 overflow-hidden">
-            <iframe 
+            <iframe
               height="400"
-              width="100%" 
+              width="100%"
               src="https://ssltvc.investing.com/?pair_ID=160&height=400&width=100%&interval=300&plotStyle=candles&domain_ID=56&lang_ID=56&timezone_ID=20"
               style={{ border: 'none' }}
               className="w-full max-w-full"
@@ -260,20 +260,25 @@ export default function ProTrading() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
         <Card>
-          <CardContent className="p-3 md:p-6">
-            <h2 className="text-xl md:text-2xl font-semibold mb-4">Order Panel</h2>
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-semibold mb-4">Order Panel</h2>
             <div className="space-y-4">
               <div className="flex flex-col gap-2">
                 <Label>Symbol</Label>
-                <Input
-                  value={symbol}
-                  onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                />
+                <Select value={symbol} onValueChange={setSymbol}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select symbol" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="RELIANCE">RELIANCE</SelectItem>
+                    <SelectItem value="TESLA">TESLA</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex flex-col gap-2">
                 <Label>Current Price</Label>
-                <div className="text-lg font-semibold">₹{realTimePrice}</div>
+                <div className="text-lg font-semibold">${realTimePrice.toFixed(2)}</div>
               </div>
 
               <div className="flex flex-col gap-2">
@@ -393,19 +398,17 @@ export default function ProTrading() {
                 <Label htmlFor="oco-order">OCO (One-Cancels-Other)</Label>
               </div>
 
-              <div className="flex gap-4">
-                <Button onClick={handleSubmitOrder}>Place Order</Button>
-                <Button variant="outline" onClick={handleSetAlert}>
-                  Set Alert
-                </Button>
-              </div>
+              <Button onClick={handleSubmitOrder}>Place Order</Button>
+              <Button variant="outline" onClick={handleSetAlert}>
+                Set Alert
+              </Button>
             </div>
           </CardContent>
         </Card>
 
         <Card className="overflow-x-auto">
-          <CardContent className="p-3 md:p-6">
-            <h2 className="text-xl md:text-2xl font-semibold mb-4">Open Positions</h2>
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-semibold mb-4">Open Positions</h2>
             <div className="overflow-x-auto -mx-3 md:-mx-6">
               <div className="min-w-[800px] px-3 md:px-6">
                 <table className="w-full">
@@ -447,7 +450,7 @@ export default function ProTrading() {
                             <td className="px-4 py-2">{pos.qty}</td>
                           )}
                           {columnOrder.includes("entryPrice") && (
-                            <td className="px-4 py-2">₹{pos.entryPrice}</td>
+                            <td className="px-4 py-2">${pos.entryPrice.toFixed(2)}</td>
                           )}
                           {columnOrder.includes("margin") && (
                             <td className="px-4 py-2">
@@ -461,7 +464,7 @@ export default function ProTrading() {
                                 pnl >= 0 ? "text-green-600" : "text-red-600"
                               )}
                             >
-                              ₹{pnl.toFixed(2)}
+                              ${pnl.toFixed(2)}
                             </td>
                           )}
                           {columnOrder.includes("date") && (
@@ -527,7 +530,7 @@ export default function ProTrading() {
               <ul className="space-y-2">
                 {alerts.map((al) => (
                   <li key={al.id}>
-                    {al.symbol} at ₹{al.price} - {al.note}
+                    {al.symbol} at ${al.price.toFixed(2)} - {al.note}
                   </li>
                 ))}
               </ul>
@@ -547,8 +550,8 @@ export default function ProTrading() {
                     [{log.time}] {log.action} {log.side || ""} {log.symbol} Qty:
                     {log.qty || ""}
                     {log.closePrice
-                      ? ` closed at ₹${log.closePrice}`
-                      : ` entry at ₹${log.entryPrice}`}
+                      ? ` closed at ${log.closePrice.toFixed(2)}`
+                      : ` entry at ${log.entryPrice ? log.entryPrice.toFixed(2) : ""}`}
                   </li>
                 ))}
               </ul>
@@ -593,7 +596,7 @@ export default function ProTrading() {
               Profit Factor: {profitFactor}
               {profitFactor > 9998 ? " (No losses yet!)" : ""}
             </p>
-            <p>Net Margin Usage: ₹{netMarginUsage.toFixed(2)}</p>
+            <p>Net Margin Usage: ${netMarginUsage.toFixed(2)}</p>
             <p>Demo Mode: {demoMode ? "ON" : "OFF"}</p>
           </div>
         </CardContent>

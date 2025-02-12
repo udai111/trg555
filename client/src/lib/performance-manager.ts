@@ -39,8 +39,21 @@ class PerformanceManager {
   async detectCapabilities(): Promise<DeviceCapabilities> {
     if (this.capabilities) return this.capabilities;
 
-    const webglVersion = tf.ENV.get('WEBGL_VERSION');
-    const webglSupport = !!webglVersion;
+    let webglSupport = false;
+    try {
+      // First try to initialize WebGL backend
+      await tf.setBackend('webgl');
+      const backend = await tf.getBackend();
+      webglSupport = backend === 'webgl';
+    } catch (e) {
+      console.warn('WebGL initialization failed, falling back to CPU:', e);
+      // Fallback to CPU backend
+      await tf.setBackend('cpu');
+      webglSupport = false;
+    }
+
+    // Ensure TensorFlow.js is ready
+    await tf.ready();
 
     // Detect CPU cores
     const cpuCores = navigator.hardwareConcurrency || 2;
@@ -59,7 +72,7 @@ class PerformanceManager {
       console.warn('GPU detection failed:', e);
     }
 
-    // Estimate available memory (if possible)
+    // Estimate available memory
     let memoryLimit = 4096; // Default assumption: 4GB
     if ('memory' in navigator) {
       const nav = navigator as any;
@@ -95,16 +108,9 @@ class PerformanceManager {
   ): number {
     let score = 0;
 
-    // WebGL support is critical
     if (webglSupport) score += 30;
-
-    // CPU cores (up to 8 cores considered)
     score += Math.min(cpuCores, 8) * 5;
-
-    // GPU capability
     if (hasHighEndGPU) score += 30;
-
-    // Memory (up to 16GB considered)
     score += Math.min(memoryLimit / 1024, 16) * 2;
 
     return Math.min(score, 100);
@@ -115,29 +121,23 @@ class PerformanceManager {
     this.applySettings();
   }
 
-  private applySettings() {
-    if (this.settings.useHighPerformanceMode) {
-      // Enable high-performance mode optimizations for WebGL
-      try {
-        tf.ENV.set('WEBGL_FORCE_F16_TEXTURES', true);
-        tf.ENV.set('WEBGL_PACK', true);
-      } catch (e) {
-        console.warn('Failed to set WebGL optimizations:', e);
-      }
+  private async applySettings() {
+    if (!this.capabilities) {
+      await this.detectCapabilities();
     }
 
-    // If we have the capabilities, configure based on them
-    if (this.capabilities) {
-      try {
-        // Configure TensorFlow.js backend
-        if (this.capabilities.webglSupport) {
-          tf.setBackend('webgl');
-        } else {
-          tf.setBackend('cpu');
-        }
-      } catch (e) {
-        console.warn('Failed to configure TensorFlow.js backend:', e);
+    try {
+      if (this.settings.useHighPerformanceMode && this.capabilities?.webglSupport) {
+        await tf.setBackend('webgl');
+      } else {
+        await tf.setBackend('cpu');
       }
+      await tf.ready();
+    } catch (e) {
+      console.warn('Failed to configure TensorFlow.js backend:', e);
+      // Ensure we always have a working backend by falling back to CPU
+      await tf.setBackend('cpu');
+      await tf.ready();
     }
   }
 
