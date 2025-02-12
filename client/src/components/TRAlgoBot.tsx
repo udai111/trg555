@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import {
   Activity, TrendingUp, TrendingDown, RefreshCw, PlayCircle,
-  PauseCircle, Settings2, AlertTriangle, BarChart2, LineChart, Workflow
+  PauseCircle, Settings2, AlertTriangle, BarChart2, LineChart, Workflow,
+  ArrowLeft, Home
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 interface Strategy {
   id: string;
@@ -65,6 +66,7 @@ interface MarketData {
 }
 
 const TRAlgoBot = () => {
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const [isRunning, setIsRunning] = useState(false);
   const [selectedStrategy, setSelectedStrategy] = useState<string>("");
@@ -292,7 +294,13 @@ const TRAlgoBot = () => {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          <Link href="/">
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Home className="h-4 w-4" />
+              Dashboard
+            </Button>
+          </Link>
           <h2 className="text-2xl font-bold">TRAlgoBot - Advanced Trading System</h2>
           {isRunning && <Activity className="h-5 w-5 text-green-500 animate-pulse" />}
         </div>

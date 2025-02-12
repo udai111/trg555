@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Trophy, Share2, Save, Play, BarChart2, Brain, Workflow, Medal, Upload, Download, Users, Gift } from "lucide-react";
+import { Trophy, Share2, Save, Play, BarChart2, Brain, Workflow, Medal, Upload, Download, Users, Gift, ArrowLeft } from "lucide-react";
+import { useLocation } from "wouter";
 
 interface BacktestResult {
   totalTrades: number;
@@ -45,6 +46,7 @@ interface Achievement {
 
 const StrategyBuilder = () => {
   const { toast } = useToast();
+  const [location, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("builder");
   const [strategyName, setStrategyName] = useState("");
   const [timeframe, setTimeframe] = useState("1h");
@@ -103,7 +105,7 @@ const StrategyBuilder = () => {
   ]);
 
   const indicators_list = [
-    "RSI", "MACD", "Moving Average", "Bollinger Bands", 
+    "RSI", "MACD", "Moving Average", "Bollinger Bands",
     "Stochastic", "ATR", "OBV", "Ichimoku Cloud",
     "ML Prediction", "Sentiment Analysis", "Volume Profile",
     "Market Regime"
@@ -151,8 +153,8 @@ const StrategyBuilder = () => {
   };
 
   const unlockAchievement = (achievementId: string) => {
-    setAchievements(achievements.map(achievement => 
-      achievement.id === achievementId 
+    setAchievements(achievements.map(achievement =>
+      achievement.id === achievementId
         ? { ...achievement, unlocked: true }
         : achievement
     ));
@@ -231,7 +233,18 @@ const StrategyBuilder = () => {
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6">AI-Powered Strategy Builder</h2>
+      <div className="flex items-center gap-4 mb-6">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+          onClick={() => setLocation('/trading')}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Trading
+        </Button>
+        <h2 className="text-2xl font-bold">AI-Powered Strategy Builder</h2>
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">

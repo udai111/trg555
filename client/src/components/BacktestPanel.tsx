@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, TrendingUp, TrendingDown, BarChart2 } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, BarChart2, ArrowLeft } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useLocation } from "wouter";
 
 // Types
 interface EquityDataPoint {
@@ -134,6 +135,7 @@ const LoadingStep = ({ step, currentStep, text }: LoadingStepProps) => (
 );
 
 const BacktestPanel = () => {
+  const [location, setLocation] = useLocation();
   const [selectedSymbol, setSelectedSymbol] = useState("");
   const [startDate, setStartDate] = useState<Date>(new Date(2024, 0, 1));
   const [endDate, setEndDate] = useState<Date>(new Date());
@@ -222,7 +224,18 @@ const BacktestPanel = () => {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Advanced Strategy Backtester</h1>
+      <div className="flex items-center gap-4 mb-6">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+          onClick={() => setLocation('/strategy-builder')}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Strategy Builder
+        </Button>
+        <h1 className="text-2xl font-bold">Advanced Strategy Backtester</h1>
+      </div>
 
       {/* Loading Overlay */}
       <AnimatePresence>
