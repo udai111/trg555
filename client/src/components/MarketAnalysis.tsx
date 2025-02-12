@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createChart, ColorType, CrosshairMode, LineStyle } from 'lightweight-charts';
+import { createChart, IChartApi, CandlestickData, Time, SeriesOptionsCommon } from 'lightweight-charts';
 import { cn } from "@/lib/utils";
 import {
   BarChart2,
@@ -14,37 +14,16 @@ import {
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  ComposedChart,
-  Scatter,
-} from "recharts";
-// Types for chart data
-interface CandlestickData {
-  time: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-}
 
 interface PatternMarker {
-  time: string;
+  time: Time;
   position: 'aboveBar' | 'belowBar';
   color: string;
   shape: 'arrowUp' | 'arrowDown';
   text: string;
 }
 
+// Rest of the interfaces remain the same
 interface InstitutionalData {
   fii: {
     netBuy: number;
@@ -80,12 +59,151 @@ const MarketAnalysis = () => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [patterns, setPatterns] = useState<PatternMarker[]>([]);
-  const [watchlist, setWatchlist] = useState<string[]>(["RELIANCE", "TCS", "INFY"]);
+  const chartRef = useRef<IChartApi | null>(null);
+
+  // Generate mock data
+  useEffect(() => {
+    const generateCandlestickData = () => {
+      const data: CandlestickData[] = [];
+      let basePrice = 100;
+      const now = new Date();
+
+      for (let i = 0; i < 100; i++) {
+        const time = new Date(now.getTime() - (100 - i) * 5 * 60000);
+        const open = basePrice + Math.random() * 2 - 1;
+        const high = open + Math.random() * 1;
+        const low = open - Math.random() * 1;
+        const close = (open + high + low) / 3 + (Math.random() - 0.5);
+
+        basePrice = close;
+
+        data.push({
+          time: time.getTime() / 1000 as Time,
+          open,
+          high,
+          low,
+          close,
+        });
+
+        // Add pattern markers
+        if (i > 0 && Math.random() > 0.9) {
+          const isUpPattern = Math.random() > 0.5;
+          const pattern: PatternMarker = {
+            time: time.getTime() / 1000 as Time,
+            position: isUpPattern ? 'belowBar' : 'aboveBar',
+            color: isUpPattern ? '#26a69a' : '#ef5350',
+            shape: isUpPattern ? 'arrowUp' : 'arrowDown',
+            text: isUpPattern ? 'Bullish Pattern' : 'Bearish Pattern'
+          };
+          setPatterns(prev => [...prev, pattern]);
+        }
+      }
+      return data;
+    };
+
+    setChartData(generateCandlestickData());
+
+    // Simulate real-time updates
+    const interval = setInterval(() => {
+      setChartData(prevData => {
+        const lastCandle = prevData[prevData.length - 1];
+        const now = new Date();
+        const newCandle: CandlestickData = {
+          time: now.getTime() / 1000 as Time,
+          open: lastCandle.close,
+          high: lastCandle.close + Math.random(),
+          low: lastCandle.close - Math.random(),
+          close: lastCandle.close + (Math.random() - 0.5) * 2,
+        };
+        return [...prevData.slice(1), newCandle];
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Initialize chart
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+
+    // Create the chart
+    const chart = createChart(chartContainerRef.current, {
+      layout: {
+        background: { type: 'solid', color: 'transparent' },
+        textColor: 'rgba(255, 255, 255, 0.9)',
+      },
+      grid: {
+        vertLines: { color: 'rgba(197, 203, 206, 0.1)' },
+        horzLines: { color: 'rgba(197, 203, 206, 0.1)' },
+      },
+      crosshair: {
+        mode: 1, // Use numeric value instead of enum
+      },
+      rightPriceScale: {
+        borderColor: 'rgba(197, 203, 206, 0.8)',
+      },
+      timeScale: {
+        borderColor: 'rgba(197, 203, 206, 0.8)',
+        timeVisible: true,
+        secondsVisible: false,
+      },
+    });
+
+    chartRef.current = chart;
+
+    // Create the candlestick series
+    const mainSeries = chart.addCandlestickSeries({
+      upColor: '#26a69a',
+      downColor: '#ef5350',
+      borderVisible: false,
+      wickUpColor: '#26a69a',
+      wickDownColor: '#ef5350',
+    });
+
+    // Set the data
+    mainSeries.setData(chartData);
+
+    // Add markers for patterns
+    if (patterns.length > 0) {
+      mainSeries.setMarkers(
+        patterns.map(pattern => ({
+          time: pattern.time,
+          position: pattern.position,
+          color: pattern.color,
+          shape: pattern.shape,
+          text: pattern.text,
+        }))
+      );
+    }
+
+    // Handle resize
+    const handleResize = () => {
+      if (chartContainerRef.current && chartRef.current) {
+        chartRef.current.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+          height: chartContainerRef.current.clientHeight,
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (chartRef.current) {
+        chartRef.current.remove();
+      }
+    };
+  }, [chartData, patterns]);
+
+  const watchlist = useState<string[]>(["RELIANCE", "TCS", "INFY"]);
   const [newSymbol, setNewSymbol] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState("");
   const [selectedTimeframe, setSelectedTimeframe] = useState("1D");
   const [selectedIndicator, setSelectedIndicator] = useState("ALL");
   const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false);
+
 
   // Mock data
   const institutionalData: InstitutionalData = {
@@ -119,168 +237,17 @@ const MarketAnalysis = () => {
     vwap: 18245.75
   };
 
-  // Mock profit data for the chart (This is no longer used but kept for completeness)
-  const profitChartData = [
-    { time: '09:30', price: 100, volume: 1000, profit: 0 },
-    { time: '10:30', price: 102, volume: 1500, profit: 2000 },
-    { time: '11:30', price: 101, volume: 1200, profit: 1500 },
-    { time: '12:30', price: 103, volume: 1800, profit: 3500 },
-    { time: '13:30', price: 104, volume: 2000, profit: 4200 },
-    { time: '14:30', price: 105, volume: 2200, profit: 5000 },
-  ];
-
   // Functions
   const addToWatchlist = (symbol: string) => {
-    if (symbol && !watchlist.includes(symbol)) {
-      setWatchlist([...watchlist, symbol]);
+    if (symbol && !watchlist[0].includes(symbol)) {
+      setWatchlist([...watchlist[0], symbol]);
       setNewSymbol("");
     }
   };
 
   const removeFromWatchlist = (symbol: string) => {
-    setWatchlist(watchlist.filter(item => item !== symbol));
+    setWatchlist(watchlist[0].filter(item => item !== symbol));
   };
-
-  useEffect(() => {
-    const generateCandlestickData = () => {
-      const data: CandlestickData[] = [];
-      let basePrice = 100;
-      const now = new Date();
-
-      for (let i = 0; i < 100; i++) {
-        const time = new Date(now.getTime() - (100 - i) * 5 * 60000);
-        const open = basePrice + Math.random() * 2 - 1;
-        const high = open + Math.random() * 1;
-        const low = open - Math.random() * 1;
-        const close = (open + high + low) / 3 + (Math.random() - 0.5);
-
-        basePrice = close;
-
-        data.push({
-          time: time.toISOString().split('T')[1].split('.')[0],
-          open,
-          high,
-          low,
-          close,
-        });
-
-        // Add pattern markers
-        if (i > 0 && Math.random() > 0.9) {
-          const isUpPattern = Math.random() > 0.5;
-          const pattern: PatternMarker = {
-            time: time.toISOString().split('T')[1].split('.')[0],
-            position: isUpPattern ? 'belowBar' : 'aboveBar',
-            color: isUpPattern ? '#26a69a' : '#ef5350',
-            shape: isUpPattern ? 'arrowUp' : 'arrowDown',
-            text: isUpPattern ? 'Bullish Pattern' : 'Bearish Pattern'
-          };
-          setPatterns(prev => [...prev, pattern]);
-        }
-      }
-      return data;
-    };
-
-    setChartData(generateCandlestickData());
-
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      setChartData(prevData => {
-        const lastCandle = prevData[prevData.length - 1];
-        const now = new Date();
-        const newCandle: CandlestickData = {
-          time: now.toISOString().split('T')[1].split('.')[0],
-          open: lastCandle.close,
-          high: lastCandle.close + Math.random(),
-          low: lastCandle.close - Math.random(),
-          close: lastCandle.close + (Math.random() - 0.5) * 2,
-        };
-        return [...prevData.slice(1), newCandle];
-      });
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Initialize chart
-  useEffect(() => {
-    if (!chartContainerRef.current) return;
-
-    const chart = createChart(chartContainerRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: 'rgba(255, 255, 255, 0.9)',
-      },
-      grid: {
-        vertLines: { color: 'rgba(197, 203, 206, 0.1)' },
-        horzLines: { color: 'rgba(197, 203, 206, 0.1)' },
-      },
-      crosshair: {
-        mode: CrosshairMode.Normal,
-      },
-      rightPriceScale: {
-        borderColor: 'rgba(197, 203, 206, 0.8)',
-      },
-      timeScale: {
-        borderColor: 'rgba(197, 203, 206, 0.8)',
-        timeVisible: true,
-        secondsVisible: false,
-      },
-    });
-
-    // Add candlestick series
-    const candlestickSeries = chart.addCandlestickSeries({
-      upColor: '#26a69a',
-      downColor: '#ef5350',
-      borderVisible: false,
-      wickUpColor: '#26a69a',
-      wickDownColor: '#ef5350',
-    });
-
-    // Add pattern markers
-    const markersSeries = chart.addCandlestickSeries({
-      markers: patterns.map(pattern => ({
-        time: pattern.time,
-        position: pattern.position,
-        color: pattern.color,
-        shape: pattern.shape,
-        text: pattern.text,
-      })),
-    });
-
-
-    // Update data
-    candlestickSeries.setData(chartData);
-
-    // Add volume series
-    const volumeSeries = chart.addHistogramSeries({
-      color: '#26a69a',
-      priceFormat: {
-        type: 'volume',
-      },
-      priceScaleId: '',
-      scaleMargins: {
-        top: 0.8,
-        bottom: 0,
-      },
-    });
-
-    // Handle resize
-    const handleResize = () => {
-      if (chartContainerRef.current) {
-        chart.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-          height: chartContainerRef.current.clientHeight,
-        });
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      chart.remove();
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [chartData, patterns]);
 
   return (
     <div className="p-6">
@@ -334,7 +301,9 @@ const MarketAnalysis = () => {
                         )}
                         {pattern.text}
                       </span>
-                      <span className="text-sm text-muted-foreground">{pattern.time}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date((pattern.time as number) * 1000).toLocaleTimeString()}
+                      </span>
                     </motion.div>
                   ))}
                 </div>
