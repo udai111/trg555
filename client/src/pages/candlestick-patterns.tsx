@@ -1,13 +1,12 @@
 import { useEffect, useState, useRef, memo } from "react";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   createChart, 
-  ColorType, 
+  ColorType,
+  UTCTimestamp,
   IChartApi,
-  CandlestickData,
-  HistogramData,
-  Time
+  SeriesOptionsCommon,
+  CandlestickData
 } from "lightweight-charts";
 import { motion, AnimatePresence } from "framer-motion";
 import { Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle, Bitcoin, LineChart, Globe, CandlestickChart, Bell, Info } from "lucide-react";
@@ -18,10 +17,10 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { toast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 // Chart Components
-const NormalChart = memo(({ data }: { data: CandlestickData[] }) => {
+const NormalChart = memo(({ data }: { data: CandlestickData<UTCTimestamp>[] }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const chartRef = useRef<IChartApi | null>(null);
@@ -31,10 +30,9 @@ const NormalChart = memo(({ data }: { data: CandlestickData[] }) => {
 
     setIsLoading(true);
 
-    // Create chart with aggr-templates inspired configuration
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { type: 'solid', color: '#131722' as ColorType },
+        background: { type: ColorType.Solid, color: '#131722' },
         textColor: '#d1d4dc',
       },
       grid: {
@@ -48,24 +46,6 @@ const NormalChart = memo(({ data }: { data: CandlestickData[] }) => {
       },
       rightPriceScale: {
         borderColor: '#2B2B43',
-        scaleMargins: {
-          top: 0.3,
-          bottom: 0.25,
-        },
-      },
-      crosshair: {
-        vertLine: {
-          color: '#758696',
-          width: 1,
-          style: 3,
-          labelBackgroundColor: '#131722',
-        },
-        horzLine: {
-          color: '#758696',
-          width: 1,
-          style: 3,
-          labelBackgroundColor: '#131722',
-        },
       },
       width: chartContainerRef.current.clientWidth,
       height: 500,
@@ -73,7 +53,6 @@ const NormalChart = memo(({ data }: { data: CandlestickData[] }) => {
 
     chartRef.current = chart;
 
-    // Create and style the candlestick series
     const candlestickSeries = chart.addCandlestickSeries({
       upColor: '#26a69a',
       downColor: '#ef5350',
@@ -96,7 +75,7 @@ const NormalChart = memo(({ data }: { data: CandlestickData[] }) => {
     });
 
     // Create volume data
-    const volumeData: HistogramData[] = limitedData.map(candle => ({
+    const volumeData = limitedData.map(candle => ({
       time: candle.time,
       value: Math.random() * 100000,
       color: candle.close >= candle.open ? '#26a69a' : '#ef5350',
@@ -192,12 +171,13 @@ export default function CandlestickPatternsPage() {
   const [selectedStock, setSelectedStock] = useState("RELIANCE");
   const [marketType, setMarketType] = useState<'indian' | 'international' | 'crypto'>('indian');
   const [chartType, setChartType] = useState<'normal' | 'lightweight' | 'tradingview'>('normal');
-  const [chartData, setChartData] = useState<CandlestickData[]>([]);
+  const [chartData, setChartData] = useState<CandlestickData<UTCTimestamp>[]>([]);
   const [drawings, setDrawings] = useState<CustomDrawing[]>([]);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [showTutorial, setShowTutorial] = useState(true);
   const [alertsEnabled, setAlertsEnabled] = useState(false);
   const [successRateThreshold, setSuccessRateThreshold] = useState(70);
+  const { toast } = useToast();
 
   // Market Data
   const indianStocks = [
@@ -254,7 +234,7 @@ export default function CandlestickPatternsPage() {
     const basePrice = getBasePrice(selectedStock);
     const volatility = marketType === 'crypto' ? 0.02 : 0.01;
 
-    const data: CandlestickData[] = Array.from({ length: 50 }).map((_, i) => {
+    const data: CandlestickData<UTCTimestamp>[] = Array.from({ length: 50 }).map((_, i) => {
       const date = new Date(currentDate);
       date.setMinutes(date.getMinutes() - (50 - i) * 15);
 
@@ -265,7 +245,7 @@ export default function CandlestickPatternsPage() {
       const close = (open + high + low) / 3 + (Math.random() - 0.5) * (basePrice * volatility / 2);
 
       return {
-        time: date.getTime() /1000,
+        time: (date.getTime() / 1000) as UTCTimestamp,
         open,
         high,
         low,
@@ -318,7 +298,7 @@ export default function CandlestickPatternsPage() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [selectedStock, marketType, alertsEnabled, successRateThreshold]);
+  }, [selectedStock, marketType, alertsEnabled, successRateThreshold, toast]);
 
   // Event Handlers
   const handleMarketTypeChange = (type: string) => {
