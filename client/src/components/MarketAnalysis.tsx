@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -116,6 +117,16 @@ const MarketAnalysis = () => {
     vwap: 18245.75
   };
 
+  // Mock profit data for the chart
+  const profitChartData = [
+    { time: '09:30', price: 100, volume: 1000, profit: 0 },
+    { time: '10:30', price: 102, volume: 1500, profit: 2000 },
+    { time: '11:30', price: 101, volume: 1200, profit: 1500 },
+    { time: '12:30', price: 103, volume: 1800, profit: 3500 },
+    { time: '13:30', price: 104, volume: 2000, profit: 4200 },
+    { time: '14:30', price: 105, volume: 2200, profit: 5000 },
+  ];
+
   // Functions
   const addToWatchlist = (symbol: string) => {
     if (symbol && !watchlist.includes(symbol)) {
@@ -137,7 +148,7 @@ const MarketAnalysis = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs defaultValue="profit" className="space-y-4">
         <TabsList className="grid grid-cols-5 w-full">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="institutional">Institutional</TabsTrigger>
@@ -145,6 +156,104 @@ const MarketAnalysis = () => {
           <TabsTrigger value="profit">Profit</TabsTrigger>
           <TabsTrigger value="patterns">Patterns</TabsTrigger>
         </TabsList>
+
+        {/* Profit Tab */}
+        <TabsContent value="profit">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <BarChart2 className="w-5 h-5" />
+                Intraday Performance
+              </h3>
+              <div className="h-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={profitChartData}>
+                    <XAxis dataKey="time" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip />
+                    <Bar dataKey="volume" yAxisId="right" fill="hsl(var(--primary))" opacity={0.3} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="profit" 
+                      yAxisId="left" 
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={2}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <DollarSign className="w-5 h-5" />
+                Profit Analysis
+              </h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span>Today's P&L</span>
+                  <span className="text-green-500 text-xl font-semibold">+₹12,500</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Week's P&L</span>
+                  <span className="text-green-500 text-xl font-semibold">+₹45,000</span>
+                </div>
+                <div className="h-px bg-border my-4" />
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span>Win Rate</span>
+                      <span className="font-semibold">75%</span>
+                    </div>
+                    <div className="w-full bg-accent/10 rounded-full h-2">
+                      <div className="bg-green-500 h-2 rounded-full" style={{ width: '75%' }} />
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Average Win</span>
+                    <span className="text-green-500 font-semibold">₹5,200</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Average Loss</span>
+                    <span className="text-red-500 font-semibold">₹2,100</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Risk/Reward Ratio</span>
+                    <span className="font-semibold">1:2.48</span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Additional Profit Metrics */}
+            <Card className="md:col-span-2 p-6">
+              <h3 className="text-lg font-semibold mb-4">Performance Metrics</h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="p-4 bg-accent/10 rounded-lg">
+                  <h4 className="text-sm text-muted-foreground mb-1">Profit Factor</h4>
+                  <p className="text-2xl font-bold">2.35</p>
+                  <span className="text-xs text-muted-foreground">Good &gt; 2.0</span>
+                </div>
+                <div className="p-4 bg-accent/10 rounded-lg">
+                  <h4 className="text-sm text-muted-foreground mb-1">Sharpe Ratio</h4>
+                  <p className="text-2xl font-bold">1.85</p>
+                  <span className="text-xs text-muted-foreground">Good &gt; 1.0</span>
+                </div>
+                <div className="p-4 bg-accent/10 rounded-lg">
+                  <h4 className="text-sm text-muted-foreground mb-1">Max Drawdown</h4>
+                  <p className="text-2xl font-bold text-red-500">-12.5%</p>
+                  <span className="text-xs text-muted-foreground">Last 30 days</span>
+                </div>
+                <div className="p-4 bg-accent/10 rounded-lg">
+                  <h4 className="text-sm text-muted-foreground mb-1">Expectancy</h4>
+                  <p className="text-2xl font-bold text-green-500">₹2,340</p>
+                  <span className="text-xs text-muted-foreground">Per trade</span>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </TabsContent>
 
         {/* Overview Tab */}
         <TabsContent value="overview">
@@ -168,7 +277,9 @@ const MarketAnalysis = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span>Net Buy:</span>
-                  <span className={`text-${institutionalData.fii.trend === 'Positive' ? 'green' : 'red'}-500`}>
+                  <span className={cn(
+                    institutionalData.fii.trend === 'Positive' ? 'text-green-500' : 'text-red-500'
+                  )}>
                     {institutionalData.fii.netBuy > 0 ? '+' : ''}{institutionalData.fii.netBuy.toFixed(1)} Cr
                   </span>
                 </div>
@@ -184,7 +295,9 @@ const MarketAnalysis = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span>Net Buy:</span>
-                  <span className={`text-${institutionalData.dii.trend === 'Positive' ? 'green' : 'red'}-500`}>
+                  <span className={cn(
+                    institutionalData.dii.trend === 'Positive' ? 'text-green-500' : 'text-red-500'
+                  )}>
                     {institutionalData.dii.netBuy > 0 ? '+' : ''}{institutionalData.dii.netBuy.toFixed(1)} Cr
                   </span>
                 </div>
@@ -197,60 +310,114 @@ const MarketAnalysis = () => {
           </div>
         </TabsContent>
 
-        {/* Profit Tab */}
-        <TabsContent value="profit">
+        {/* Institutional Tab */}
+        <TabsContent value="institutional">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Intraday Performance</h3>
-              <div className="h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={[
-                    { time: '09:30', price: 100, volume: 1000 },
-                    { time: '10:30', price: 102, volume: 1500 },
-                    { time: '11:30', price: 101, volume: 1200 },
-                    { time: '12:30', price: 103, volume: 1800 },
-                    { time: '13:30', price: 104, volume: 2000 },
-                    { time: '14:30', price: 105, volume: 2200 },
-                  ]}>
-                    <XAxis dataKey="time" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip />
-                    <Bar dataKey="volume" yAxisId="right" fill="hsl(var(--primary))" opacity={0.3} />
-                    <Line type="monotone" dataKey="price" yAxisId="left" stroke="hsl(var(--primary))" />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Profit Analysis</h3>
+              <h3 className="text-lg font-semibold mb-4">FII Activity</h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span>Today's P&L</span>
-                  <span className="text-green-500">+₹12,500</span>
+                  <span>Net Buy:</span>
+                  <span className={cn(
+                    institutionalData.fii.trend === 'Positive' ? 'text-green-500' : 'text-red-500'
+                  )}>
+                    {institutionalData.fii.netBuy > 0 ? '+' : ''}{institutionalData.fii.netBuy.toFixed(1)} Cr
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span>Week's P&L</span>
-                  <span className="text-green-500">+₹45,000</span>
+                  <span>Total Buy:</span>
+                  <span>{institutionalData.fii.totalBuy.toFixed(1)} Cr</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span>Win Rate</span>
-                  <span>75%</span>
+                  <span>Total Sell:</span>
+                  <span>{institutionalData.fii.totalSell.toFixed(1)} Cr</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span>Average Win</span>
-                  <span className="text-green-500">₹5,200</span>
+                  <span>Weekly Change:</span>
+                  <span className={cn(
+                    institutionalData.fii.trend === 'Positive' ? 'text-green-500' : 'text-red-500'
+                  )}>
+                    {institutionalData.fii.weeklyChange}
+                  </span>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">DII Activity</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span>Net Buy:</span>
+                  <span className={cn(
+                    institutionalData.dii.trend === 'Positive' ? 'text-green-500' : 'text-red-500'
+                  )}>
+                    {institutionalData.dii.netBuy > 0 ? '+' : ''}{institutionalData.dii.netBuy.toFixed(1)} Cr
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span>Average Loss</span>
-                  <span className="text-red-500">₹2,100</span>
+                  <span>Total Buy:</span>
+                  <span>{institutionalData.dii.totalBuy.toFixed(1)} Cr</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Total Sell:</span>
+                  <span>{institutionalData.dii.totalSell.toFixed(1)} Cr</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Weekly Change:</span>
+                  <span className={cn(
+                    institutionalData.dii.trend === 'Positive' ? 'text-green-500' : 'text-red-500'
+                  )}>
+                    {institutionalData.dii.weeklyChange}
+                  </span>
                 </div>
               </div>
             </Card>
           </div>
         </TabsContent>
 
+        {/* Technical Tab */}
+        <TabsContent value="technical">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Technical Indicators</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span>RSI</span>
+                  <span>55</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>MACD</span>
+                  <span>Positive</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>SMA (200)</span>
+                  <span>18000</span>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Volume Analysis</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span>Volume</span>
+                  <span>100000</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>OBV</span>
+                  <span>Increasing</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>VWAP</span>
+                  <span>{marketBreadthData.vwap.toFixed(2)}</span>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Patterns Tab */}
+        <TabsContent value="patterns">
+          <p>Patterns Tab Content</p>
+        </TabsContent>
       </Tabs>
     </div>
   );
