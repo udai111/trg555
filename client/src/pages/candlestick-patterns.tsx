@@ -145,6 +145,10 @@ export default function CandlestickPatternsPage() {
         chartRef.current.remove();
       }
 
+      // Make sure container has dimensions
+      containerRef.current.style.height = '500px';
+      containerRef.current.style.width = '100%';
+
       const chart = createChart(containerRef.current, {
         layout: {
           background: { color: '#131722' },
@@ -161,13 +165,40 @@ export default function CandlestickPatternsPage() {
         },
         rightPriceScale: {
           borderColor: '#2B2B43',
+          scaleMargins: {
+            top: 0.1,
+            bottom: 0.1,
+          },
         },
-        width: containerRef.current.clientWidth,
-        height: 500,
+        crosshair: {
+          mode: 1,
+          vertLine: {
+            width: 1,
+            color: 'rgba(224, 227, 235, 0.1)',
+            style: 0,
+          },
+          horzLine: {
+            width: 1,
+            color: 'rgba(224, 227, 235, 0.1)',
+            style: 0,
+          },
+        },
+        handleScroll: {
+          vertTouchDrag: false,
+        },
       });
 
-      const candleSeries = chart.addCandlestickSeries();
-      candlestickSeriesRef.current = candleSeries;
+      const series = chart.addCandlestickSeries({
+        upColor: '#26a69a',
+        downColor: '#ef5350',
+        borderUpColor: '#26a69a',
+        borderDownColor: '#ef5350',
+        wickUpColor: '#26a69a',
+        wickDownColor: '#ef5350',
+      });
+
+      candlestickSeriesRef.current = series;
+      chartRef.current = chart;
 
       const currentDate = new Date();
       const basePrice = getBasePrice(selectedStock);
@@ -192,8 +223,9 @@ export default function CandlestickPatternsPage() {
         };
       });
 
-      candleSeries.setData(data);
-      chartRef.current = chart;
+      series.setData(data);
+
+      chart.timeScale().fitContent();
 
       const handleResize = () => {
         if (containerRef.current && chartRef.current) {
