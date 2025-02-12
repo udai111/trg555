@@ -62,9 +62,9 @@ const MarketAnalysis = () => {
   const { toast } = useToast();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [chartData, setChartData] = useState<CandleData[]>([]);
-  const [watchlistItems, setWatchlistItems] = useState<string[]>(["RELIANCE", "TCS", "INFY"]);
+  const [watchlistItems, setWatchlistItems] = useState<string[]>(["TSLA", "AAPL", "GOOGL"]);
   const [newSymbol, setNewSymbol] = useState("");
-  const [selectedSymbol, setSelectedSymbol] = useState("");
+  const [selectedSymbol, setSelectedSymbol] = useState("TSLA");
   const [selectedTimeframe, setSelectedTimeframe] = useState("1D");
   const [selectedIndicator, setSelectedIndicator] = useState("ALL");
   const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false);

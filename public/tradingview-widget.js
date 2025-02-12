@@ -3,9 +3,9 @@ function initTradingView() {
     new TradingView.widget({
       "width": "100%",
       "height": 400,
-      "symbol": "NSE:RELIANCE",
+      "symbol": "NASDAQ:TSLA",
       "interval": "15",
-      "timezone": "Asia/Kolkata",
+      "timezone": "America/New_York",
       "theme": "dark",
       "style": "1",
       "locale": "en",
