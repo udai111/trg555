@@ -38,7 +38,7 @@ interface TradeLog {
 }
 
 export default function UltraProTradingPage() {
-  const [symbol, setSymbol] = useState("RELIANCE");
+  const [symbol, setSymbol] = useState("TESLA");
   const [orderType, setOrderType] = useState<"Market" | "Limit" | "Stop-Loss">("Market");
   const [side, setSide] = useState<"Buy" | "Sell">("Buy");
   const [quantity, setQuantity] = useState("");
@@ -192,7 +192,7 @@ export default function UltraProTradingPage() {
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-6">Ultra-Pro Trading Technology</h1>
-      
+
       <div className="flex gap-4 mb-6">
         <div className="flex items-center gap-2">
           <Switch
@@ -223,7 +223,7 @@ export default function UltraProTradingPage() {
               <SelectItem value="D">1 day</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Switch
@@ -243,7 +243,7 @@ export default function UltraProTradingPage() {
             </div>
           </div>
         </div>
-        
+
         <div className="tradingview-widget-container mb-8">
           <div className="tradingview-widget-container__widget" />
           <div id="tradingview_advanced_chart" className="h-[400px]" />
@@ -254,7 +254,7 @@ export default function UltraProTradingPage() {
         <Card>
           <CardContent className="p-6">
             <h2 className="text-2xl font-semibold mb-4">Order Panel</h2>
-            
+
             <div className="space-y-4">
               <div className="flex flex-col gap-2">
                 <Label>Symbol</Label>
@@ -263,12 +263,12 @@ export default function UltraProTradingPage() {
                   onChange={(e) => setSymbol(e.target.value.toUpperCase())}
                 />
               </div>
-              
+
               <div className="flex flex-col gap-2">
                 <Label>Current Price</Label>
                 <div className="text-lg font-semibold">₹{realTimePrice}</div>
               </div>
-              
+
               <div className="flex flex-col gap-2">
                 <Label>Side</Label>
                 <Select value={side} onValueChange={(value: "Buy" | "Sell") => setSide(value)}>
@@ -281,7 +281,7 @@ export default function UltraProTradingPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="flex flex-col gap-2">
                 <Label>Order Type</Label>
                 <Select
@@ -298,7 +298,7 @@ export default function UltraProTradingPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               {orderType === "Limit" && (
                 <div className="flex flex-col gap-2">
                   <Label>Limit Price</Label>
@@ -309,7 +309,7 @@ export default function UltraProTradingPage() {
                   />
                 </div>
               )}
-              
+
               {orderType === "Stop-Loss" && (
                 <div className="flex flex-col gap-2">
                   <Label>Stop Price</Label>
@@ -320,7 +320,7 @@ export default function UltraProTradingPage() {
                   />
                 </div>
               )}
-              
+
               <div className="flex flex-col gap-2">
                 <Label>Quantity</Label>
                 <Input
@@ -329,7 +329,7 @@ export default function UltraProTradingPage() {
                   onChange={(e) => setQuantity(e.target.value)}
                 />
               </div>
-              
+
               <div className="flex flex-col gap-2">
                 <Label>Trailing Stop (%)</Label>
                 <Input
@@ -338,7 +338,7 @@ export default function UltraProTradingPage() {
                   onChange={(e) => setTrailingStop(e.target.value)}
                 />
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Switch
                   checked={marginEnabled}
@@ -347,7 +347,7 @@ export default function UltraProTradingPage() {
                 />
                 <Label htmlFor="margin-enabled">Margin Trade</Label>
               </div>
-              
+
               {marginEnabled && (
                 <div className="flex flex-col gap-2">
                   <Label>Leverage</Label>
@@ -367,7 +367,7 @@ export default function UltraProTradingPage() {
                   </Select>
                 </div>
               )}
-              
+
               <div className="flex items-center gap-2">
                 <Switch
                   checked={orderIceberg}
@@ -376,7 +376,7 @@ export default function UltraProTradingPage() {
                 />
                 <Label htmlFor="iceberg-order">Iceberg Order</Label>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Switch
                   checked={orderOCO}
@@ -385,7 +385,7 @@ export default function UltraProTradingPage() {
                 />
                 <Label htmlFor="oco-order">OCO (One-Cancels-Other)</Label>
               </div>
-              
+
               <div className="flex gap-4">
                 <Button onClick={handleSubmitOrder}>Place Order</Button>
                 <Button variant="outline" onClick={handleSetAlert}>
