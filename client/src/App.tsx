@@ -24,6 +24,11 @@ import { performanceManager } from "@/lib/performance-manager";
 import { Component, Suspense, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import NotFound from "@/pages/not-found";
+import { RouteComponentProps } from "wouter";
+
+const MagicForecastPanelRoute = () => {
+  return <MagicForecastPanel stock="" onClose={() => {}} />;
+};
 
 
 interface ErrorState {
@@ -179,7 +184,7 @@ function App(): JSX.Element {
                       <Route path="/market-analysis" component={MarketAnalysis} />
                       <Route path="/strategy-builder" component={StrategyBuilder} />
                       <Route path="/portfolio" component={PortfolioManagement} />
-                      <Route path="/magic-forecast" component={MagicForecastPanel} />
+                      <Route path="/magic-forecast" component={MagicForecastPanelRoute} />
                       <Route path="/pattern-scanner" component={IntradayPatternScanner} />
                       <Route path="/order-flow" component={OrderFlowAnalysis} />
                       <Route path="/risk-analytics" component={RiskAnalytics} />
