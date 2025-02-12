@@ -21,6 +21,23 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { performanceManager } from '@/lib/performance-manager';
+import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';  // Updated import
+import { Label } from '@/components/ui/label';   // Separate Label import
+
+
+// Performance optimization features
+const REFRESH_INTERVALS = {
+  HIGH_PERFORMANCE: 1000,
+  MEDIUM_PERFORMANCE: 2000,
+  LOW_PERFORMANCE: 5000
+};
+
+const BATCH_SIZES = {
+  HIGH_PERFORMANCE: 50,
+  MEDIUM_PERFORMANCE: 25,
+  LOW_PERFORMANCE: 10
+};
 
 interface MarketAnalysis {
   symbol: string;
@@ -76,6 +93,11 @@ const QuantumDashboard = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [mlFeaturesAvailable, setMlFeaturesAvailable] = useState(false);
   const [initializationError, setInitializationError] = useState<string | null>(null);
+  const [performanceMode, setPerformanceMode] = useState<'high' | 'medium' | 'low'>('medium');
+  const [dataUpdateInterval, setDataUpdateInterval] = useState(REFRESH_INTERVALS.MEDIUM_PERFORMANCE);
+  const [batchSize, setBatchSize] = useState(BATCH_SIZES.MEDIUM_PERFORMANCE);
+  // Add the GPU mode toggle state and handler
+  const [useGPUMode, setUseGPUMode] = useState(false);
 
   useEffect(() => {
     const initPerformance = async () => {
@@ -93,13 +115,44 @@ const QuantumDashboard = () => {
     initPerformance();
   }, []);
 
+  useEffect(() => {
+    const updatePerformanceSettings = async () => {
+      const capabilities = await performanceManager.detectCapabilities();
+      const settings = performanceManager.getRecommendedSettings();
+
+      // Adjust refresh rates based on performance capabilities
+      if (settings.renderQuality === 'high') {
+        setPerformanceMode('high');
+        setDataUpdateInterval(REFRESH_INTERVALS.HIGH_PERFORMANCE);
+        setBatchSize(BATCH_SIZES.HIGH_PERFORMANCE);
+      } else if (settings.renderQuality === 'low') {
+        setPerformanceMode('low');
+        setDataUpdateInterval(REFRESH_INTERVALS.LOW_PERFORMANCE);
+        setBatchSize(BATCH_SIZES.LOW_PERFORMANCE);
+      } else {
+        setPerformanceMode('medium');
+        setDataUpdateInterval(REFRESH_INTERVALS.MEDIUM_PERFORMANCE);
+        setBatchSize(BATCH_SIZES.MEDIUM_PERFORMANCE);
+      }
+
+      // Update autoRefresh interval based on performance mode
+      if (autoRefresh) {
+        setAutoRefresh(false); // Temporarily disable to change interval
+        setTimeout(() => setAutoRefresh(true), 100); // Re-enable with new interval
+      }
+    };
+
+    updatePerformanceSettings();
+  }, []);
+
   const { data: marketAnalysis, isLoading: isLoadingAnalysis } = useQuery<MarketAnalysis>({
     queryKey: ['marketAnalysis', selectedSymbol, timeframe],
     queryFn: async () => {
       const response = await fetch(`/api/market-analysis?symbol=${selectedSymbol}&timeframe=${timeframe}`);
       return response.json();
     },
-    refetchInterval: autoRefresh ? 1000 : false
+    refetchInterval: autoRefresh ? dataUpdateInterval : false,
+    staleTime: dataUpdateInterval / 2
   });
 
   const { data: portfolioMetrics, isLoading: isLoadingPortfolio } = useQuery<PortfolioMetrics>({
@@ -108,12 +161,23 @@ const QuantumDashboard = () => {
       const response = await fetch('/api/portfolio-metrics');
       return response.json();
     },
-    refetchInterval: autoRefresh ? 5000 : false
+    refetchInterval: autoRefresh ? dataUpdateInterval * 2 : false,
+    staleTime: dataUpdateInterval
   });
 
   const formatNumber = (value: number | undefined, decimals = 2) => {
     if (value === undefined || isNaN(value)) return 'N/A';
     return value.toFixed(decimals);
+  };
+
+  const handleGPUModeChange = async (enabled: boolean) => {
+    setUseGPUMode(enabled);
+    await performanceManager.updateSettings({
+      useHighPerformanceMode: enabled,
+      enableBackgroundProcessing: enabled,
+      renderQuality: enabled ? 'high' : 'low',
+      maxParallelOperations: enabled ? 4 : 1
+    });
   };
 
   if (isLoadingAnalysis && isLoadingPortfolio) {
@@ -182,6 +246,25 @@ const QuantumDashboard = () => {
                   <RefreshCcw className={`w-4 h-4 ${autoRefresh ? "animate-spin" : ""}`} />
                   {autoRefresh ? "Auto-refresh On" : "Auto-refresh Off"}
                 </Button>
+                <div className="flex items-center gap-2 ml-4">
+                  <span className="text-sm text-muted-foreground">Performance Mode:</span>
+                  <span className={cn("text-sm font-medium", {
+                    "text-green-500": performanceMode === 'high',
+                    "text-yellow-500": performanceMode === 'medium',
+                    "text-red-500": performanceMode === 'low'
+                  })}>
+                    {performanceMode.charAt(0).toUpperCase() + performanceMode.slice(1)}
+                  </span>
+                </div>
+                {/* Add this next to the other controls in the UI */}
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={useGPUMode}
+                    onCheckedChange={handleGPUModeChange}
+                    id="gpu-mode"
+                  />
+                  <Label htmlFor="gpu-mode">GPU Mode</Label>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -256,7 +339,7 @@ const QuantumDashboard = () => {
                         <div>
                           <p className="text-sm text-muted-foreground">Volatility</p>
                           <p className="font-semibold">
-                            {marketAnalysis?.indicators.volatility ? formatNumber(marketAnalysis.indicators.volatility * 100,1) + "%" : 'N/A'}
+                            {marketAnalysis?.indicators.volatility ? formatNumber(marketAnalysis.indicators.volatility * 100, 1) + "%" : 'N/A'}
                           </p>
                         </div>
                       </div>
@@ -266,16 +349,16 @@ const QuantumDashboard = () => {
                         <div className="space-y-1">
                           <div className="flex justify-between">
                             <span>Signal</span>
-                            <span>{marketAnalysis?.indicators.macd.signal ? formatNumber(marketAnalysis.indicators.macd.signal,3) : 'N/A'}</span>
+                            <span>{marketAnalysis?.indicators.macd.signal ? formatNumber(marketAnalysis.indicators.macd.signal, 3) : 'N/A'}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>MACD</span>
-                            <span>{marketAnalysis?.indicators.macd.macd ? formatNumber(marketAnalysis.indicators.macd.macd,3) : 'N/A'}</span>
+                            <span>{marketAnalysis?.indicators.macd.macd ? formatNumber(marketAnalysis.indicators.macd.macd, 3) : 'N/A'}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Histogram</span>
                             <span className={marketAnalysis?.indicators.macd.histogram > 0 ? 'text-green-500' : 'text-red-500'}>
-                              {marketAnalysis?.indicators.macd.histogram ? formatNumber(marketAnalysis.indicators.macd.histogram,3) : 'N/A'}
+                              {marketAnalysis?.indicators.macd.histogram ? formatNumber(marketAnalysis.indicators.macd.histogram, 3) : 'N/A'}
                             </span>
                           </div>
                         </div>
@@ -306,7 +389,7 @@ const QuantumDashboard = () => {
                             <div className="text-right">
                               <p className="text-sm text-muted-foreground">Confidence</p>
                               <p className="font-semibold">
-                                {marketAnalysis?.aiPredictions.confidence ? formatNumber(marketAnalysis.aiPredictions.confidence * 100,1) + "%" : 'N/A'}
+                                {marketAnalysis?.aiPredictions.confidence ? formatNumber(marketAnalysis.aiPredictions.confidence * 100, 1) + "%" : 'N/A'}
                               </p>
                             </div>
                           </div>
@@ -479,6 +562,25 @@ const QuantumDashboard = () => {
               <RefreshCcw className={`w-4 h-4 ${autoRefresh ? "animate-spin" : ""}`} />
               {autoRefresh ? "Auto-refresh On" : "Auto-refresh Off"}
             </Button>
+            <div className="flex items-center gap-2 ml-4">
+              <span className="text-sm text-muted-foreground">Performance Mode:</span>
+              <span className={cn("text-sm font-medium", {
+                "text-green-500": performanceMode === 'high',
+                "text-yellow-500": performanceMode === 'medium',
+                "text-red-500": performanceMode === 'low'
+              })}>
+                {performanceMode.charAt(0).toUpperCase() + performanceMode.slice(1)}
+              </span>
+            </div>
+            {/* Add this next to the other controls in the UI */}
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={useGPUMode}
+                onCheckedChange={handleGPUModeChange}
+                id="gpu-mode"
+              />
+              <Label htmlFor="gpu-mode">GPU Mode</Label>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -553,7 +655,7 @@ const QuantumDashboard = () => {
                     <div>
                       <p className="text-sm text-muted-foreground">Volatility</p>
                       <p className="font-semibold">
-                        {marketAnalysis?.indicators.volatility ? formatNumber(marketAnalysis.indicators.volatility * 100,1) + "%" : 'N/A'}
+                        {marketAnalysis?.indicators.volatility ? formatNumber(marketAnalysis.indicators.volatility * 100, 1) + "%" : 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -563,16 +665,16 @@ const QuantumDashboard = () => {
                     <div className="space-y-1">
                       <div className="flex justify-between">
                         <span>Signal</span>
-                        <span>{marketAnalysis?.indicators.macd.signal ? formatNumber(marketAnalysis.indicators.macd.signal,3) : 'N/A'}</span>
+                        <span>{marketAnalysis?.indicators.macd.signal ? formatNumber(marketAnalysis.indicators.macd.signal, 3) : 'N/A'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>MACD</span>
-                        <span>{marketAnalysis?.indicators.macd.macd ? formatNumber(marketAnalysis.indicators.macd.macd,3) : 'N/A'}</span>
+                        <span>{marketAnalysis?.indicators.macd.macd ? formatNumber(marketAnalysis.indicators.macd.macd, 3) : 'N/A'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Histogram</span>
                         <span className={marketAnalysis?.indicators.macd.histogram > 0 ? 'text-green-500' : 'text-red-500'}>
-                          {marketAnalysis?.indicators.macd.histogram ? formatNumber(marketAnalysis.indicators.macd.histogram,3) : 'N/A'}
+                          {marketAnalysis?.indicators.macd.histogram ? formatNumber(marketAnalysis.indicators.macd.histogram, 3) : 'N/A'}
                         </span>
                       </div>
                     </div>
@@ -603,7 +705,7 @@ const QuantumDashboard = () => {
                         <div className="text-right">
                           <p className="text-sm text-muted-foreground">Confidence</p>
                           <p className="font-semibold">
-                            {marketAnalysis?.aiPredictions.confidence ? formatNumber(marketAnalysis.aiPredictions.confidence * 100,1) + "%" : 'N/A'}
+                            {marketAnalysis?.aiPredictions.confidence ? formatNumber(marketAnalysis.aiPredictions.confidence * 100, 1) + "%" : 'N/A'}
                           </p>
                         </div>
                       </div>
