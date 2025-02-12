@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createChart, IChartApi, CandlestickData, Time } from "lightweight-charts";
 import { motion } from "framer-motion";
-import { Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle, Bitcoin, LineChart } from "lucide-react";
+import { Activity, TrendingUp, TrendingDown, BarChart2, HelpCircle, Bitcoin, LineChart, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -78,7 +78,7 @@ TradingViewChart.displayName = 'TradingViewChart';
 export default function CandlestickPatternsPage() {
   const [activePatterns, setActivePatterns] = useState<StockPattern[]>([]);
   const [selectedStock, setSelectedStock] = useState("RELIANCE");
-  const [marketType, setMarketType] = useState<'stocks' | 'crypto'>('stocks');
+  const [marketType, setMarketType] = useState<'indian' | 'international' | 'crypto'>('indian');
   const [chartType, setChartType] = useState<'lightweight' | 'tradingview'>('lightweight');
   const chartRef = useRef<IChartApi | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -91,9 +91,14 @@ export default function CandlestickPatternsPage() {
     "Falling Three Methods", "Three Inside Up", "Three Inside Down"
   ];
 
-  const stockData = [
+  const indianStocks = [
     "RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK", "WIPRO",
     "BAJFINANCE", "BHARTIARTL", "ASIANPAINT", "MARUTI"
+  ];
+
+  const internationalStocks = [
+    "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META",
+    "NVDA", "JPM", "V", "WMT"
   ];
 
   const cryptoData = [
@@ -102,7 +107,7 @@ export default function CandlestickPatternsPage() {
   ];
 
   const getStockBasePrice = (symbol: string): number => {
-    const prices: { [key: string]: number } = {
+    const indianPrices: { [key: string]: number } = {
       'RELIANCE': 2432.50,
       'TCS': 3890.75,
       'INFY': 1567.25,
@@ -114,7 +119,23 @@ export default function CandlestickPatternsPage() {
       'ASIANPAINT': 3456.78,
       'MARUTI': 9876.54,
     };
-    return prices[symbol] || 1000;
+
+    const internationalPrices: { [key: string]: number } = {
+      'AAPL': 185.85,
+      'MSFT': 420.55,
+      'GOOGL': 145.75,
+      'AMZN': 175.35,
+      'TSLA': 185.85,
+      'META': 465.20,
+      'NVDA': 725.35,
+      'JPM': 185.45,
+      'V': 275.85,
+      'WMT': 175.45,
+    };
+
+    return marketType === 'indian'
+      ? (indianPrices[symbol] || 1000)
+      : (internationalPrices[symbol] || 100);
   };
 
   const getCryptoBasePrice = (symbol: string): number => {
@@ -135,6 +156,19 @@ export default function CandlestickPatternsPage() {
 
   const getBasePrice = (symbol: string) => {
     return marketType === 'crypto' ? getCryptoBasePrice(symbol) : getStockBasePrice(symbol);
+  };
+
+  const getAvailableSymbols = () => {
+    switch (marketType) {
+      case 'indian':
+        return indianStocks;
+      case 'international':
+        return internationalStocks;
+      case 'crypto':
+        return cryptoData;
+      default:
+        return indianStocks;
+    }
   };
 
   const initializeChart = () => {
@@ -249,15 +283,22 @@ export default function CandlestickPatternsPage() {
   }, [selectedStock, marketType, chartType]);
 
   const handleMarketTypeChange = (type: string) => {
-    if (type === 'crypto' || type === 'stocks') {
+    if (type === 'indian' || type === 'international' || type === 'crypto') {
       setMarketType(type);
-      setSelectedStock(type === 'crypto' ? 'BTC/USDT' : 'RELIANCE');
+      // Set default stock for each market type
+      const defaultSymbols = {
+        indian: 'RELIANCE',
+        international: 'AAPL',
+        crypto: 'BTC/USDT'
+      };
+      setSelectedStock(defaultSymbols[type]);
     }
   };
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const newPatterns = (marketType === 'crypto' ? cryptoData : stockData).map(symbol => ({
+      const availableStocks = getAvailableSymbols();
+      const newPatterns = availableStocks.map(symbol => ({
         symbol,
         patterns: patterns
           .filter(() => Math.random() > 0.7)
@@ -285,9 +326,13 @@ export default function CandlestickPatternsPage() {
         <h1 className="text-3xl font-bold">Live Pattern Recognition</h1>
         <div className="flex items-center gap-4">
           <ToggleGroup type="single" value={marketType} onValueChange={handleMarketTypeChange}>
-            <ToggleGroupItem value="stocks" aria-label="Stocks">
+            <ToggleGroupItem value="indian" aria-label="Indian">
               <BarChart2 className="h-4 w-4 mr-2" />
-              Stocks
+              Indian
+            </ToggleGroupItem>
+            <ToggleGroupItem value="international" aria-label="International">
+              <Globe className="h-4 w-4 mr-2" />
+              International
             </ToggleGroupItem>
             <ToggleGroupItem value="crypto" aria-label="Crypto">
               <Bitcoin className="h-4 w-4 mr-2" />
@@ -311,7 +356,7 @@ export default function CandlestickPatternsPage() {
               <SelectValue placeholder="Select asset" />
             </SelectTrigger>
             <SelectContent>
-              {(marketType === 'crypto' ? cryptoData : stockData).map((asset) => (
+              {getAvailableSymbols().map((asset) => (
                 <SelectItem key={asset} value={asset}>
                   {asset}
                 </SelectItem>
