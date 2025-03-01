@@ -1,0 +1,2892 @@
+import { useState, useEffect, useMemo, useCallback, useRef, Suspense } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { motion, AnimatePresence, useAnimation } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  AlertCircle, TrendingUp, BarChart2, Settings2, ChevronDown, ChevronUp, 
+  Play, Pause, Zap, Brain, Cpu, Activity, Layers, GitBranch, 
+  BarChart, PieChart, LineChart, Sliders, Eye, EyeOff, Lock, Unlock,
+  ArrowUpRight, ArrowDownRight, Maximize2, Minimize2, RefreshCw
+} from "lucide-react";
+import { toast } from "@/components/ui/toast";
+import { Toaster } from "@/components/ui/toaster";
+import { Slider } from "@/components/ui/slider";
+import { Progress } from "@/components/ui/progress";
+import { useTheme } from "next-themes";
+import { 
+  Chart as ChartJS, 
+  CategoryScale, 
+  LinearScale, 
+  PointElement, 
+  LineElement, 
+  BarElement,
+  Title, 
+  Tooltip, 
+  Legend, 
+  Filler,
+  TimeScale
+} from "chart.js";
+import { Line, Bar, Scatter } from "react-chartjs-2";
+import { format } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tooltip as TooltipComponent, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+  TimeScale
+);
+
+// Enhanced interfaces with more sophisticated types
+interface Position extends BasePosition {
+  unrealizedPnL: number;
+  realizedPnL: number;
+  liquidationPrice: number;
+  fundingRate: number;
+  markPrice: number;
+  notionalValue: number;
+  collateral: number;
+  maintenanceMargin: number;
+  marginRatio: number;
+}
+
+interface BasePosition {
+  id: number;
+  symbol: string;
+  side: "Buy" | "Sell";
+  orderType: OrderType;
+  qty: number;
+  entryPrice: number;
+  margin: boolean;
+  leverage: number;
+  trailingStop: number | null;
+  takeProfit: number | null;
+  riskReward: number;
+  date: string;
+  tags: string[];
+}
+
+type OrderType = "Market" | "Limit" | "Stop-Loss" | "Stop-Limit" | "Trailing-Stop" | "OCO";
+
+interface Alert {
+  id: number;
+  symbol: string;
+  price: number;
+  note: string;
+}
+
+interface TradeLog {
+  action: "OPEN" | "CLOSE";
+  symbol: string;
+  side?: string;
+  qty: number;
+  entryPrice?: number;
+  closePrice?: number;
+  time: string;
+}
+
+interface PortfolioAnalytics {
+  totalValue: number;
+  dailyPnL: number;
+  weeklyPnL: number;
+  monthlyPnL: number;
+  sharpeRatio: number;
+  maxDrawdown: number;
+  winRate: number;
+  riskExposure: number;
+}
+
+// New interfaces for advanced features
+interface TechnicalIndicator {
+  type: string;
+  name: string;
+  enabled: boolean;
+  parameters: {
+    [key: string]: string | number;
+  };
+}
+
+interface RiskMetrics {
+  valueAtRisk: number;
+  expectedShortfall: number;
+  betaToMarket: number;
+  correlationMatrix: number[][];
+}
+
+interface AdvancedOrderSettings {
+  timeInForce: "GTC" | "IOC" | "FOK";
+  postOnly: boolean;
+  hidden: boolean;
+  icebergQty?: number;
+  triggerType?: "Mark" | "Last" | "Index";
+  closeOnTrigger: boolean;
+  reduceOnly: boolean;
+  workingType: "Contract" | "Mark";
+}
+
+// New interfaces for enhanced features
+interface MarketDepth {
+  bids: [number, number][];
+  asks: [number, number][];
+  timestamp: number;
+}
+
+interface LiquidityAnalysis {
+  bidLiquidity: number;
+  askLiquidity: number;
+  spreadPercentage: number;
+  depth: number;
+}
+
+interface VolumeProfile {
+  price: number;
+  volume: number;
+}
+
+// Type definitions for toast variants
+type ToastVariant = "default" | "destructive" | "success";
+
+interface Parameters {
+  period?: number;
+  multiplier?: number;
+  source?: string;
+  length?: number;
+  deviation?: number;
+  [key: string]: number | number[] | string | undefined;
+}
+
+// Fix toast variant type
+interface ToastProps {
+  title: string;
+  description: string;
+  variant?: "default" | "destructive";
+}
+
+// Utility function for showing toasts with proper typing
+const showToast = (title: string, description: string, variant: "default" | "destructive" = "default") => {
+  toast({
+    title,
+    description,
+    variant
+  });
+};
+
+// Enhanced warning toast
+const showWarningToast = (title: string, description: string) => {
+  showToast(title, description, "default");
+};
+
+// Enhanced technical indicator parameters type
+interface IndicatorParameters extends Parameters {
+  [key: string]: number | number[] | string | undefined;
+}
+
+interface TechnicalIndicator {
+  type: string;
+  name: string;
+  enabled: boolean;
+  parameters: {
+    [key: string]: string | number;
+  };
+}
+
+// Advanced algorithmic trading interfaces
+interface AlgorithmConfig {
+  type: "TWAP" | "VWAP" | "Iceberg" | "Sniper" | "Market Maker";
+  enabled: boolean;
+  parameters: {
+    duration?: number; // in minutes
+    targetSpread?: number; // in percentage
+    volumeParticipation?: number; // in percentage
+    priceOffset?: number; // in percentage
+    minProfit?: number; // in percentage
+    maxSlippage?: number; // in percentage
+    orderInterval?: number; // in seconds
+    gridLevels?: number;
+    momentum?: number;
+  };
+}
+
+interface SmartOrderRoute {
+  venue: string;
+  price: number;
+  liquidity: number;
+  fees: number;
+  latency: number;
+  probability: number;
+}
+
+interface MarketMicrostructure {
+  bidAskSpread: number;
+  marketImpact: number;
+  volumeProfile: VolumeProfile[];
+  priceVolatility: number;
+  orderBookImbalance: number;
+  liquidityScore: number;
+  aiAnalysis?: {
+    marketCondition: string;
+    confidence: number;
+    volatilityForecast: number;
+    recommendations: AIRecommendation[];
+  };
+}
+
+interface RiskAnalytics extends RiskMetrics {
+  stressTestResults: {
+    scenario: string;
+    pnl: number;
+    var: number;
+    maxDrawdown: number;
+  }[];
+  sensitivityAnalysis: {
+    delta: number;
+    gamma: number;
+    vega: number;
+    theta: number;
+    rho: number;
+  };
+  portfolioHeatmap: {
+    sector: string;
+    exposure: number;
+    correlation: number;
+  }[];
+}
+
+interface VolumeProfileData {
+  price: number;
+  volume: number;
+}
+
+// Add new interfaces for advanced features
+interface MarketMaker {
+  enabled: boolean;
+  gridLevels: number;
+  gridSpacing: number;
+  minSpread: number;
+  maxSpread: number;
+  volumeMultiplier: number;
+  profitTarget: number;
+  stopLoss: number;
+}
+
+interface DarkPoolExecution {
+  enabled: boolean;
+  minSize: number;
+  maxSize: number;
+  priceImprovement: number;
+  crossingProbability: number;
+}
+
+interface SmartOrderRouter {
+  enabled: boolean;
+  venues: string[];
+  latencyThreshold: number;
+  costThreshold: number;
+  liquidityPreference: "aggressive" | "passive" | "neutral";
+  adaptiveRouting: boolean;
+}
+
+interface ExecutionAlgorithm {
+  type: "TWAP" | "VWAP" | "POV" | "Implementation Shortfall" | "Adaptive";
+  parameters: {
+    duration?: number;
+    participation?: number;
+    urgency?: "high" | "medium" | "low";
+    adaptiveWindow?: number;
+    minParticipation?: number;
+    maxParticipation?: number;
+  };
+}
+
+// Add IndicatorParamProps interface
+interface IndicatorParamProps {
+  indicator: TechnicalIndicator;
+  param: string;
+  value: number;
+  onChange: (value: number) => void;
+}
+
+// Types and interfaces
+interface TechnicalIndicatorsSectionProps {
+  indicators: TechnicalIndicator[];
+  onToggleIndicator: (index: number) => void;
+  onParameterChange: (index: number, indicator: TechnicalIndicator, param: string, value: string) => void;
+}
+
+// Technical Indicators Section Component
+const TechnicalIndicatorsSection: React.FC<TechnicalIndicatorsSectionProps> = ({
+  indicators,
+  onToggleIndicator,
+  onParameterChange
+}) => {
+  return (
+    <div className="technical-indicators-section">
+      {indicators.map((indicator: TechnicalIndicator, index: number) => (
+        <div key={index} className="indicator-item">
+          <div className="indicator-header">
+            <Switch
+              checked={indicator.enabled}
+              onChange={() => onToggleIndicator(index)}
+            />
+            <span>{indicator.type}</span>
+          </div>
+          {indicator.enabled && (
+            <div className="indicator-parameters">
+              {Object.entries(indicator.parameters).map(([param, value]) => (
+                <div key={param} className="parameter-input">
+                  <label>{param}</label>
+                  <input
+                    type="text"
+                    value={value.toString()}
+                    onChange={(e) => onParameterChange(index, indicator, param, e.target.value)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Add new interfaces for AI-powered trading
+interface AITradingModel {
+  id: string;
+  name: string;
+  description: string;
+  type: "Classification" | "Regression" | "Reinforcement" | "Ensemble";
+  accuracy: number;
+  sharpeRatio: number;
+  trainedOn: string;
+  lastUpdated: string;
+  features: string[];
+  enabled: boolean;
+  confidence: number;
+  prediction: {
+    direction: "Up" | "Down" | "Sideways";
+    magnitude: number;
+    timeframe: "Short" | "Medium" | "Long";
+    probability: number;
+  };
+  hyperparameters: {
+    [key: string]: number | string | boolean;
+  };
+}
+
+interface PredictiveAnalytics {
+  priceTargets: {
+    timeframe: string;
+    high: number;
+    low: number;
+    confidence: number;
+  }[];
+  supportLevels: number[];
+  resistanceLevels: number[];
+  trendStrength: number;
+  momentumSignals: {
+    indicator: string;
+    signal: "Bullish" | "Bearish" | "Neutral";
+    strength: number;
+  }[];
+  volatilityForecast: {
+    expected: number;
+    upperBound: number;
+    lowerBound: number;
+  };
+  sentimentAnalysis: {
+    overall: number;
+    news: number;
+    social: number;
+    institutional: number;
+  };
+}
+
+interface AdvancedRiskManagement {
+  positionSizing: {
+    recommended: number;
+    maxAllowed: number;
+    riskRewardRatio: number;
+  };
+  hedgingStrategies: {
+    type: string;
+    instrument: string;
+    allocation: number;
+    cost: number;
+    effectiveness: number;
+  }[];
+  correlationMatrix: {
+    assets: string[];
+    values: number[][];
+  };
+  stressTestScenarios: {
+    name: string;
+    description: string;
+    impact: number;
+    probability: number;
+  }[];
+  tailRiskMetrics: {
+    expectedShortfall: number;
+    conditionalVaR: number;
+    maxDrawdown: number;
+    recoveryTime: number;
+  };
+}
+
+interface MarketRegimeAnalysis {
+  currentRegime: "Bull" | "Bear" | "Sideways" | "Volatile" | "Recovery";
+  regimeChangeSignals: {
+    indicator: string;
+    probability: number;
+    timeframe: string;
+  }[];
+  sectorRotation: {
+    outperforming: string[];
+    underperforming: string[];
+    momentum: {
+      [sector: string]: number;
+    };
+  };
+  macroFactors: {
+    factor: string;
+    impact: number;
+    trend: "Increasing" | "Decreasing" | "Stable";
+  }[];
+  liquidityConditions: {
+    overall: number;
+    marketDepth: number;
+    bidAskSpread: number;
+    volumeProfile: number;
+  };
+}
+
+interface TradingBotConfig {
+  id: string;
+  name: string;
+  strategy: string;
+  status: "Active" | "Paused" | "Backtest" | "Optimization";
+  performance: {
+    totalReturn: number;
+    sharpeRatio: number;
+    maxDrawdown: number;
+    winRate: number;
+    profitFactor: number;
+  };
+  parameters: {
+    [key: string]: number | string | boolean;
+  };
+  riskControls: {
+    maxPositionSize: number;
+    maxLeverage: number;
+    stopLossPercent: number;
+    takeProfitPercent: number;
+    maxDailyLoss: number;
+    maxOpenPositions: number;
+  };
+  schedule: {
+    active: boolean;
+    timeZone: string;
+    tradingHours: {
+      start: string;
+      end: string;
+    }[];
+  };
+}
+
+interface PortfolioOptimizationSettings {
+  objective: "MaxReturn" | "MinRisk" | "MaxSharpe" | "RiskParity";
+  constraints: {
+    minAllocation: number;
+    maxAllocation: number;
+    sectorLimits: {
+      [sector: string]: number;
+    };
+    turnoverLimit: number;
+  };
+  rebalancingFrequency: "Daily" | "Weekly" | "Monthly" | "Quarterly";
+  riskFreeRate: number;
+  forecastHorizon: number;
+  confidenceInterval: number;
+  optimizationMethod: "MeanVariance" | "BlackLitterman" | "RiskParity" | "HierarchicalRiskParity";
+}
+
+// Define recommendation type for AI analysis
+interface AIRecommendation {
+  type: "Buy" | "Sell" | "Neutral";
+  confidence: number;
+  reason: string;
+  timeframe: string;
+  entryPrice?: number;
+  targetPrice?: number;
+  stopLoss?: number;
+  suggestion?: string;
+}
+
+// Implement the missing hooks directly
+const useLocalStorage = <T,>(key: string, initialValue: T): [T, (value: T) => void] => {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.error(error);
+      return initialValue;
+    }
+  });
+
+  const setValue = (value: T) => {
+    try {
+      setStoredValue(value);
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return [storedValue, setValue];
+};
+
+const useMediaQuery = (query: string): boolean => {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    if (media.matches !== matches) {
+      setMatches(media.matches);
+    }
+    const listener = () => setMatches(media.matches);
+    media.addEventListener("change", listener);
+    return () => media.removeEventListener("change", listener);
+  }, [matches, query]);
+
+  return matches;
+};
+
+const useDebounce = <T,>(value: T, delay: number): T => {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
+export default function ProTrading() {
+  const [symbol, setSymbol] = useState("RELIANCE");
+  const [orderType, setOrderType] = useState<"Market" | "Limit" | "Stop-Loss">("Market");
+  const [side, setSide] = useState<"Buy" | "Sell">("Buy");
+  const [quantity, setQuantity] = useState("");
+  const [limitPrice, setLimitPrice] = useState("");
+  const [stopPrice, setStopPrice] = useState("");
+  const [marginEnabled, setMarginEnabled] = useState(false);
+  const [leverage, setLeverage] = useState<number>(1);
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [tradeLogs, setTradeLogs] = useState<TradeLog[]>([]);
+  const [realTimePrice, setRealTimePrice] = useState(2300);
+  const [mockInterval, setMockInterval] = useState<NodeJS.Timeout | null>(null);
+  const [demoMode, setDemoMode] = useState(true);
+  const [trailingStop, setTrailingStop] = useState("");
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [chartInterval, setChartInterval] = useState("15");
+  const [advancedIndicators, setAdvancedIndicators] = useState({
+    ma: false,
+    rsi: false,
+  });
+  const [watchers, setWatchers] = useState<string[]>([]);
+  const [orderIceberg, setOrderIceberg] = useState(false);
+  const [orderOCO, setOrderOCO] = useState(false);
+  const [partialCloseQty, setPartialCloseQty] = useState("");
+  const [profitFactor, setProfitFactor] = useState(0);
+  const [netMarginUsage, setNetMarginUsage] = useState(0);
+  const [columnOrder, setColumnOrder] = useState([
+    "symbol",
+    "side",
+    "orderType",
+    "qty",
+    "entryPrice",
+    "margin",
+    "PnL",
+    "date",
+    "actions",
+  ]);
+  const [takeProfit, setTakeProfit] = useState("");
+  const [riskManagement, setRiskManagement] = useState({
+    maxPositionSize: 0.1, // 10% of portfolio
+    maxLeverage: 10,
+    stopLossPercent: 0.02, // 2%
+    takeProfitPercent: 0.06, // 6%
+  });
+  const [portfolioAnalytics, setPortfolioAnalytics] = useState<PortfolioAnalytics>({
+    totalValue: 100000,
+    dailyPnL: 0,
+    weeklyPnL: 0,
+    monthlyPnL: 0,
+    sharpeRatio: 0,
+    maxDrawdown: 0,
+    winRate: 0,
+    riskExposure: 0
+  });
+  const [positionTags, setPositionTags] = useState<string[]>([]);
+  const [showAdvancedFeatures, setShowAdvancedFeatures] = useState(true);
+  const [partialCloseQtyMap, setPartialCloseQtyMap] = useState<Record<number, string>>({});
+  const [previousPrice, setPreviousPrice] = useState<number>(0);
+  
+  // Update previousPrice when realTimePrice changes
+  useEffect(() => {
+    if (realTimePrice !== 0) {
+      setPreviousPrice(realTimePrice);
+    }
+  }, [realTimePrice]);
+  
+  // Enhanced technical indicators with proper typing
+  const [technicalIndicators, setTechnicalIndicators] = useState<TechnicalIndicator[]>([
+    { 
+      type: "RSI", 
+      name: "RSI", 
+      enabled: false,
+      parameters: { 
+        period: 14, 
+        overbought: 70, 
+        oversold: 30 
+      }
+    },
+    { 
+      type: "MACD", 
+      name: "MACD", 
+      enabled: false,
+      parameters: { 
+        fast: 12, 
+        slow: 26, 
+        signal: 9 
+      }
+    },
+    { 
+      type: "Bollinger", 
+      name: "Bollinger", 
+      enabled: false,
+      parameters: { 
+        period: 20, 
+        stdDev: 2, 
+        shift: 0 
+      }
+    },
+    { 
+      type: "Fibonacci", 
+      name: "Fibonacci", 
+      enabled: false,
+      parameters: { 
+        period: 20,
+        levelCount: 5,
+        startLevel: 0,
+        endLevel: 1,
+        retracement: 0.618
+      }
+    }
+  ]);
+
+  const [advancedOrderSettings, setAdvancedOrderSettings] = useState<AdvancedOrderSettings>({
+    timeInForce: "GTC",
+    postOnly: false,
+    hidden: false,
+    closeOnTrigger: false,
+    reduceOnly: false,
+    workingType: "Contract"
+  });
+
+  const [riskMetrics, setRiskMetrics] = useState<RiskMetrics>({
+    valueAtRisk: 0,
+    expectedShortfall: 0,
+    betaToMarket: 0,
+    correlationMatrix: []
+  });
+
+  const [hedgingEnabled, setHedgingEnabled] = useState(false);
+  const [portfolioRebalancing, setPortfolioRebalancing] = useState(false);
+  const [autoHedgeThreshold, setAutoHedgeThreshold] = useState(5); // 5% drawdown trigger
+  const [riskParity, setRiskParity] = useState(false);
+
+  // New advanced state management
+  const [marketDepth, setMarketDepth] = useState<MarketDepth>({
+    bids: [],
+    asks: [],
+    timestamp: Date.now()
+  });
+
+  const [liquidityAnalysis, setLiquidityAnalysis] = useState<LiquidityAnalysis>({
+    bidLiquidity: 0,
+    askLiquidity: 0,
+    spreadPercentage: 0,
+    depth: 0
+  });
+
+  const [volumeProfile, setVolumeProfile] = useState<VolumeProfile[]>([]);
+
+  // Advanced algorithmic trading state
+  const [algorithms, setAlgorithms] = useState<AlgorithmConfig[]>([
+    {
+      type: "TWAP",
+      enabled: false,
+      parameters: {
+        duration: 60,
+        volumeParticipation: 10,
+        maxSlippage: 0.1
+      }
+    },
+    {
+      type: "VWAP",
+      enabled: false,
+      parameters: {
+        duration: 120,
+        volumeParticipation: 15,
+        maxSlippage: 0.15
+      }
+    },
+    {
+      type: "Market Maker",
+      enabled: false,
+      parameters: {
+        targetSpread: 0.1,
+        gridLevels: 5,
+        minProfit: 0.05,
+        orderInterval: 5
+      }
+    },
+    {
+      type: "Sniper",
+      enabled: false,
+      parameters: {
+        priceOffset: 0.05,
+        momentum: 0.5,
+        maxSlippage: 0.1
+      }
+    }
+  ]);
+
+  const [smartRouting, setSmartRouting] = useState<SmartOrderRoute[]>([]);
+  const [microstructure, setMicrostructure] = useState<MarketMicrostructure>({
+    bidAskSpread: 0,
+    marketImpact: 0,
+    volumeProfile: [],
+    priceVolatility: 0,
+    orderBookImbalance: 0,
+    liquidityScore: 0
+  });
+
+  // Advanced risk analytics state
+  const [riskAnalytics, setRiskAnalytics] = useState<RiskAnalytics>({
+    valueAtRisk: 0,
+    expectedShortfall: 0,
+    betaToMarket: 0,
+    correlationMatrix: [],
+    stressTestResults: [],
+    sensitivityAnalysis: {
+      delta: 0,
+      gamma: 0,
+      vega: 0,
+      theta: 0,
+      rho: 0
+    },
+    portfolioHeatmap: []
+  });
+
+  // Add new state variables
+  const [marketMaker, setMarketMaker] = useState<MarketMaker>({
+    enabled: false,
+    gridLevels: 5,
+    gridSpacing: 0.1,
+    minSpread: 0.05,
+    maxSpread: 0.5,
+    volumeMultiplier: 1.5,
+    profitTarget: 0.2,
+    stopLoss: 0.1
+  });
+
+  const [darkPool, setDarkPool] = useState<DarkPoolExecution>({
+    enabled: false,
+    minSize: 100,
+    maxSize: 10000,
+    priceImprovement: 0.02,
+    crossingProbability: 0.7
+  });
+
+  const [smartRouter, setSmartRouter] = useState<SmartOrderRouter>({
+    enabled: true,
+    venues: ["Primary", "Secondary", "Dark Pool", "SOR"],
+    latencyThreshold: 50,
+    costThreshold: 0.02,
+    liquidityPreference: "neutral",
+    adaptiveRouting: true
+  });
+
+  const [executionAlgo, setExecutionAlgo] = useState<ExecutionAlgorithm>({
+    type: "Adaptive",
+    parameters: {
+      duration: 30,
+      participation: 15,
+      urgency: "medium",
+      adaptiveWindow: 5,
+      minParticipation: 5,
+      maxParticipation: 25
+    }
+  });
+
+  // Add new state variables for AI features
+  const [aiModels, setAiModels] = useState<AITradingModel[]>([
+    {
+      id: "ai-model-1",
+      name: "TrendPredictor",
+      description: "Deep learning model for trend prediction",
+      type: "Classification",
+      accuracy: 0.78,
+      sharpeRatio: 1.85,
+      trainedOn: "5 years of market data",
+      lastUpdated: new Date().toISOString(),
+      features: ["Price", "Volume", "Volatility", "Sentiment", "Macro Indicators"],
+      enabled: true,
+      confidence: 0.82,
+      prediction: {
+        direction: "Up",
+        magnitude: 2.3,
+        timeframe: "Medium",
+        probability: 0.76
+      },
+      hyperparameters: {
+        learningRate: 0.001,
+        epochs: 500,
+        batchSize: 64,
+        dropout: 0.2,
+        layers: 4
+      }
+    },
+    {
+      id: "ai-model-2",
+      name: "VolatilityPredictor",
+      description: "LSTM model for volatility forecasting",
+      type: "Regression",
+      accuracy: 0.72,
+      sharpeRatio: 1.62,
+      trainedOn: "3 years of market data",
+      lastUpdated: new Date().toISOString(),
+      features: ["Historical Volatility", "Option Implied Volatility", "Volume", "News Sentiment"],
+      enabled: true,
+      confidence: 0.75,
+      prediction: {
+        direction: "Up",
+        magnitude: 1.8,
+        timeframe: "Short",
+        probability: 0.68
+      },
+      hyperparameters: {
+        learningRate: 0.0005,
+        epochs: 300,
+        batchSize: 32,
+        dropout: 0.3,
+        layers: 3
+      }
+    },
+    {
+      id: "ai-model-3",
+      name: "MacroTrendAnalyzer",
+      description: "Ensemble model for macro trend analysis",
+      type: "Ensemble",
+      accuracy: 0.81,
+      sharpeRatio: 2.1,
+      trainedOn: "7 years of market data",
+      lastUpdated: new Date().toISOString(),
+      features: ["Economic Indicators", "Central Bank Policies", "Market Breadth", "Sector Rotation"],
+      enabled: false,
+      confidence: 0.88,
+      prediction: {
+        direction: "Sideways",
+        magnitude: 0.5,
+        timeframe: "Long",
+        probability: 0.72
+      },
+      hyperparameters: {
+        models: 5,
+        featureImportanceThreshold: 0.05,
+        baggingFraction: 0.8,
+        boostingRounds: 100,
+        regularization: 0.01
+      }
+    }
+  ]);
+
+  const [predictiveAnalytics, setPredictiveAnalytics] = useState<PredictiveAnalytics>({
+    priceTargets: [
+      { timeframe: "1D", high: realTimePrice * 1.02, low: realTimePrice * 0.98, confidence: 0.75 },
+      { timeframe: "1W", high: realTimePrice * 1.05, low: realTimePrice * 0.96, confidence: 0.68 },
+      { timeframe: "1M", high: realTimePrice * 1.12, low: realTimePrice * 0.92, confidence: 0.62 }
+    ],
+    supportLevels: [realTimePrice * 0.98, realTimePrice * 0.95, realTimePrice * 0.92],
+    resistanceLevels: [realTimePrice * 1.02, realTimePrice * 1.05, realTimePrice * 1.08],
+    trendStrength: 0.72,
+    momentumSignals: [
+      { indicator: "RSI", signal: "Bullish", strength: 0.8 },
+      { indicator: "MACD", signal: "Bullish", strength: 0.75 },
+      { indicator: "Stochastic", signal: "Neutral", strength: 0.5 }
+    ],
+    volatilityForecast: {
+      expected: 0.15,
+      upperBound: 0.22,
+      lowerBound: 0.08
+    },
+    sentimentAnalysis: {
+      overall: 0.65,
+      news: 0.7,
+      social: 0.6,
+      institutional: 0.65
+    }
+  });
+
+  const [advancedRiskManagement, setAdvancedRiskManagement] = useState<AdvancedRiskManagement>({
+    positionSizing: {
+      recommended: 5,
+      maxAllowed: 10,
+      riskRewardRatio: 2.5
+    },
+    hedgingStrategies: [
+      { type: "Options", instrument: "Put Option", allocation: 0.1, cost: 0.5, effectiveness: 0.8 },
+      { type: "Futures", instrument: "E-mini", allocation: 0.2, cost: 0.3, effectiveness: 0.75 }
+    ],
+    correlationMatrix: {
+      assets: ["BTC", "ETH", "S&P 500", "Gold", "USD"],
+      values: [
+        [1.0, 0.8, 0.4, 0.1, -0.2],
+        [0.8, 1.0, 0.35, 0.05, -0.25],
+        [0.4, 0.35, 1.0, 0.2, -0.1],
+        [0.1, 0.05, 0.2, 1.0, -0.4],
+        [-0.2, -0.25, -0.1, -0.4, 1.0]
+      ]
+    },
+    stressTestScenarios: [
+      { name: "Market Crash", description: "Sudden 20% market decline", impact: -0.15, probability: 0.05 },
+      { name: "Rate Hike", description: "Unexpected interest rate increase", impact: -0.08, probability: 0.15 },
+      { name: "Liquidity Crisis", description: "Significant reduction in market liquidity", impact: -0.12, probability: 0.08 }
+    ],
+    tailRiskMetrics: {
+      expectedShortfall: 0.12,
+      conditionalVaR: 0.15,
+      maxDrawdown: 0.25,
+      recoveryTime: 45
+    }
+  });
+
+  const [marketRegimeAnalysis, setMarketRegimeAnalysis] = useState<MarketRegimeAnalysis>({
+    currentRegime: "Bull",
+    regimeChangeSignals: [
+      { indicator: "Moving Average Crossover", probability: 0.15, timeframe: "2-4 weeks" },
+      { indicator: "Volatility Expansion", probability: 0.22, timeframe: "1-2 weeks" }
+    ],
+    sectorRotation: {
+      outperforming: ["Technology", "Healthcare", "Consumer Discretionary"],
+      underperforming: ["Energy", "Utilities", "Basic Materials"],
+      momentum: {
+        "Technology": 0.8,
+        "Healthcare": 0.75,
+        "Consumer Discretionary": 0.7,
+        "Financials": 0.6,
+        "Communication Services": 0.65,
+        "Industrials": 0.55,
+        "Energy": 0.4,
+        "Utilities": 0.35,
+        "Basic Materials": 0.45,
+        "Real Estate": 0.5
+      }
+    },
+    macroFactors: [
+      { factor: "Interest Rates", impact: -0.7, trend: "Increasing" },
+      { factor: "Inflation", impact: -0.6, trend: "Increasing" },
+      { factor: "GDP Growth", impact: 0.5, trend: "Stable" },
+      { factor: "Corporate Earnings", impact: 0.8, trend: "Increasing" }
+    ],
+    liquidityConditions: {
+      overall: 0.75,
+      marketDepth: 0.8,
+      bidAskSpread: 0.85,
+      volumeProfile: 0.7
+    }
+  });
+
+  const [tradingBots, setTradingBots] = useState<TradingBotConfig[]>([
+    {
+      id: "bot-1",
+      name: "Momentum Trader",
+      strategy: "Trend Following with Mean Reversion Filter",
+      status: "Active",
+      performance: {
+        totalReturn: 28.5,
+        sharpeRatio: 1.8,
+        maxDrawdown: 12.5,
+        winRate: 0.65,
+        profitFactor: 1.75
+      },
+      parameters: {
+        fastPeriod: 12,
+        slowPeriod: 26,
+        signalPeriod: 9,
+        overboughtLevel: 70,
+        oversoldLevel: 30,
+        takeProfitMultiplier: 2.5,
+        stopLossMultiplier: 1.0
+      },
+      riskControls: {
+        maxPositionSize: 5,
+        maxLeverage: 2,
+        stopLossPercent: 2,
+        takeProfitPercent: 5,
+        maxDailyLoss: 3,
+        maxOpenPositions: 5
+      },
+      schedule: {
+        active: true,
+        timeZone: "UTC",
+        tradingHours: [
+          { start: "09:30", end: "16:00" },
+          { start: "18:00", end: "20:00" }
+        ]
+      }
+    },
+    {
+      id: "bot-2",
+      name: "Volatility Harvester",
+      strategy: "Options Volatility Arbitrage",
+      status: "Paused",
+      performance: {
+        totalReturn: 18.2,
+        sharpeRatio: 1.5,
+        maxDrawdown: 8.5,
+        winRate: 0.72,
+        profitFactor: 2.1
+      },
+      parameters: {
+        ivPercentile: 60,
+        daysToExpiration: 30,
+        deltaTarget: 0.3,
+        vegaExposureLimit: 0.5,
+        gammaLimit: 0.2,
+        adjustmentThreshold: 15
+      },
+      riskControls: {
+        maxPositionSize: 3,
+        maxLeverage: 1.5,
+        stopLossPercent: 5,
+        takeProfitPercent: 10,
+        maxDailyLoss: 2,
+        maxOpenPositions: 3
+      },
+      schedule: {
+        active: false,
+        timeZone: "UTC",
+        tradingHours: [
+          { start: "09:30", end: "16:00" }
+        ]
+      }
+    }
+  ]);
+
+  const [portfolioOptimization, setPortfolioOptimization] = useState<PortfolioOptimizationSettings>({
+    objective: "MaxSharpe",
+    constraints: {
+      minAllocation: 0.05,
+      maxAllocation: 0.25,
+      sectorLimits: {
+        "Technology": 0.3,
+        "Financials": 0.25,
+        "Healthcare": 0.2,
+        "Energy": 0.15,
+        "Consumer": 0.2
+      },
+      turnoverLimit: 0.2
+    },
+    rebalancingFrequency: "Monthly",
+    riskFreeRate: 0.03,
+    forecastHorizon: 12,
+    confidenceInterval: 0.95,
+    optimizationMethod: "BlackLitterman"
+  });
+
+  // Chart reference
+  const chartRef = useRef<ChartJS>(null);
+
+  useEffect(() => {
+    if (mockInterval) clearInterval(mockInterval);
+    const interval = setInterval(() => {
+      setRealTimePrice((prev) => {
+        const change = (Math.random() - 0.5) * 5;
+        return parseFloat((prev + change).toFixed(2));
+      });
+    }, 3000);
+    setMockInterval(interval);
+    return () => clearInterval(interval);
+  }, [symbol]);
+
+  useEffect(() => {
+    let totalWins = 0;
+    let totalLosses = 0;
+    let winsCount = 0;
+    let lossesCount = 0;
+    positions.forEach((pos) => {
+      const pnl = (realTimePrice - pos.entryPrice) * pos.qty * (pos.side === "Buy" ? 1 : -1);
+      if (pnl > 0) {
+        totalWins += pnl;
+        winsCount += 1;
+      } else {
+        totalLosses += Math.abs(pnl);
+        lossesCount += 1;
+      }
+    });
+    if (totalLosses === 0) {
+      setProfitFactor(winsCount > 0 ? 9999 : 0);
+    } else {
+      setProfitFactor(parseFloat((totalWins / totalLosses).toFixed(2)));
+    }
+    let marginUse = 0;
+    positions.forEach((pos) => {
+      if (pos.margin) {
+        marginUse += pos.qty * pos.entryPrice * (1 / pos.leverage);
+      }
+    });
+    setNetMarginUsage(marginUse);
+  }, [positions, realTimePrice]);
+
+  useEffect(() => {
+    positions.forEach(position => {
+      if (position.trailingStop !== null) {
+        const stopThreshold = position.side === "Buy" 
+          ? position.entryPrice * (1 - position.trailingStop / 100)
+          : position.entryPrice * (1 + position.trailingStop / 100);
+        
+        if ((position.side === "Buy" && realTimePrice <= stopThreshold) || 
+            (position.side === "Sell" && realTimePrice >= stopThreshold)) {
+          handleClosePosition(position.id);
+        }
+      }
+
+      if (position.takeProfit !== null) {
+        const profitThreshold = position.side === "Buy"
+          ? position.entryPrice * (1 + position.takeProfit / 100)
+          : position.entryPrice * (1 - position.takeProfit / 100);
+
+        if ((position.side === "Buy" && realTimePrice >= profitThreshold) ||
+            (position.side === "Sell" && realTimePrice <= profitThreshold)) {
+          handleClosePosition(position.id);
+        }
+      }
+    });
+  }, [realTimePrice, positions]);
+
+  useEffect(() => {
+    const calculateAnalytics = () => {
+      let totalPnL = 0;
+      let wins = 0;
+      let totalTrades = positions.length;
+      let maxDrawdown = 0;
+      let currentDrawdown = 0;
+      let returns: number[] = [];
+
+      positions.forEach(pos => {
+        const pnl = (realTimePrice - pos.entryPrice) * pos.qty * (pos.side === "Buy" ? 1 : -1);
+        totalPnL += pnl;
+        if (pnl > 0) wins++;
+        
+        // Calculate drawdown
+        currentDrawdown = Math.min(currentDrawdown, pnl);
+        maxDrawdown = Math.min(maxDrawdown, currentDrawdown);
+        
+        // Store returns for Sharpe ratio
+        returns.push(pnl / (pos.entryPrice * pos.qty));
+      });
+
+      // Calculate Sharpe ratio (simplified)
+      const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+      const stdDev = Math.sqrt(returns.reduce((a, b) => a + Math.pow(b - avgReturn, 2), 0) / returns.length);
+      const sharpeRatio = avgReturn / (stdDev || 1);
+
+      setPortfolioAnalytics({
+        totalValue: 100000 + totalPnL,
+        dailyPnL: totalPnL,
+        weeklyPnL: totalPnL * 0.8, // Simplified calculation
+        monthlyPnL: totalPnL * 0.6, // Simplified calculation
+        sharpeRatio,
+        maxDrawdown: Math.abs(maxDrawdown),
+        winRate: totalTrades ? (wins / totalTrades) * 100 : 0,
+        riskExposure: (netMarginUsage / portfolioAnalytics.totalValue) * 100
+      });
+    };
+
+    calculateAnalytics();
+  }, [positions, realTimePrice, netMarginUsage]);
+
+  // Advanced Analytics Calculations
+  const calculateAdvancedMetrics = useMemo(() => {
+    if (positions.length === 0) return null;
+
+    const returns = positions.map(pos => {
+      const pnl = (realTimePrice - pos.entryPrice) * pos.qty * (pos.side === "Buy" ? 1 : -1);
+      return pnl / (pos.entryPrice * pos.qty);
+    });
+
+    // Calculate Value at Risk (VaR) - Simple historical simulation
+    const sortedReturns = [...returns].sort((a, b) => a - b);
+    const varIndex = Math.floor(returns.length * 0.05); // 95% confidence
+    const valueAtRisk = Math.abs(sortedReturns[varIndex] || 0);
+
+    // Expected Shortfall (ES/CVaR)
+    const expectedShortfall = sortedReturns
+      .slice(0, varIndex)
+      .reduce((sum, val) => sum + val, 0) / varIndex;
+
+    return {
+      valueAtRisk,
+      expectedShortfall,
+      betaToMarket: 1.2, // Mock value, would need market data
+      correlationMatrix: [[1]] // Simplified
+    };
+  }, [positions, realTimePrice]);
+
+  useEffect(() => {
+    if (calculateAdvancedMetrics) {
+      setRiskMetrics(calculateAdvancedMetrics);
+    }
+  }, [calculateAdvancedMetrics]);
+
+  // Basic helper functions
+  const calculateVolatility = useCallback(() => {
+    // Mock implementation - would use actual price history in production
+    return 0.03; // 3% volatility
+  }, []);
+
+  const handleClosePosition = useCallback((id: number, partial = false) => {
+    let newPositions = [...positions];
+    let index = newPositions.findIndex((p) => p.id === id);
+    if (index === -1) return;
+    let pos = newPositions[index];
+    let closeQty = partial ? parseFloat(partialCloseQtyMap[id] || "0") : pos.qty;
+    if (!closeQty || closeQty <= 0 || closeQty > pos.qty) return;
+    const closePrice = realTimePrice;
+    let newLog = [...tradeLogs];
+    newLog.push({
+      action: "CLOSE",
+      symbol: pos.symbol,
+      side: pos.side,
+      qty: closeQty,
+      closePrice,
+      time: new Date().toLocaleString(),
+    });
+    setTradeLogs(newLog);
+    if (closeQty < pos.qty) {
+      newPositions[index].qty = pos.qty - closeQty;
+    } else {
+      newPositions.splice(index, 1);
+    }
+    setPositions(newPositions);
+  }, [positions, realTimePrice, partialCloseQtyMap, tradeLogs]);
+
+  // Helper functions for calculations
+  const calculateLiquidationPrice = useCallback((entryPrice: number, qty: number): number => {
+    if (!marginEnabled) return 0;
+    const maintenanceMarginRate = 0.005; // 0.5%
+    const positionSize = qty * entryPrice;
+    const maintenanceAmount = positionSize * maintenanceMarginRate;
+    const collateral = positionSize / leverage;
+    
+    if (side === "Buy") {
+      return entryPrice * (1 - (collateral - maintenanceAmount) / positionSize);
+    } else {
+      return entryPrice * (1 + (collateral - maintenanceAmount) / positionSize);
+    }
+  }, [marginEnabled, leverage, side]);
+
+  const calculateMaintenanceMargin = useCallback((positionSize: number): number => {
+    return positionSize * 0.005; // 0.5% maintenance margin rate
+  }, []);
+
+  // Position management functions
+  const createNewPosition = useCallback((qty: number, entryPrice: number): Position => {
+    return {
+      id: Date.now(),
+      symbol,
+      side,
+      orderType,
+      qty,
+      entryPrice,
+      margin: marginEnabled,
+      leverage,
+      trailingStop: trailingStop ? parseFloat(trailingStop) : null,
+      takeProfit: takeProfit ? parseFloat(takeProfit) : null,
+      riskReward: takeProfit && trailingStop ? 
+        parseFloat(takeProfit) / parseFloat(trailingStop) : 0,
+      date: new Date().toLocaleString(),
+      tags: positionTags,
+      unrealizedPnL: 0,
+      realizedPnL: 0,
+      liquidationPrice: marginEnabled ? calculateLiquidationPrice(entryPrice, qty) : 0,
+      fundingRate: 0,
+      markPrice: realTimePrice,
+      notionalValue: qty * entryPrice,
+      collateral: marginEnabled ? (qty * entryPrice) / leverage : qty * entryPrice,
+      maintenanceMargin: marginEnabled ? calculateMaintenanceMargin(qty * entryPrice) : 0,
+      marginRatio: 0
+    };
+  }, [
+    symbol,
+    side,
+    orderType,
+    marginEnabled,
+    leverage,
+    trailingStop,
+    takeProfit,
+    positionTags,
+    realTimePrice,
+    calculateLiquidationPrice,
+    calculateMaintenanceMargin
+  ]);
+
+  const updatePositions = useCallback((newPosition: Position) => {
+    setPositions(prev => [...prev, newPosition]);
+  }, []);
+
+  const logTrade = useCallback((action: "OPEN" | "CLOSE", position: Position) => {
+    const log: TradeLog = {
+      action,
+      symbol: position.symbol,
+      side: position.side,
+      qty: position.qty,
+      entryPrice: action === "OPEN" ? position.entryPrice : undefined,
+      closePrice: action === "CLOSE" ? realTimePrice : undefined,
+      time: new Date().toLocaleString()
+    };
+    setTradeLogs(prev => [...prev, log]);
+  }, [realTimePrice]);
+
+  // Order validation and execution
+  const validateOrder = useCallback(() => {
+    const qty = parseFloat(quantity);
+    if (!qty || qty <= 0) return false;
+
+    const positionValue = qty * realTimePrice;
+    const portfolioValue = portfolioAnalytics.totalValue;
+
+    // Position size check
+    if (positionValue / portfolioValue > riskManagement.maxPositionSize) {
+      showToast(
+        "Position Size Error",
+        "Position size exceeds maximum allowed",
+        "destructive"
+      );
+      return false;
+    }
+
+    // Leverage check
+    if (marginEnabled && leverage > riskManagement.maxLeverage) {
+      showToast(
+        "Leverage Error",
+        "Leverage exceeds maximum allowed",
+        "destructive"
+      );
+      return false;
+    }
+
+    // Liquidity check
+    const requiredLiquidity = side === "Buy" ? liquidityAnalysis.askLiquidity : liquidityAnalysis.bidLiquidity;
+    if (qty > requiredLiquidity * 0.1) {
+      showWarningToast(
+        "Liquidity Warning",
+        "Order size may impact market price significantly"
+      );
+    }
+
+    // Volatility check
+    const currentVolatility = calculateVolatility();
+    if (currentVolatility > 0.05) {
+      showWarningToast(
+        "High Volatility Warning",
+        "Market is experiencing high volatility"
+      );
+    }
+
+    return true;
+  }, [
+    quantity,
+    realTimePrice,
+    marginEnabled,
+    leverage,
+    side,
+    liquidityAnalysis,
+    riskManagement,
+    portfolioAnalytics,
+    calculateVolatility
+  ]);
+
+  const handleSubmitOrder = useCallback(() => {
+    if (!validateOrder()) return;
+
+    if (smartRouter.enabled) {
+      executeSmartOrder();
+      return;
+    }
+
+    if (darkPool.enabled) {
+      executeDarkPoolOrder();
+      return;
+    }
+
+    if (marketMaker.enabled) {
+      executeMarketMaking();
+      return;
+    }
+
+    if (executionAlgo.type === "Adaptive") {
+      executeAdaptiveAlgo();
+      return;
+    }
+
+    const qty = parseFloat(quantity);
+    let entryPrice = realTimePrice;
+    
+    if (orderType === "Limit" && limitPrice) {
+      entryPrice = parseFloat(limitPrice);
+    }
+
+    const position = createNewPosition(qty, entryPrice);
+    updatePositions(position);
+    logTrade("OPEN", position);
+  }, [
+    quantity, 
+    realTimePrice, 
+    orderType, 
+    limitPrice, 
+    smartRouter, 
+    darkPool, 
+    marketMaker, 
+    executionAlgo,
+    createNewPosition,
+    updatePositions,
+    logTrade,
+    validateOrder
+  ]);
+
+  const handleSetAlert = () => {
+    let newAlerts = [...alerts];
+    newAlerts.push({
+      symbol,
+      price: realTimePrice,
+      note: "Alert set at current price",
+      id: Date.now(),
+    });
+    setAlerts(newAlerts);
+  };
+
+  const toggleIndicators = (ind: "ma" | "rsi") => {
+    setAdvancedIndicators({ ...advancedIndicators, [ind]: !advancedIndicators[ind] });
+  };
+
+  const handlePartialCloseQtyChange = (id: number, value: string) => {
+    setPartialCloseQtyMap({ ...partialCloseQtyMap, [id]: value });
+  };
+
+  // Advanced Order Handling
+  const handleAdvancedOrder = () => {
+    if (!validateOrder()) return;
+
+    // Check for advanced order conditions
+    if (advancedOrderSettings.timeInForce === "IOC" && orderType === "Limit") {
+      if (side === "Buy" && parseFloat(limitPrice) < realTimePrice) {
+        toast({
+          title: "Order Rejected",
+          description: "IOC Buy limit price must be >= market price",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (side === "Sell" && parseFloat(limitPrice) > realTimePrice) {
+        toast({
+          title: "Order Rejected",
+          description: "IOC Sell limit price must be <= market price",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
+    // Handle iceberg orders
+    if (advancedOrderSettings.icebergQty) {
+      const totalQty = parseFloat(quantity);
+      const icebergQty = advancedOrderSettings.icebergQty;
+      let remainingQty = totalQty;
+
+      const executeIcebergOrder = () => {
+        if (remainingQty <= 0) return;
+        
+        const currentQty = Math.min(remainingQty, icebergQty);
+        setQuantity(currentQty.toString()); // Set quantity in state before submitting
+        handleSubmitOrder(); // Call without arguments
+        remainingQty -= currentQty;
+        
+        if (remainingQty > 0) {
+          setTimeout(executeIcebergOrder, 1000); // 1s delay between chunks
+        }
+      };
+
+      executeIcebergOrder();
+      return;
+    }
+
+    handleSubmitOrder();
+  };
+
+  // Portfolio Optimization
+  const optimizePortfolio = () => {
+    if (!positions.length) return;
+
+    // Calculate position weights based on risk parity
+    if (riskParity) {
+      const totalRisk = positions.reduce((sum, pos) => {
+        const volatility = 0.2; // Mock volatility, would need historical data
+        return sum + volatility * pos.qty * pos.entryPrice;
+      }, 0);
+
+      const newPositions = positions.map(pos => {
+        const volatility = 0.2; // Mock volatility
+        const targetWeight = (1 / positions.length);
+        const currentWeight = (pos.qty * pos.entryPrice) / portfolioAnalytics.totalValue;
+        const adjustmentFactor = targetWeight / currentWeight;
+
+        return {
+          ...pos,
+          qty: Math.round(pos.qty * adjustmentFactor)
+        };
+      });
+
+      setPositions(newPositions);
+      toast({
+        title: "Portfolio Optimized",
+        description: "Positions rebalanced using risk parity approach"
+      });
+    }
+  };
+
+  // Automated Hedging
+  useEffect(() => {
+    if (!hedgingEnabled || !autoHedgeThreshold) return;
+
+    const totalPnL = positions.reduce((sum, pos) => {
+      const pnl = (realTimePrice - pos.entryPrice) * pos.qty * (pos.side === "Buy" ? 1 : -1);
+      return sum + pnl;
+    }, 0);
+
+    const drawdown = (totalPnL / portfolioAnalytics.totalValue) * 100;
+
+    if (Math.abs(drawdown) >= autoHedgeThreshold) {
+      // Create hedge position
+      const netExposure = positions.reduce((sum, pos) => {
+        return sum + (pos.side === "Buy" ? 1 : -1) * pos.qty;
+      }, 0);
+
+      if (netExposure !== 0) {
+        const hedgePosition: Position = {
+          id: Date.now(),
+          symbol: "NIFTY",  // Using index as hedge
+          side: netExposure > 0 ? "Sell" : "Buy",
+          orderType: "Market",
+          qty: Math.abs(netExposure),
+          entryPrice: realTimePrice,
+          margin: true,
+          leverage: 1,
+          trailingStop: null,
+          takeProfit: null,
+          riskReward: 0,
+          date: new Date().toLocaleString(),
+          tags: ["hedge"],
+          unrealizedPnL: 0,
+          realizedPnL: 0,
+          liquidationPrice: 0,
+          fundingRate: 0,
+          markPrice: 0,
+          notionalValue: 0,
+          collateral: 0,
+          maintenanceMargin: 0,
+          marginRatio: 0
+        };
+
+        setPositions(prev => [...prev, hedgePosition]);
+        toast({
+          title: "Hedge Position Created",
+          description: `Automatic hedge triggered at ${autoHedgeThreshold}% drawdown`
+        });
+      }
+    }
+  }, [portfolioAnalytics.totalValue, hedgingEnabled, autoHedgeThreshold]);
+
+  // New advanced order execution functions
+  const executeIcebergOrder = useCallback(() => {
+    if (!advancedOrderSettings.icebergQty) return;
+    
+    let remainingQty = parseFloat(quantity);
+    const icebergQty = advancedOrderSettings.icebergQty;
+    
+    const processChunk = async () => {
+      if (remainingQty <= 0) return;
+      
+      const chunkSize = Math.min(remainingQty, icebergQty);
+      setQuantity(chunkSize.toString());
+      await handleSubmitOrder(); // Call without arguments
+      remainingQty -= chunkSize;
+      
+      if (remainingQty > 0) {
+        setTimeout(processChunk, 1000);
+      }
+    };
+    
+    processChunk();
+  }, [quantity, advancedOrderSettings.icebergQty, handleSubmitOrder, setQuantity]);
+
+  // Helper functions for order management
+  const validateImmediateOrder = (price: number): boolean => {
+    if (side === "Buy" && price < realTimePrice) {
+      toast({
+        title: "Order Rejected",
+        description: "IOC Buy limit price must be >= market price",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (side === "Sell" && price > realTimePrice) {
+      toast({
+        title: "Order Rejected",
+        description: "IOC Sell limit price must be <= market price",
+        variant: "destructive"
+      });
+      return false;
+    }
+    return true;
+  };
+
+  // Advanced market analysis
+  const analyzeMarketDepth = useCallback(() => {
+    const totalBidVolume = marketDepth.bids.reduce((sum, [_, vol]) => sum + vol, 0);
+    const totalAskVolume = marketDepth.asks.reduce((sum, [_, vol]) => sum + vol, 0);
+    const bestBid = marketDepth.bids[0]?.[0] || 0;
+    const bestAsk = marketDepth.asks[0]?.[0] || 0;
+    const spread = bestAsk - bestBid;
+    const spreadPct = (spread / bestBid) * 100;
+
+    setLiquidityAnalysis({
+      bidLiquidity: totalBidVolume,
+      askLiquidity: totalAskVolume,
+      spreadPercentage: spreadPct,
+      depth: Math.min(totalBidVolume, totalAskVolume)
+    });
+  }, [marketDepth]);
+
+  // Volume profile analysis
+  const updateVolumeProfile = useCallback((data: VolumeProfile[]) => {
+    return data.reduce((acc: Record<number, number>, item: VolumeProfile) => {
+      acc[item.price] = (acc[item.price] || 0) + item.volume;
+      return acc;
+    }, {});
+  }, []);
+
+  // Advanced risk management
+  const calculatePositionRisk = useCallback((position: Position) => {
+    const volatility = 0.02; // Mock 2% daily volatility
+    const confidenceLevel = 0.95;
+    const zScore = 1.645; // 95% confidence level z-score
+    const positionValue = position.qty * position.markPrice;
+    
+    // Value at Risk calculation
+    const valueAtRisk = positionValue * volatility * zScore;
+    
+    // Expected Shortfall calculation
+    const expectedShortfall = valueAtRisk * 1.2; // Simplified calculation
+    
+    // Position Delta
+    const delta = position.side === "Buy" ? position.qty : -position.qty;
+    
+    // Gamma (rate of change of delta)
+    const gamma = delta / position.markPrice;
+    
+    return {
+      valueAtRisk,
+      expectedShortfall,
+      delta,
+      gamma
+    };
+  }, []);
+
+  // Advanced market analysis with WebSocket simulation
+  useEffect(() => {
+    const simulateMarketData = () => {
+      // Simulate market depth updates
+      const generateDepth = (basePrice: number, side: "bid" | "ask") => {
+        const levels = 10;
+        const data: [number, number][] = [];
+        const priceStep = basePrice * 0.001; // 0.1% steps
+        
+        for (let i = 0; i < levels; i++) {
+          const price = side === "bid" 
+            ? basePrice - (i * priceStep)
+            : basePrice + (i * priceStep);
+          const volume = Math.random() * 100 + 50;
+          data.push([price, volume]);
+        }
+        
+        return data;
+      };
+
+      setMarketDepth(prev => ({
+        bids: generateDepth(realTimePrice, "bid"),
+        asks: generateDepth(realTimePrice, "ask"),
+        timestamp: Date.now()
+      }));
+
+      // Update volume profile with current market depth data
+      const volumeData = [
+        ...marketDepth.bids.map(([price, volume]) => ({ price, volume })),
+        ...marketDepth.asks.map(([price, volume]) => ({ price, volume }))
+      ];
+      const updatedProfile = updateVolumeProfile(volumeData);
+      setVolumeProfile(Object.entries(updatedProfile).map(([price, volume]) => ({
+        price: parseFloat(price),
+        volume
+      })));
+    };
+
+    const interval = setInterval(simulateMarketData, 1000);
+    return () => clearInterval(interval);
+  }, [realTimePrice, marketDepth, updateVolumeProfile]);
+
+  // Advanced position management
+  const calculatePositionMetrics = useCallback((position: Position) => {
+    const markPrice = realTimePrice;
+    const notionalValue = position.qty * markPrice;
+    const unrealizedPnL = (markPrice - position.entryPrice) * position.qty * (position.side === "Buy" ? 1 : -1);
+    const marginRatio = position.margin ? (position.collateral / notionalValue) * 100 : 0;
+    
+    // Calculate advanced metrics
+    const riskMetrics = calculatePositionRisk(position);
+    const fundingRate = calculateFundingRate();
+    const liquidationPrice = calculateLiquidationPrice(position.entryPrice, position.qty);
+    
+    return {
+      ...position,
+      markPrice,
+      notionalValue,
+      unrealizedPnL,
+      marginRatio,
+      ...riskMetrics,
+      fundingRate,
+      liquidationPrice
+    };
+  }, [realTimePrice, calculatePositionRisk]);
+
+  // Calculate funding rate (8-hour intervals)
+  const calculateFundingRate = useCallback(() => {
+    const baseRate = 0.0001; // 0.01% base rate
+    const utilizationMultiplier = 1 + (netMarginUsage / portfolioAnalytics.totalValue);
+    return baseRate * utilizationMultiplier;
+  }, [netMarginUsage, portfolioAnalytics.totalValue]);
+
+  // Algorithmic trading execution
+  const executeAlgorithmicOrder = useCallback((algorithm: AlgorithmConfig) => {
+    const { type, parameters } = algorithm;
+    
+    switch (type) {
+      case "TWAP":
+        return executeTWAP(parameters);
+      case "VWAP":
+        return executeVWAP(parameters);
+      case "Market Maker":
+        return executeMarketMaker(parameters);
+      case "Sniper":
+        return executeSniper(parameters);
+      default:
+        return null;
+    }
+  }, []);
+
+  const executeTWAP = useCallback((params: AlgorithmConfig["parameters"]) => {
+    const { duration = 60, volumeParticipation = 10 } = params;
+    const totalQuantity = parseFloat(quantity);
+    const interval = (duration * 60 * 1000) / (totalQuantity / volumeParticipation);
+    
+    let remainingQty = totalQuantity;
+    const sliceQty = totalQuantity * (volumeParticipation / 100);
+
+    const executeTWAPSlice = () => {
+      if (remainingQty <= 0) return;
+      
+      const currentQty = Math.min(remainingQty, sliceQty);
+      const position = createNewPosition(currentQty, realTimePrice);
+      updatePositions(position);
+      logTrade("OPEN", position);
+      
+      remainingQty -= currentQty;
+
+      if (remainingQty > 0) {
+        setTimeout(executeTWAPSlice, interval);
+      }
+    };
+
+    executeTWAPSlice();
+  }, [quantity, realTimePrice]);
+
+  const executeVWAP = useCallback((params: AlgorithmConfig["parameters"]) => {
+    const { duration = 120, volumeParticipation = 15 } = params;
+    const totalQuantity = parseFloat(quantity);
+    
+    // Use market depth for volume profile
+    const volumeData = marketDepth.bids.concat(marketDepth.asks).map(([price, volume]) => ({
+      price,
+      volume
+    }));
+    
+    const volumeProfile = updateVolumeProfile(volumeData);
+    const intervals = Object.entries(volumeProfile).map(([price, volume]) => ({
+      time: parseFloat(price),
+      quantity: totalQuantity * (volume / Object.values(volumeProfile).reduce((sum, v) => sum + v, 0))
+    }));
+
+    intervals.forEach((interval, i) => {
+      setTimeout(() => {
+        const position = createNewPosition(interval.quantity, realTimePrice);
+        updatePositions(position);
+        logTrade("OPEN", position);
+      }, (duration * 60 * 1000) * (i / intervals.length));
+    });
+  }, [quantity, realTimePrice, marketDepth, updateVolumeProfile]);
+
+  const executeMarketMaker = useCallback((params: AlgorithmConfig["parameters"]) => {
+    const { targetSpread = 0.1, gridLevels = 5, minProfit = 0.05 } = params;
+    const baseQuantity = parseFloat(quantity) / gridLevels;
+    
+    // Create grid of orders around the current price
+    for (let i = 0; i < gridLevels; i++) {
+      const buyPrice = realTimePrice * (1 - (targetSpread * (i + 1)));
+      const sellPrice = realTimePrice * (1 + (targetSpread * (i + 1)));
+      
+      // Place buy orders
+      const buyPosition = createNewPosition(baseQuantity, buyPrice);
+      updatePositions(buyPosition);
+      logTrade("OPEN", buyPosition);
+      
+      // Place sell orders
+      const sellPosition = createNewPosition(baseQuantity, sellPrice);
+      sellPosition.side = "Sell";
+      updatePositions(sellPosition);
+      logTrade("OPEN", sellPosition);
+    }
+  }, [quantity, realTimePrice]);
+
+  const executeSniper = useCallback((params: AlgorithmConfig["parameters"]) => {
+    const { priceOffset = 0.05, momentum = 0.5 } = params;
+    const totalQuantity = parseFloat(quantity);
+    
+    // Monitor price movements and execute when momentum is favorable
+    const checkMomentum = () => {
+      const currentMomentum = calculateMomentum();
+      if (currentMomentum >= momentum) {
+        const position = createNewPosition(totalQuantity, realTimePrice);
+        updatePositions(position);
+        logTrade("OPEN", position);
+      }
+    };
+
+    const interval = setInterval(checkMomentum, 1000);
+    return () => clearInterval(interval);
+  }, [quantity, realTimePrice]);
+
+  // Market microstructure analysis
+  const analyzeMicrostructure = useCallback(() => {
+    const bidAskSpread = calculateBidAskSpread();
+    const marketImpact = estimateMarketImpact();
+    const priceVolatility = calculateVolatility();
+    const orderBookImbalance = calculateOrderBookImbalance();
+    const liquidityScore = calculateLiquidityScore();
+
+    setMicrostructure({
+      bidAskSpread,
+      marketImpact,
+      volumeProfile: volumeProfile,
+      priceVolatility,
+      orderBookImbalance,
+      liquidityScore
+    });
+  }, [marketDepth, volumeProfile]);
+
+  // Smart order routing
+  const findOptimalRoute = useCallback(() => {
+    const routes = calculatePossibleRoutes();
+    const bestRoute = routes.reduce((best, current) => {
+      const score = calculateRouteScore(current);
+      return score > calculateRouteScore(best) ? current : best;
+    });
+    setSmartRouting(routes);
+    return bestRoute;
+  }, [marketDepth, liquidityAnalysis]);
+
+  // Advanced risk analytics
+  const updateRiskAnalytics = useCallback(() => {
+    const stressTests = runStressTests();
+    const sensitivity = calculateSensitivity();
+    const heatmap = generatePortfolioHeatmap();
+
+    setRiskAnalytics(prev => ({
+      ...prev,
+      stressTestResults: stressTests,
+      sensitivityAnalysis: sensitivity,
+      portfolioHeatmap: heatmap
+    }));
+  }, [positions, portfolioAnalytics]);
+
+  // Market microstructure analysis functions
+  const calculateBidAskSpread = useCallback(() => {
+    if (!marketDepth.bids.length || !marketDepth.asks.length) return 0;
+    const bestBid = marketDepth.bids[0][0];
+    const bestAsk = marketDepth.asks[0][0];
+    return (bestAsk - bestBid) / bestBid;
+  }, [marketDepth]);
+
+  const estimateMarketImpact = useCallback(() => {
+    const orderSize = parseFloat(quantity);
+    const totalLiquidity = side === "Buy" 
+      ? marketDepth.asks.reduce((sum, [_, vol]) => sum + vol, 0)
+      : marketDepth.bids.reduce((sum, [_, vol]) => sum + vol, 0);
+    
+    return orderSize / totalLiquidity;
+  }, [quantity, side, marketDepth]);
+
+  const calculateOrderBookImbalance = useCallback(() => {
+    const totalBidVolume = marketDepth.bids.reduce((sum, [_, vol]) => sum + vol, 0);
+    const totalAskVolume = marketDepth.asks.reduce((sum, [_, vol]) => sum + vol, 0);
+    return (totalBidVolume - totalAskVolume) / (totalBidVolume + totalAskVolume);
+  }, [marketDepth]);
+
+  const calculateLiquidityScore = useCallback(() => {
+    const spread = calculateBidAskSpread();
+    const depth = Math.min(
+      marketDepth.bids.reduce((sum, [_, vol]) => sum + vol, 0),
+      marketDepth.asks.reduce((sum, [_, vol]) => sum + vol, 0)
+    );
+    return (1 / spread) * Math.log(depth);
+  }, [marketDepth, calculateBidAskSpread]);
+
+  const calculateMomentum = useCallback(() => {
+    // Simple momentum calculation using price changes
+    const priceChanges = tradeLogs
+      .slice(-10)
+      .map(log => log.entryPrice || log.closePrice || 0)
+      .reduce((acc, price, i, arr) => {
+        if (i === 0) return acc;
+        return acc + (price - arr[i - 1]) / arr[i - 1];
+      }, 0);
+    
+    return priceChanges / 10;
+  }, [tradeLogs]);
+
+  // Smart order routing functions
+  const calculatePossibleRoutes = useCallback((): SmartOrderRoute[] => {
+    // Simulate multiple venues with different characteristics
+    const venues = [
+      { name: "Primary", latency: 50, fees: 0.001 },
+      { name: "Secondary", latency: 100, fees: 0.0008 },
+      { name: "Dark Pool", latency: 150, fees: 0.0015 }
+    ];
+
+    return venues.map(venue => ({
+      venue: venue.name,
+      price: realTimePrice * (1 + (Math.random() - 0.5) * 0.001),
+      liquidity: Math.random() * 1000,
+      fees: venue.fees,
+      latency: venue.latency,
+      probability: Math.random()
+    }));
+  }, [realTimePrice]);
+
+  const calculateRouteScore = useCallback((route: SmartOrderRoute) => {
+    const priceScore = 1 / route.price;
+    const liquidityScore = route.liquidity / 1000;
+    const feeScore = 1 - route.fees;
+    const latencyScore = 1 - (route.latency / 200);
+    const probabilityScore = route.probability;
+
+    return (
+      priceScore * 0.4 +
+      liquidityScore * 0.2 +
+      feeScore * 0.15 +
+      latencyScore * 0.15 +
+      probabilityScore * 0.1
+    );
+  }, []);
+
+  // Advanced risk analysis functions
+  const runStressTests = useCallback(() => {
+    const scenarios = [
+      { name: "Market Crash", priceFactor: 0.8 },
+      { name: "Volatility Spike", volFactor: 2 },
+      { name: "Liquidity Crisis", liquidityFactor: 0.5 }
+    ];
+
+    return scenarios.map(scenario => {
+      const pnl = calculateScenarioPnL(scenario);
+      const var95 = calculateScenarioVaR(scenario);
+      const maxDD = calculateScenarioDrawdown(scenario);
+
+      return {
+        scenario: scenario.name,
+        pnl,
+        var: var95,
+        maxDrawdown: maxDD
+      };
+    });
+  }, [positions, portfolioAnalytics]);
+
+  const calculateSensitivity = useCallback(() => {
+    const delta = positions.reduce((sum, pos) => 
+      sum + (pos.side === "Buy" ? 1 : -1) * pos.qty, 0);
+    
+    const gamma = delta / realTimePrice;
+    const vega = calculateVegaSensitivity();
+    const theta = calculateThetaSensitivity();
+    const rho = calculateRhoSensitivity();
+
+    return { delta, gamma, vega, theta, rho };
+  }, [positions, realTimePrice]);
+
+  const generatePortfolioHeatmap = useCallback(() => {
+    const sectors = Array.from(new Set(positions.map(p => p.tags[0] || "Unknown")));
+    
+    return sectors.map(sector => {
+      const sectorPositions = positions.filter(p => p.tags[0] === sector);
+      const exposure = sectorPositions.reduce((sum, pos) => 
+        sum + pos.notionalValue, 0);
+      const correlation = calculateSectorCorrelation(sector);
+
+      return {
+        sector,
+        exposure,
+        correlation
+      };
+    });
+  }, [positions]);
+
+  // Helper functions for risk calculations
+  const calculateScenarioPnL = useCallback((scenario: any) => {
+    const priceFactor = scenario.priceFactor || 1;
+    const volFactor = scenario.volFactor || 1;
+    const liquidityFactor = scenario.liquidityFactor || 1;
+
+    return positions.reduce((total, pos) => {
+      const adjustedPrice = pos.markPrice * priceFactor;
+      const pnl = (adjustedPrice - pos.entryPrice) * pos.qty * 
+        (pos.side === "Buy" ? 1 : -1) * liquidityFactor;
+      return total + pnl;
+    }, 0);
+  }, [positions]);
+
+  const calculateScenarioVaR = useCallback((scenario: any) => {
+    const confidence = 0.95;
+    const horizon = 1; // 1 day
+    const volFactor = scenario.volFactor || 1;
+    
+    const portfolioValue = positions.reduce((sum, pos) => 
+      sum + pos.notionalValue, 0);
+    const portfolioVol = calculateVolatility() * volFactor;
+    
+    return portfolioValue * portfolioVol * Math.sqrt(horizon) * 
+      Math.abs(calculateNormalInverse(confidence));
+  }, [positions, calculateVolatility]);
+
+  const calculateScenarioDrawdown = useCallback((scenario: any) => {
+    const priceFactor = scenario.priceFactor || 1;
+    const highWaterMark = Math.max(...positions.map(p => p.entryPrice));
+    const lowWaterMark = Math.min(...positions.map(p => p.entryPrice * priceFactor));
+    return (highWaterMark - lowWaterMark) / highWaterMark;
+  }, [positions]);
+
+  // Statistical helper functions
+  const calculateNormalInverse = (probability: number) => {
+    // Approximation of inverse normal distribution
+    const a1 = -39.6968302866538;
+    const a2 = 220.946098424521;
+    const a3 = -275.928510446969;
+    const a4 = 138.357751867269;
+    const a5 = -30.6647980661472;
+    const a6 = 2.50662827745924;
+    
+    const b1 = -54.4760987982241;
+    const b2 = 161.585836858041;
+    const b3 = -155.698979859887;
+    const b4 = 66.8013118877197;
+    const b5 = -13.2806815528857;
+    
+    const c1 = -7.78489400243029E-03;
+    const c2 = -0.322396458041136;
+    const c3 = -2.40075827716184;
+    const c4 = -2.54973253934373;
+    const c5 = 4.37466414146497;
+    const c6 = 2.93816398269878;
+    
+    const d1 = 7.78469570904146E-03;
+    const d2 = 0.32246712907004;
+    const d3 = 2.445134137143;
+    const d4 = 3.75440866190742;
+    
+    const p_low = 0.02425;
+    const p_high = 1 - p_low;
+    
+    let q, r;
+    let retVal;
+    
+    if ((probability <= 0) || (probability >= 1)) {
+      retVal = 0;
+    } else if (probability < p_low) {
+      q = Math.sqrt(-2 * Math.log(probability));
+      retVal = (((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
+        ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+    } else if (probability <= p_high) {
+      q = probability - 0.5;
+      r = q * q;
+      retVal = (((((a1 * r + a2) * r + a3) * r + a4) * r + a5) * r + a6) * q /
+        (((((b1 * r + b2) * r + b3) * r + b4) * r + b5) * r + 1);
+    } else {
+      q = Math.sqrt(-2 * Math.log(1 - probability));
+      retVal = -(((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
+        ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+    }
+    
+    return retVal;
+  };
+
+  const calculateVegaSensitivity = () => {
+    // Placeholder implementation
+    return 0;
+  };
+
+  const calculateThetaSensitivity = () => {
+    // Placeholder implementation
+    return 0;
+  };
+
+  const calculateRhoSensitivity = () => {
+    // Placeholder implementation
+    return 0;
+  };
+
+  const calculateSectorCorrelation = (sector: string) => {
+    // Placeholder implementation
+    return 0;
+  };
+
+  // Add new helper functions
+  const executeMarketMaking = useCallback(() => {
+    if (!marketMaker.enabled) return;
+
+    const basePrice = realTimePrice;
+    const gridOrders: Position[] = [];
+
+    for (let i = 0; i < marketMaker.gridLevels; i++) {
+      const buyPrice = basePrice * (1 - (i * marketMaker.gridSpacing));
+      const sellPrice = basePrice * (1 + (i * marketMaker.gridSpacing));
+      const orderSize = parseFloat(quantity) * Math.pow(marketMaker.volumeMultiplier, i);
+
+      // Place buy order
+      gridOrders.push(createNewPosition(orderSize, buyPrice));
+
+      // Place sell order
+      const sellPosition = createNewPosition(orderSize, sellPrice);
+      sellPosition.side = "Sell";
+      gridOrders.push(sellPosition);
+    }
+
+    gridOrders.forEach(order => {
+      updatePositions(order);
+      logTrade("OPEN", order);
+    });
+  }, [marketMaker, realTimePrice, quantity]);
+
+  const executeDarkPoolOrder = useCallback(() => {
+    if (!darkPool.enabled) return;
+
+    const orderSize = Math.min(
+      Math.max(parseFloat(quantity), darkPool.minSize),
+      darkPool.maxSize
+    );
+
+    const improvedPrice = side === "Buy" 
+      ? realTimePrice * (1 - darkPool.priceImprovement)
+      : realTimePrice * (1 + darkPool.priceImprovement);
+
+    if (Math.random() < darkPool.crossingProbability) {
+      const position = createNewPosition(orderSize, improvedPrice);
+      updatePositions(position);
+      logTrade("OPEN", position);
+      
+      showToast(
+        "Dark Pool Execution",
+        `Order executed with ${(darkPool.priceImprovement * 100).toFixed(2)}% price improvement`,
+        "default"
+      );
+    }
+  }, [darkPool, quantity, side, realTimePrice]);
+
+  const executeSmartOrder = useCallback(() => {
+    if (!smartRouter.enabled) return;
+
+    const routes = calculatePossibleRoutes();
+    const bestRoute = routes.reduce((best, current) => {
+      const score = calculateRouteScore(current);
+      const latencyOK = current.latency <= smartRouter.latencyThreshold;
+      const costOK = current.fees <= smartRouter.costThreshold;
+      
+      if (!latencyOK || !costOK) return best;
+      return score > calculateRouteScore(best) ? current : best;
+    });
+
+    if (bestRoute) {
+      const position = createNewPosition(parseFloat(quantity), bestRoute.price);
+      position.tags.push(`venue:${bestRoute.venue}`);
+      updatePositions(position);
+      logTrade("OPEN", position);
+    }
+  }, [smartRouter, quantity]);
+
+  const executeAdaptiveAlgo = useCallback(() => {
+    const { duration, participation, urgency, adaptiveWindow } = executionAlgo.parameters;
+    
+    const calculateParticipation = () => {
+      const volatility = calculateVolatility();
+      const spread = calculateBidAskSpread();
+      const momentum = calculateMomentum();
+      
+      let baseParticipation = participation || 15;
+      
+      // Adjust based on market conditions
+      if (volatility > 0.02) baseParticipation *= 0.8;
+      if (spread > 0.001) baseParticipation *= 0.9;
+      if (Math.abs(momentum) > 0.005) baseParticipation *= 1.2;
+      
+      return Math.min(
+        Math.max(baseParticipation, executionAlgo.parameters.minParticipation || 5),
+        executionAlgo.parameters.maxParticipation || 25
+      );
+    };
+
+    const totalQuantity = parseFloat(quantity);
+    const sliceSize = totalQuantity * (calculateParticipation() / 100);
+    let remainingQty = totalQuantity;
+
+    const executeSlice = () => {
+      if (remainingQty <= 0) return;
+      
+      const currentQty = Math.min(remainingQty, sliceSize);
+      const position = createNewPosition(currentQty, realTimePrice);
+      updatePositions(position);
+      logTrade("OPEN", position);
+      
+      remainingQty -= currentQty;
+
+      if (remainingQty > 0) {
+        const delay = (adaptiveWindow || 5) * 1000;
+        setTimeout(executeSlice, delay);
+      }
+    };
+
+    executeSlice();
+  }, [executionAlgo, quantity, realTimePrice]);
+
+  // Add UI components for new features
+  const AlgorithmicTradingTab = () => (
+    <Card>
+      <CardContent className="p-4">
+        <h3 className="text-lg font-semibold mb-4">Algorithmic Trading</h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Smart Order Router</Label>
+              <p className="text-sm text-muted-foreground">
+                Optimize execution across multiple venues
+              </p>
+            </div>
+            <Switch
+              checked={smartRouter.enabled}
+              onCheckedChange={(checked) => 
+                setSmartRouter(prev => ({...prev, enabled: checked}))}
+            />
+          </div>
+
+          {smartRouter.enabled && (
+            <div className="space-y-2">
+              <div className="space-y-2">
+                <Label>Liquidity Preference</Label>
+                <Select
+                  value={smartRouter.liquidityPreference}
+                  onValueChange={(val: "aggressive" | "passive" | "neutral") => 
+                    setSmartRouter(prev => ({...prev, liquidityPreference: val}))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="aggressive">Aggressive</SelectItem>
+                    <SelectItem value="passive">Passive</SelectItem>
+                    <SelectItem value="neutral">Neutral</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Latency Threshold (ms)</Label>
+                <Input
+                  type="number"
+                  value={smartRouter.latencyThreshold}
+                  onChange={(e) => setSmartRouter(prev => ({
+                    ...prev,
+                    latencyThreshold: parseFloat(e.target.value)
+                  }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Cost Threshold (%)</Label>
+                <Input
+                  type="number"
+                  value={smartRouter.costThreshold * 100}
+                  onChange={(e) => setSmartRouter(prev => ({
+                    ...prev,
+                    costThreshold: parseFloat(e.target.value) / 100
+                  }))}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Dark Pool</Label>
+              <p className="text-sm text-muted-foreground">
+                Execute orders with minimal market impact
+              </p>
+            </div>
+            <Switch
+              checked={darkPool.enabled}
+              onCheckedChange={(checked) => 
+                setDarkPool(prev => ({...prev, enabled: checked}))}
+            />
+          </div>
+
+          {darkPool.enabled && (
+            <div className="space-y-2">
+              <div className="space-y-2">
+                <Label>Min Size</Label>
+                <Input
+                  type="number"
+                  value={darkPool.minSize}
+                  onChange={(e) => setDarkPool(prev => ({
+                    ...prev,
+                    minSize: parseFloat(e.target.value)
+                  }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Max Size</Label>
+                <Input
+                  type="number"
+                  value={darkPool.maxSize}
+                  onChange={(e) => setDarkPool(prev => ({
+                    ...prev,
+                    maxSize: parseFloat(e.target.value)
+                  }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Price Improvement (%)</Label>
+                <Input
+                  type="number"
+                  value={darkPool.priceImprovement * 100}
+                  onChange={(e) => setDarkPool(prev => ({
+                    ...prev,
+                    priceImprovement: parseFloat(e.target.value) / 100
+                  }))}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Market Making</Label>
+              <p className="text-sm text-muted-foreground">
+                Automated market making with grid strategy
+              </p>
+            </div>
+            <Switch
+              checked={marketMaker.enabled}
+              onCheckedChange={(checked) => 
+                setMarketMaker(prev => ({...prev, enabled: checked}))}
+            />
+          </div>
+
+          {marketMaker.enabled && (
+            <div className="space-y-2">
+              <div className="space-y-2">
+                <Label>Grid Levels</Label>
+                <Input
+                  type="number"
+                  value={marketMaker.gridLevels}
+                  onChange={(e) => setMarketMaker(prev => ({
+                    ...prev,
+                    gridLevels: parseInt(e.target.value)
+                  }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Grid Spacing (%)</Label>
+                <Input
+                  type="number"
+                  value={marketMaker.gridSpacing * 100}
+                  onChange={(e) => setMarketMaker(prev => ({
+                    ...prev,
+                    gridSpacing: parseFloat(e.target.value) / 100
+                  }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Volume Multiplier</Label>
+                <Input
+                  type="number"
+                  value={marketMaker.volumeMultiplier}
+                  onChange={(e) => setMarketMaker(prev => ({
+                    ...prev,
+                    volumeMultiplier: parseFloat(e.target.value)
+                  }))}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Execution Algorithm</Label>
+              <p className="text-sm text-muted-foreground">
+                Advanced execution strategies
+              </p>
+            </div>
+            <Select
+              value={executionAlgo.type}
+              onValueChange={(val: ExecutionAlgorithm["type"]) => 
+                setExecutionAlgo(prev => ({...prev, type: val}))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="TWAP">TWAP</SelectItem>
+                <SelectItem value="VWAP">VWAP</SelectItem>
+                <SelectItem value="POV">POV</SelectItem>
+                <SelectItem value="Implementation Shortfall">Implementation Shortfall</SelectItem>
+                <SelectItem value="Adaptive">Adaptive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {executionAlgo.type === "Adaptive" && (
+            <div className="space-y-2">
+              <div className="space-y-2">
+                <Label>Participation Rate (%)</Label>
+                <Input
+                  type="number"
+                  value={executionAlgo.parameters.participation}
+                  onChange={(e) => setExecutionAlgo(prev => ({
+                    ...prev,
+                    parameters: {
+                      ...prev.parameters,
+                      participation: parseFloat(e.target.value)
+                    }
+                  }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Urgency</Label>
+                <Select
+                  value={executionAlgo.parameters.urgency}
+                  onValueChange={(val: "high" | "medium" | "low") => 
+                    setExecutionAlgo(prev => ({
+                      ...prev,
+                      parameters: {
+                        ...prev.parameters,
+                        urgency: val
+                      }
+                    }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Adaptive Window (seconds)</Label>
+                <Input
+                  type="number"
+                  value={executionAlgo.parameters.adaptiveWindow}
+                  onChange={(e) => setExecutionAlgo(prev => ({
+                    ...prev,
+                    parameters: {
+                      ...prev.parameters,
+                      adaptiveWindow: parseFloat(e.target.value)
+                    }
+                  }))}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  // Fix indicator parameter handling in UI
+  const IndicatorParameterInput: React.FC<IndicatorParamProps> = ({ 
+    indicator, 
+    param, 
+    value, 
+    onChange 
+  }) => (
+    <div>
+      <Label className="text-sm">{param}</Label>
+      <Input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+      />
+    </div>
+  );
+
+  // Technical Analysis Section
+  const TechnicalAnalysisSection = () => (
+    <div className="technical-analysis-section">
+      <h2>Technical Analysis</h2>
+      <TechnicalIndicatorsSection
+        indicators={technicalIndicators}
+        onToggleIndicator={handleIndicatorToggle}
+        onParameterChange={handleParameterChange}
+      />
+    </div>
+  );
+
+  // Chart update function
+  const updateChart = useCallback(() => {
+    if (chartRef.current) {
+      chartRef.current.update();
+    }
+  }, []);
+
+  // Technical indicator handlers
+  const handleIndicatorToggle = useCallback((index: number) => {
+    const newIndicators = [...technicalIndicators];
+    newIndicators[index].enabled = !newIndicators[index].enabled;
+    setTechnicalIndicators(newIndicators);
+    updateChart();
+  }, [technicalIndicators, updateChart]);
+
+  // Parameter change handler
+  const handleParameterChange = useCallback((
+    index: number,
+    indicator: TechnicalIndicator,
+    param: string,
+    value: string
+  ) => {
+    const newIndicators = [...technicalIndicators];
+    const numValue = parseFloat(value);
+    newIndicators[index].parameters[param] = isNaN(numValue) ? value : numValue;
+    setTechnicalIndicators(newIndicators);
+    updateChart();
+  }, [technicalIndicators, updateChart]);
+
+  // Add advanced AI-powered market analysis function
+  const analyzeMarketWithAI = useCallback(() => {
+    // Market conditions with probabilities
+    const marketConditions = [
+      { condition: "trending", probability: 0.35 },
+      { condition: "ranging", probability: 0.40 },
+      { condition: "volatile", probability: 0.25 }
+    ];
+    
+    // Select a market condition based on probabilities
+    const random = Math.random();
+    let cumulativeProbability = 0;
+    let selectedCondition = "ranging";
+    
+    for (const { condition, probability } of marketConditions) {
+      cumulativeProbability += probability;
+      if (random <= cumulativeProbability) {
+        selectedCondition = condition;
+        break;
+      }
+    }
+    
+    // Generate AI confidence level (between 0.7 and 0.98)
+    const aiConfidence = 0.7 + Math.random() * 0.28;
+    
+    // Generate recommendations based on market condition
+    const recommendations: AIRecommendation[] = [];
+    
+    if (selectedCondition === "trending") {
+      // In trending markets, generate momentum-based recommendations
+      recommendations.push({
+        type: Math.random() > 0.5 ? "Buy" : "Sell",
+        confidence: 0.75 + Math.random() * 0.2,
+        reason: "Strong momentum detected in price action",
+        timeframe: "Medium-term",
+        entryPrice: realTimePrice * (1 + (Math.random() * 0.02 - 0.01)),
+        targetPrice: realTimePrice * (1 + (Math.random() > 0.5 ? 0.05 : -0.05)),
+        stopLoss: realTimePrice * (1 + (Math.random() > 0.5 ? -0.03 : 0.03)),
+        suggestion: "Consider trailing stop to capture trend"
+      });
+    } else if (selectedCondition === "ranging") {
+      // In ranging markets, generate mean-reversion recommendations
+      const priceDirection = Math.random() > 0.5;
+      recommendations.push({
+        type: priceDirection ? "Sell" : "Buy",
+        confidence: 0.65 + Math.random() * 0.2,
+        reason: "Price approaching range boundary",
+        timeframe: "Short-term",
+        entryPrice: realTimePrice,
+        targetPrice: realTimePrice * (1 + (priceDirection ? -0.03 : 0.03)),
+        stopLoss: realTimePrice * (1 + (priceDirection ? 0.02 : -0.02)),
+        suggestion: "Set tight stop loss due to range-bound conditions"
+      });
+    } else if (selectedCondition === "volatile") {
+      // In volatile markets, generate both directional and neutral recommendations
+      if (Math.random() > 0.3) {
+        recommendations.push({
+          type: Math.random() > 0.5 ? "Buy" : "Sell",
+          confidence: 0.6 + Math.random() * 0.15,
+          reason: "Volatility breakout opportunity",
+          timeframe: "Very short-term",
+          entryPrice: realTimePrice,
+          targetPrice: realTimePrice * (1 + (Math.random() > 0.5 ? 0.07 : -0.07)),
+          stopLoss: realTimePrice * (1 + (Math.random() > 0.5 ? -0.04 : 0.04)),
+          suggestion: "Consider reducing position size due to high volatility"
+        });
+      } else {
+        recommendations.push({
+          type: "Neutral",
+          confidence: 0.8 + Math.random() * 0.15,
+          reason: "Excessive volatility detected",
+          timeframe: "Current",
+          suggestion: "Consider waiting for volatility to decrease"
+        });
+      }
+    }
+    
+    // Update market microstructure with AI analysis
+    setMicrostructure(prev => ({
+      ...prev,
+      aiAnalysis: {
+        marketCondition: selectedCondition,
+        confidence: aiConfidence,
+        volatilityForecast: 0.15 + Math.random() * 0.1,
+        recommendations
+      }
+    }));
+    
+    // Show toast notification with AI analysis
+    showToast(
+      "AI Market Analysis Complete",
+      `Market condition: ${selectedCondition} (${(aiConfidence * 100).toFixed(0)}% confidence)`,
+      "default"
+    );
+    
+    return recommendations;
+  }, [realTimePrice]);
+
+  // Add function to execute AI-recommended trades
+  const executeAIRecommendation = useCallback((recommendation: AIRecommendation) => {
+    if (!recommendation) return;
+    
+    // Set order parameters based on AI recommendation
+    if (recommendation.type === "Buy" || recommendation.type === "Sell") {
+      setSymbol(symbol); // Keep current symbol
+      setSide(recommendation.type === "Buy" ? "Buy" : "Sell");
+      setOrderType("Limit");
+      setQuantity(Math.max(1, Math.floor(portfolioAnalytics.totalValue * 0.05 / (recommendation.entryPrice || realTimePrice))).toString());
+      if (recommendation.entryPrice) setLimitPrice(recommendation.entryPrice.toString());
+      if (recommendation.targetPrice) setTakeProfit(recommendation.targetPrice.toString());
+      if (recommendation.stopLoss) {
+        // Handle stop loss based on available functions
+        if (typeof setTrailingStop === 'function') {
+          setTrailingStop(recommendation.stopLoss.toString());
+        }
+        // Add other stop loss handling options if needed
+      }
+      
+      // Show toast notification
+      showToast(
+        "AI Recommendation Applied",
+        `${recommendation.type} order prepared with ${(recommendation.confidence * 100).toFixed(2)}% confidence`,
+        "default"
+      );
+    }
+  }, [symbol, realTimePrice, portfolioAnalytics.totalValue, setTrailingStop]);
+  
+  // Move marketMicrostructure state declaration before the AI analysis functions
+  const [marketMicrostructure, setMarketMicrostructure] = useState<MarketMicrostructure>({
+    bidAskSpread: 0.05,
+    marketImpact: 0.02,
+    volumeProfile: [],
+    priceVolatility: 0.12,
+    orderBookImbalance: 0.03,
+    liquidityScore: 0.78,
+    aiAnalysis: {
+      marketCondition: "ranging",
+      confidence: 0.85,
+      volatilityForecast: 0.18,
+      recommendations: []
+    }
+  });
+  
+  // Now define the AI analysis functions after the state declaration
+  const analyzeMarketWithAI = useCallback(() => {
+    // Market conditions with probabilities
+    const marketConditions = [
+      { condition: "trending", probability: 0.35 },
+      { condition: "ranging", probability: 0.40 },
+      { condition: "volatile", probability: 0.25 }
+    ];
+    
+    // Select a market condition based on probabilities
+    const random = Math.random();
+    let cumulativeProbability = 0;
+    let selectedCondition = "ranging";
+    
+    for (const { condition, probability } of marketConditions) {
+      cumulativeProbability += probability;
+      if (random <= cumulativeProbability) {
+        selectedCondition = condition;
+        break;
+      }
+    }
+    
+    // Generate AI confidence level (between 0.7 and 0.98)
+    const aiConfidence = 0.7 + Math.random() * 0.28;
+    
+    // Generate recommendations based on market condition
+    const recommendations: AIRecommendation[] = [];
+    
+    if (selectedCondition === "trending") {
+      // In trending markets, generate momentum-based recommendations
+      recommendations.push({
+        type: Math.random() > 0.5 ? "Buy" : "Sell",
+        confidence: 0.75 + Math.random() * 0.2,
+        reason: "Strong momentum detected in price action",
+        timeframe: "Medium-term",
+        entryPrice: realTimePrice * (1 + (Math.random() * 0.02 - 0.01)),
+        targetPrice: realTimePrice * (1 + (Math.random() > 0.5 ? 0.05 : -0.05)),
+        stopLoss: realTimePrice * (1 + (Math.random() > 0.5 ? -0.03 : 0.03)),
+        suggestion: "Consider trailing stop to capture trend"
+      });
+    } else if (selectedCondition === "ranging") {
+      // In ranging markets, generate mean-reversion recommendations
+      const priceDirection = Math.random() > 0.5;
+      recommendations.push({
+        type: priceDirection ? "Sell" : "Buy",
+        confidence: 0.65 + Math.random() * 0.2,
+        reason: "Price approaching range boundary",
+        timeframe: "Short-term",
+        entryPrice: realTimePrice,
+        targetPrice: realTimePrice * (1 + (priceDirection ? -0.03 : 0.03)),
+        stopLoss: realTimePrice * (1 + (priceDirection ? 0.02 : -0.02)),
+        suggestion: "Set tight stop loss due to range-bound conditions"
+      });
+    } else if (selectedCondition === "volatile") {
+      // In volatile markets, generate both directional and neutral recommendations
+      if (Math.random() > 0.3) {
+        recommendations.push({
+          type: Math.random() > 0.5 ? "Buy" : "Sell",
+          confidence: 0.6 + Math.random() * 0.15,
+          reason: "Volatility breakout opportunity",
+          timeframe: "Very short-term",
+          entryPrice: realTimePrice,
+          targetPrice: realTimePrice * (1 + (Math.random() > 0.5 ? 0.07 : -0.07)),
+          stopLoss: realTimePrice * (1 + (Math.random() > 0.5 ? -0.04 : 0.04)),
+          suggestion: "Consider reducing position size due to high volatility"
+        });
+      } else {
+        recommendations.push({
+          type: "Neutral",
+          confidence: 0.8 + Math.random() * 0.15,
+          reason: "Excessive volatility detected",
+          timeframe: "Current",
+          suggestion: "Consider waiting for volatility to decrease"
+        });
+      }
+    }
+    
+    // Update market microstructure with AI analysis
+    setMarketMicrostructure(prev => ({
+      ...prev,
+      aiAnalysis: {
+        marketCondition: selectedCondition,
+        confidence: aiConfidence,
+        volatilityForecast: 0.15 + Math.random() * 0.1,
+        recommendations
+      }
+    }));
+    
+    // Show toast notification with AI analysis
+    showToast(
+      "AI Market Analysis Complete",
+      `Market condition: ${selectedCondition} (${(aiConfidence * 100).toFixed(0)}% confidence)`,
+      "default"
+    );
+    
+    return recommendations;
+  }, [realTimePrice]);
+
+  // ... existing code ...
+}
